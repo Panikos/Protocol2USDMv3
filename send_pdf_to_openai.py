@@ -11,15 +11,14 @@ load_dotenv(env_path)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument('--model', default=os.environ.get('OPENAI_MODEL', 'gpt-4o'))
-parser.add_argument('pdf_path', nargs='?')
-parser.add_argument('--output', default='soa_extracted.json')
-args, _ = parser.parse_known_args()
-MODEL_NAME = args.model
-if 'OPENAI_MODEL' not in os.environ:
-    os.environ['OPENAI_MODEL'] = MODEL_NAME
-print(f"[INFO] Using OpenAI model: {MODEL_NAME}")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Extract SoA from PDF text with OpenAI")
+    parser.add_argument("pdf_path", help="Path to the protocol PDF")
+    parser.add_argument("--output", default="STEP1_soa_text.json", help="Output JSON file")
+    parser.add_argument("--model", default=os.environ.get("OPENAI_MODEL", "gpt-4o"), help="OpenAI model")
+    return parser.parse_args()
 
 def extract_pdf_text(pdf_path):
     doc = fitz.open(pdf_path)
@@ -90,38 +89,49 @@ def send_text_to_openai(text):
         print("[WARNING] LLM output may be truncated. Consider splitting the task or increasing max_tokens if supported.")
     return content
 
-# Path to your PDF file
-pdf_path = 'c:/Users/panik/Documents/GitHub/Protcol2USDMv3/CDISC_Pilot_Study.pdf'
-
-# Extract text and send to GPT-4o
-pdf_text = extract_pdf_text(pdf_path)
 import json
+
 
 def clean_llm_json(raw):
     raw = raw.strip()
-    # Remove code block markers
     if raw.startswith('```json'):
         raw = raw[7:]
     if raw.startswith('```'):
         raw = raw[3:]
     if raw.endswith('```'):
         raw = raw[:-3]
-    # Remove anything after the last closing brace
     last_brace = raw.rfind('}')
     if last_brace != -1:
-        raw = raw[:last_brace+1]
+        raw = raw[:last_brace + 1]
     return raw
 
-parsed_content = send_text_to_openai(pdf_text)
-import sys
-sys.stdout.reconfigure(encoding='utf-8')
-try:
-    parsed_json = json.loads(parsed_content)
-except json.JSONDecodeError:
-    cleaned = clean_llm_json(parsed_content)
-    parsed_json = json.loads(cleaned)
-print(json.dumps(parsed_json, indent=2, ensure_ascii=False))
 
-# Optionally, save to file
-with open("STEP1_soa_text.json", "w", encoding="utf-8") as f:
-    json.dump(parsed_json, f, indent=2, ensure_ascii=False)
+def main():
+    args = parse_args()
+    global MODEL_NAME
+    MODEL_NAME = args.model
+    if 'OPENAI_MODEL' not in os.environ:
+        os.environ['OPENAI_MODEL'] = MODEL_NAME
+    print(f"[INFO] Using OpenAI model: {MODEL_NAME}")
+
+    pdf_text = extract_pdf_text(args.pdf_path)
+    parsed_content = send_text_to_openai(pdf_text)
+
+    import sys
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+
+    try:
+        parsed_json = json.loads(parsed_content)
+    except json.JSONDecodeError:
+        cleaned = clean_llm_json(parsed_content)
+        parsed_json = json.loads(cleaned)
+
+    print(json.dumps(parsed_json, indent=2, ensure_ascii=False))
+    with open(args.output, 'w', encoding='utf-8') as f:
+        json.dump(parsed_json, f, indent=2, ensure_ascii=False)
+    print(f"[SUCCESS] Wrote SoA text output to {args.output}")
+
+
+if __name__ == "__main__":
+    main()

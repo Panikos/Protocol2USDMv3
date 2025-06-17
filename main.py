@@ -71,7 +71,7 @@ def main():
 
     # 1. Extract SoA from text (PDF)
     print("\n[STEP 1] Extracting SoA from PDF text...")
-    success, _ = run_script("send_pdf_to_openai.py")
+    success, _ = run_script("send_pdf_to_openai.py", [PDF_PATH, "--output", "STEP1_soa_text.json", "--model", MODEL_NAME])
     if not success:
         print("[FATAL] Text extraction failed. Aborting.")
         return
