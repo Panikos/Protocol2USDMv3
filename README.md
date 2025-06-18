@@ -108,6 +108,13 @@ Visit [http://localhost:8501](http://localhost:8501) in your browser after runni
   - Quickly identify extraction issues or missing data.
 - Useful for quality control, annotation, and sharing results with non-technical stakeholders.
 
+## Running Tests
+To run the unit tests, install dependencies and execute:
+```bash
+pytest
+```
+
+
 ## Notes
 - The workflow is fully automated and robust to both text-based and image-based PDFs.
 - For best results, use GPT-4o or a model with vision capabilities for image-based adjudication.
