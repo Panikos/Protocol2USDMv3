@@ -15,6 +15,8 @@ LLM_PROMPT = (
     "You will be given two JSON objects, each representing a Schedule of Activities (SoA) extracted from a clinical trial protocol. Both are intended to conform to the USDM v4.0 Wrapper-Input OpenAPI schema.\n"
     "Compare and reconcile the two objects, resolving any discrepancies by using your best judgment and the USDM v4.0 standard.\n"
     "IMPORTANT: Output ALL column headers (timepoints) from the table EXACTLY as shown, including ranges (e.g., 'Day 2-3', 'Day 30-35'), even if they appear similar or redundant. Do NOT drop or merge any timepoints unless they are exact duplicates.\n"
+    "When creating the `plannedTimepoints` array, you MUST standardize the `name` for each timepoint. If a timepoint has a simple `name` (e.g., 'Screening') and a more detailed `description` (e.g., 'Visit 1 / Week -2'), combine them into a single, user-friendly `name` in the format 'Visit X (Week Y)'. For example, a timepoint with `name: 'Screening'` and `description: 'Visit 1 / Week -2'` should be reconciled into a final timepoint with `name: 'Visit 1 (Week -2)'`. Preserve the original `description` field as well.\n"
+    "CRITICAL: When reconciling the `activityTimepoints` (the matrix of checkmarks), you MUST prioritize the data from the VISION-EXTRACTED SoA. The vision model is more reliable for identifying which activities occur at which timepoints. If the vision JSON indicates a checkmark (`isPerformed: true`) for an activity at a timepoint, ensure it is present in the final output, even if the text JSON disagrees.\n"
     "Your output must be a single, unified JSON object that:\n"
     "- Strictly conforms to the USDM v4.0 Wrapper-Input schema (including the top-level keys: study, usdmVersion, systemName, systemVersion).\n"
     "- The study object must include all required and as many optional fields as possible, including a fully detailed SoA: activities, plannedTimepoints, activityGroups, activityTimepoints, and all appropriate groupings and relationships.\n"
@@ -27,25 +29,20 @@ def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def reconcile_soa(vision_path, output_path, text_path=None, model_name='o3'):
-    # Text SoA is optional. If not provided or invalid, proceed with vision only.
-    text_soa = None
-    if text_path and os.path.exists(text_path):
-        try:
-            text_soa = load_json(text_path)
-        except (json.JSONDecodeError, FileNotFoundError):
-            print(f"[WARN] Could not load or parse text SoA from {text_path}. Proceeding with vision SoA only.")
-            text_soa = None
+def reconcile_soa(vision_path, output_path, text_path, model_name='o3'):
+    try:
+        print(f"[INFO] Loading text-extracted SoA from: {text_path}")
+        text_soa = load_json(text_path)
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        print(f"[FATAL] Could not load or parse text SoA from {text_path}: {e}")
+        raise
 
-    vision_soa = load_json(vision_path)
-
-    # If no valid text_soa, just pass through the vision_soa as the final output.
-    if not text_soa:
-        print("[INFO] No valid text SoA provided. Passing through vision SoA as final output.")
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(vision_soa, f, indent=2, ensure_ascii=False)
-        print(f"[SUCCESS] Vision SoA written to {output_path}")
-        return
+    try:
+        print(f"[INFO] Loading vision-extracted SoA from: {vision_path}")
+        vision_soa = load_json(vision_path)
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        print(f"[FATAL] Could not load or parse vision SoA from {vision_path}: {e}")
+        raise
 
     # If we have both, proceed with LLM-based reconciliation.
     print("[INFO] Both text and vision SoA found. Reconciling with LLM...")
@@ -127,9 +124,9 @@ def reconcile_soa(vision_path, output_path, text_path=None, model_name='o3'):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="LLM-based reconciliation of SoA JSONs.")
-    parser.add_argument("--text", default=None, help="Path to text-extracted SoA JSON (optional)")
-    parser.add_argument("--vision", required=True, help="Path to vision-extracted SoA JSON")
-    parser.add_argument("--output", default="STEP5_soa_final.json", help="Path to write reconciled SoA JSON")
+    parser.add_argument("--text-input", required=True, help="Path to text-extracted SoA JSON.")
+    parser.add_argument("--vision-input", required=True, help="Path to vision-extracted SoA JSON.")
+    parser.add_argument("--output", required=True, help="Path to write reconciled SoA JSON.")
     parser.add_argument("--model", default=os.environ.get('OPENAI_MODEL', 'o3'), help="OpenAI model to use")
     args = parser.parse_args()
 
@@ -139,4 +136,4 @@ if __name__ == "__main__":
         os.environ['OPENAI_MODEL'] = args.model
     print(f"[INFO] Using OpenAI model: {args.model}")
 
-    reconcile_soa(vision_path=args.vision, output_path=args.output, text_path=args.text, model_name=args.model)
+    reconcile_soa(vision_path=args.vision_input, output_path=args.output, text_path=args.text_input, model_name=args.model)

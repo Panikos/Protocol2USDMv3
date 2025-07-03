@@ -2,6 +2,8 @@ import subprocess
 import sys
 import os
 import json
+import glob
+import shutil
 
 # Ensure all output is UTF-8 safe for Windows terminals
 if hasattr(sys.stdout, 'reconfigure'):
@@ -13,11 +15,20 @@ def run_script(script, args=None):
     if args:
         cmd.extend(args)
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True)
-        try:
+        # Set cwd to the directory of the main script to ensure relative paths work
+        cwd = os.path.dirname(os.path.abspath(__file__))
+        result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", check=True, cwd=cwd)
+        
+        # Print stderr for logging purposes, even on success
+        if result.stderr:
+            print(f"--- Log from {script} ---\n{result.stderr}\n--- End log ---", file=sys.stderr)
+
+        # Print stdout for the actual output
+        if result.stdout:
             print(f"[SUCCESS] {script} output:\n{result.stdout}")
-        except UnicodeEncodeError:
-            print(f"[SUCCESS] {script} output (UTF-8 chars replaced):\n{result.stdout.encode('utf-8', errors='replace').decode('utf-8')}")
+        else:
+            print(f"[SUCCESS] {script} completed with no output.")
+
         return True, result.stdout
     except subprocess.CalledProcessError as e:
         print(f"[ERROR] {script} failed with exit code {e.returncode}")
@@ -27,32 +38,19 @@ def run_script(script, args=None):
             print(f"[STDERR]:\n{e.stderr}")
         return False, e.stdout + '\n' + (e.stderr or '')
 
-
-import glob
-import shutil
-import subprocess
-
-def cleanup_outputs():
-    # Delete all .json files except requirements.json and soa_entity_mapping.json
-    for f in glob.glob('*.json'):
-        if f not in ['requirements.json', 'soa_entity_mapping.json']:
+def cleanup_outputs(output_dir):
+    """Clears the output directory before a new run."""
+    if os.path.exists(output_dir):
+        print(f"[INFO] Cleaning up output directory: {output_dir}")
+        for fname in os.listdir(output_dir):
+            fpath = os.path.join(output_dir, fname)
             try:
-                os.remove(f)
-            except Exception as e:
-                print(f"[WARN] Could not delete {f}: {e}")
-    # Clear soa_images directory
-    img_dir = 'soa_images'
-    if os.path.exists(img_dir):
-        for fname in os.listdir(img_dir):
-            fpath = os.path.join(img_dir, fname)
-            try:
-                if os.path.isfile(fpath):
-                    os.remove(fpath)
+                if os.path.isfile(fpath) or os.path.islink(fpath):
+                    os.unlink(fpath)
                 elif os.path.isdir(fpath):
                     shutil.rmtree(fpath)
             except Exception as e:
-                print(f"[WARN] Could not delete {fpath}: {e}")
-
+                print(f'[WARN] Failed to delete {fpath}. Reason: {e}')
 
 def print_summary(summary_data):
     """Prints a formatted summary of the pipeline execution."""
@@ -76,185 +74,202 @@ def print_summary(summary_data):
 MODEL_NAME = 'gpt-4o'
 
 def main():
+    print("[DEBUG] main.py execution started.", file=sys.stderr)
     global MODEL_NAME
     import argparse
     parser = argparse.ArgumentParser(description="Run the SoA extraction pipeline.")
     parser.add_argument("pdf_path", help="Path to the protocol PDF")
     parser.add_argument("--model", default=MODEL_NAME, help="OpenAI model to use (default: gpt-4o)")
-    parser.add_argument("--batch-size", type=int, default=None, help="Images per vision-model batch (default: all)")
-    parser.add_argument("--workers", type=int, default=4, help="Parallel worker threads for vision batches")
+
     args = parser.parse_args()
     MODEL_NAME = args.model
-    PDF_PATH = os.path.abspath(args.pdf_path)
-    SOA_IMAGES_DIR = "./soa_images"
+    PDF_PATH = args.pdf_path
+    
+    # Define output directory and file paths
+    protocol_name = os.path.splitext(os.path.basename(PDF_PATH))[0]
+    OUTPUT_DIR = os.path.join("output", protocol_name)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    
+    PATHS = {
+        "prompt": os.path.join(OUTPUT_DIR, "1_llm_prompt.txt"),
+        "soa_pages": os.path.join(OUTPUT_DIR, "2_soa_pages.json"),
+        "images_dir": os.path.join(OUTPUT_DIR, "3_soa_images"),
+        "header_structure": os.path.join(OUTPUT_DIR, "4_soa_header_structure.json"),
+        "raw_text": os.path.join(OUTPUT_DIR, "5_raw_text_soa.json"),
+        "raw_vision": os.path.join(OUTPUT_DIR, "6_raw_vision_soa.json"),
+        "postprocessed_text": os.path.join(OUTPUT_DIR, "7_postprocessed_text_soa.json"),
+        "postprocessed_vision": os.path.join(OUTPUT_DIR, "8_postprocessed_vision_soa.json"),
+        "final_soa": os.path.join(OUTPUT_DIR, "9_reconciled_soa.json"),
+    }
+    os.makedirs(PATHS["images_dir"], exist_ok=True)
+
     summary_data = []
 
     try:
-        cleanup_outputs()
+        cleanup_outputs(OUTPUT_DIR)
 
-        # Step 1: Text Extraction
-        step1_info = {"step": "1. Text Extraction", "inputs": [PDF_PATH], "outputs": ["STEP1_soa_text.json"]}
-        print("\n[STEP 1] Extracting SoA from PDF text...")
-        success, output = run_script("send_pdf_to_openai.py", [PDF_PATH, "--model", MODEL_NAME, "--output", "STEP1_soa_text.json"])
-        if success:
-            step1_info["status"] = "Success"
-        else:
-            step1_info["status"] = "Failed"
+        # Initialize status flags
+        text_soa_ok = False
+        vision_soa_ok = False
+
+        # Step 1: Generate Prompt
+        step1_info = {"step": "1. Generate LLM Prompt", "inputs": ["soa_entity_mapping.json"], "outputs": [PATHS["prompt"]]}
+        print("\n[STEP 1] Generating up-to-date LLM prompt from mapping...")
+        success, _ = run_script("generate_soa_llm_prompt.py", ["--output", PATHS["prompt"]])
+        step1_info["status"] = "Success" if success else "Failed"
         summary_data.append(step1_info)
-        if not success:
-            raise RuntimeError("Text extraction failed.")
+        if not success: raise RuntimeError("Prompt generation failed.")
 
-        # Step 2: Generate Prompt
-        step2_info = {"step": "2. Generate LLM Prompt", "inputs": ["soa_entity_mapping.json"], "outputs": ["llm_soa_prompt.txt"]}
-        print("\n[STEP 2] Generating up-to-date LLM prompt from mapping...")
-        success, _ = run_script("generate_soa_llm_prompt.py")
-        step2_info["status"] = "Success" if success else "Skipped/Failed"
-        summary_data.append(step2_info)
-
-        # Step 3: Find SoA Pages
-        step3_info = {"step": "3. Find SoA Pages", "inputs": [PDF_PATH]}
-        print("\n[STEP 3] Identifying SOA pages in PDF...")
-        success, output = run_script("find_soa_pages.py", [PDF_PATH, "--model", MODEL_NAME])
-        page_str = ""
+        # Step 2: Find SoA Pages
+        step2_info = {"step": "2. Find SoA Pages", "inputs": [PDF_PATH, PATHS["prompt"]], "outputs": [PATHS["soa_pages"]]}
+        print("\n[STEP 2] Finding SoA pages...")
+        # The updated script prints comma-separated page indices to stdout
+        success, output = run_script("find_soa_pages.py", [PDF_PATH, "--model", MODEL_NAME, "--prompt-file", PATHS["prompt"]])
         if success:
             try:
-                page_str = output.strip().split('\n')[-1]
-                page_numbers = [int(p.strip()) for p in page_str.split(',') if p.strip().isdigit()]
-                if not page_numbers: raise ValueError("No valid page numbers found.")
-                print(f"[INFO] Found SoA on pages: {page_numbers}")
-                step3_info["status"] = "Success"
-                step3_info["outputs"] = [f"Page numbers: {page_str}"]
-            except Exception as e:
-                success = False
-                print(f"[FATAL] Could not parse page numbers: {e}")
-        if not success:
-            step3_info["status"] = "Failed"
-        summary_data.append(step3_info)
-        if not success:
-            raise RuntimeError("SOA page identification failed.")
-
-        # Step 4: Extract Images
-        image_paths = []
-        step4_info = {"step": "4. Extract Images", "inputs": [PDF_PATH], "outputs": [], "status": "Skipped"}
-        if page_numbers:
-            print("\n[STEP 4] Extracting SoA pages as images...")
-            os.makedirs(SOA_IMAGES_DIR, exist_ok=True)
-            # Pass pages as individual arguments
-            page_args = [str(p) for p in page_numbers]
-            success, img_output = run_script("extract_pdf_pages_as_images.py", [PDF_PATH, "--outdir", SOA_IMAGES_DIR, "--pages"] + page_args)
-            if success:
-                # Parse the output to find the generated image files
-                image_paths = [line.split(" ")[-1] for line in img_output.strip().split('\n') if "Extracted page" in line]
-                step4_info["outputs"] = [os.path.basename(f) for f in image_paths]
-                step4_info["status"] = "Success"
-            else:
-                step4_info["status"] = "Failed"
-            summary_data.append(step4_info)
-            if not success:
-                raise RuntimeError("Image extraction failed.")
-
-        # Step 5: Vision Extraction
-        step5_info = {"step": "5. Vision Extraction", "inputs": image_paths + ["llm_soa_prompt.txt"], "outputs": ["STEP2_soa_vision.json"]}
-        print("\n[STEP 5] Extracting SoA from images using vision model...")
-        vision_args = image_paths + ["--model", MODEL_NAME, "--output", "STEP2_soa_vision.json", "--prompt-file", "llm_soa_prompt.txt"]
-        if args.batch_size is not None:
-            vision_args += ["--batch-size", str(args.batch_size)]
-        vision_args += ["--workers", str(args.workers)]
-        success, _ = run_script("vision_extract_soa.py", vision_args)
-        if success:
-            step5_info["status"] = "Success"
-        else:
-            step5_info["status"] = "Failed"
-        summary_data.append(step5_info)
-        if not success:
-            raise RuntimeError("Vision extraction failed.")
-
-        # Step 6: Post-process Vision
-        step6_info = {"step": "6. Post-process & Validate Vision SoA", "inputs": ["STEP2_soa_vision.json"], "outputs": ["STEP3_soa_vision_fixed.json"]}
-        print("\n[STEP 6] Consolidating and normalizing vision output...")
-        success, _ = run_script("soa_postprocess_consolidated.py", ["STEP2_soa_vision.json", "STEP3_soa_vision_fixed.json"])
-        if not success:
-            step6_info["status"] = "Failed (Post-process)"
-            summary_data.append(step6_info)
-            raise RuntimeError("Vision SoA post-processing failed.")
-        
-        success, _ = run_script("soa_extraction_validator.py", ["STEP3_soa_vision_fixed.json"])
-        if not success:
-            step6_info["status"] = "Failed (Mapping Validation)"
-            summary_data.append(step6_info)
-            raise RuntimeError("Vision SoA mapping validation failed.")
-            
-        success, _ = run_script("validate_usdm_schema.py", ["STEP3_soa_vision_fixed.json", "Wrapper-Input"])
-        if not success:
-            step6_info["status"] = "Failed (Schema Validation)"
-            summary_data.append(step6_info)
-            raise RuntimeError("Vision SoA schema validation failed.")
-        step6_info["status"] = "Success"
-        summary_data.append(step6_info)
-
-        # Step 7: Post-process Text
-        step7_info = {"step": "7. Post-process & Validate Text SoA", "inputs": ["STEP1_soa_text.json"], "outputs": ["STEP4_soa_text_fixed.json"], "status": "Skipped"}
-        if os.path.exists("STEP1_soa_text.json"):
-            print("\n[STEP 7] Consolidating and normalizing text output...")
-            success, _ = run_script("soa_postprocess_consolidated.py", ["STEP1_soa_text.json", "STEP4_soa_text_fixed.json"])
-            if success:
-                success, _ = run_script("soa_extraction_validator.py", ["STEP4_soa_text_fixed.json"])
-                if success:
-                    success, _ = run_script("validate_usdm_schema.py", ["STEP4_soa_text_fixed.json", "Wrapper-Input"])
-                    if success:
-                        step7_info["status"] = "Success"
-                    else:
-                        step7_info["status"] = "Warning (Schema Validation Failed)"
+                # Parse the output and save to the JSON file for subsequent steps
+                page_indices = [int(p) for p in output.strip().split(',') if p.strip()]
+                if not page_indices:
+                    print("[WARN] find_soa_pages.py ran successfully but found no SoA pages.")
+                    # Write an empty list to the file to allow graceful handling downstream
+                    with open(PATHS["soa_pages"], 'w') as f:
+                        json.dump({"soa_pages": []}, f)
                 else:
-                    step7_info["status"] = "Warning (Mapping Validation Failed)"
-            else:
-                step7_info["status"] = "Warning (Post-process Failed)"
+                    with open(PATHS["soa_pages"], 'w') as f:
+                        json.dump({"soa_pages": page_indices}, f)
+                step2_info["status"] = "Success"
+            except (ValueError, IndexError) as e:
+                print(f"[ERROR] Failed to parse output from find_soa_pages.py: {e}")
+                print(f"[RAW_OUTPUT]:\n{output}")
+                success = False
+                step2_info["status"] = "Failed"
+        else:
+            step2_info["status"] = "Failed"
+        
+        summary_data.append(step2_info)
+        if not success: raise RuntimeError("Find SoA pages failed.")
+
+        # Step 3: Extract PDF pages as images
+        step3_info = {"step": "3. Extract SoA Images", "inputs": [PDF_PATH, PATHS["soa_pages"]], "outputs": [PATHS["images_dir"]]}
+        print("\n[STEP 3] Extracting SoA pages as images...")
+        success, _ = run_script("extract_pdf_pages_as_images.py", [PDF_PATH, "--pages-file", PATHS["soa_pages"], "--output-dir", PATHS["images_dir"]])
+        step3_info["status"] = "Success" if success else "Failed"
+        summary_data.append(step3_info)
+        if not success: raise RuntimeError("Image extraction failed.")
+
+        # Step 4: Analyze SoA Header Structure
+        step4_info = {"step": "4. Analyze SoA Header", "inputs": [PATHS["images_dir"]], "outputs": [PATHS["header_structure"]]}
+        print("\n[STEP 4] Analyzing SoA header structure from images...")
+        # Corrected script name from analyze_soa_header.py to analyze_soa_structure.py
+        success, _ = run_script("analyze_soa_structure.py", ["--images-dir", PATHS["images_dir"], "--output", PATHS["header_structure"], "--model", MODEL_NAME])
+        step4_info["status"] = "Success" if success else "Failed"
+        summary_data.append(step4_info)
+        if not success: raise RuntimeError("Header analysis failed.")
+
+        # Step 5: Text-based Extraction
+        step5_info = {"step": "5. Extract SoA from Text", "inputs": [PDF_PATH, PATHS["prompt"]], "outputs": [PATHS["raw_text"]]}
+        print("\n[STEP 5] Extracting SoA from PDF text...")
+        # The --soa-pages-file argument was removed to ensure the full PDF text is processed,
+        # not just the pages identified as the SoA.
+        success, _ = run_script("send_pdf_to_openai.py", [
+            PDF_PATH,
+            "--output", PATHS["raw_text"],
+            "--model", MODEL_NAME,
+            "--prompt-file", PATHS["prompt"],
+            "--header-structure-file", PATHS["header_structure"]
+        ])
+        text_soa_ok = success
+        step5_info["status"] = "Success" if text_soa_ok else "Failed"
+        summary_data.append(step5_info)
+        print(f"[DEBUG] Status of text_soa_ok after Step 5: {text_soa_ok}")
+
+        # Step 6: Vision-based Extraction
+        step6_info = {"step": "6. Vision Extraction", "inputs": [PATHS["images_dir"], PATHS["prompt"], PATHS["header_structure"]], "outputs": [PATHS["raw_vision"]]}
+        print("\n[STEP 6] Extracting SoA from images...")
+        vision_args = [
+            "--images-dir", PATHS["images_dir"],
+            "--output", PATHS["raw_vision"],
+            "--model", MODEL_NAME,
+            "--prompt-file", PATHS["prompt"],
+            "--header-structure-file", PATHS["header_structure"]
+        ]
+        vision_soa_ok, _ = run_script("vision_extract_soa.py", vision_args)
+        step6_info["status"] = "Success" if vision_soa_ok else "Failed"
+        summary_data.append(step6_info)
+        if not vision_soa_ok: raise RuntimeError("Vision SoA extraction failed.")
+
+        # Step 7: Text Post-processing
+        print(f"[DEBUG] Checking text_soa_ok before Step 7: {text_soa_ok}")
+        step7_info = {"step": "7. Post-process Text SoA", "inputs": [PATHS["raw_text"]], "outputs": [PATHS["postprocessed_text"]]}
+        if text_soa_ok:
+            print("\n[STEP 7] Consolidating and normalizing text output...")
+            success, _ = run_script("soa_postprocess_consolidated.py", [PATHS["raw_text"], PATHS["postprocessed_text"]])
+            step7_info["status"] = "Success" if success else "Warning (Failed)"
+        else:
+            step7_info["status"] = "Skipped"
         summary_data.append(step7_info)
 
-        # Step 8: Reconciliation
-        step8_inputs = ["STEP3_soa_vision_fixed.json"]
-        if os.path.exists("STEP4_soa_text_fixed.json"):
-            step8_inputs.append("STEP4_soa_text_fixed.json")
-        step8_info = {"step": "8. LLM Reconciliation", "inputs": step8_inputs, "outputs": ["STEP5_soa_final.json"]}
-        print("\n[STEP 8] LLM-based reconciliation...")
-        reconciliation_args = ["--vision", "STEP3_soa_vision_fixed.json", "--output", "STEP5_soa_final.json", "--model", MODEL_NAME]
-        if os.path.exists("STEP4_soa_text_fixed.json"):
-            reconciliation_args.extend(["--text", "STEP4_soa_text_fixed.json"])
-        success, _ = run_script("reconcile_soa_llm.py", reconciliation_args)
-        if success:
-            step8_info["status"] = "Success"
+        # Step 8: Vision Post-processing
+        step8_info = {"step": "8. Post-process Vision SoA", "inputs": [PATHS["raw_vision"]], "outputs": [PATHS["postprocessed_vision"]]}
+        if vision_soa_ok:
+            print("\n[STEP 8] Consolidating and normalizing vision output...")
+            success, _ = run_script("soa_postprocess_consolidated.py", [PATHS["raw_vision"], PATHS["postprocessed_vision"]])
+            step8_info["status"] = "Success" if success else "Failed"
         else:
-            step8_info["status"] = "Failed"
+            step8_info["status"] = "Skipped"
         summary_data.append(step8_info)
-        if not success:
-            raise RuntimeError("LLM reconciliation failed.")
+        if step8_info["status"] == "Failed": raise RuntimeError("Vision SoA post-processing failed.")
 
-        # Step 9: Final Validation
-        step9_info = {"step": "9. Final Validation", "inputs": ["STEP5_soa_final.json"], "outputs": []}
-        print("\n[STEP 9] Final validation...")
-        success, _ = run_script("validate_usdm_schema.py", ["STEP5_soa_final.json", "Wrapper-Input"])
-        if success:
-            step9_info["status"] = "Success"
+        # Step 9: Reconciliation
+        step9_inputs = [PATHS["postprocessed_vision"], PATHS["postprocessed_text"]]
+        step9_info = {"step": "9. LLM Reconciliation", "inputs": step9_inputs, "outputs": [PATHS["final_soa"]]}
+        
+        if os.path.exists(PATHS["postprocessed_vision"]) and os.path.exists(PATHS["postprocessed_text"]):
+            print("\n[STEP 9] LLM-based reconciliation...")
+            reconciliation_args = [
+                "--output", PATHS["final_soa"], 
+                "--model", MODEL_NAME,
+                "--vision-input", PATHS["postprocessed_vision"],
+                "--text-input", PATHS["postprocessed_text"]
+            ]
+            success, _ = run_script("reconcile_soa_llm.py", reconciliation_args)
+            step9_info["status"] = "Success" if success else "Failed"
         else:
-            step9_info["status"] = "Failed"
+            print("\n[STEP 9] Skipping LLM-based reconciliation... One or both inputs missing.")
+            if os.path.exists(PATHS["postprocessed_vision"]):
+                shutil.copy(PATHS["postprocessed_vision"], PATHS["final_soa"])
+                step9_info["status"] = "Skipped (Used Vision)"
+                success = True
+            else:
+                step9_info["status"] = "Skipped (No Inputs)"
+                success = False
         summary_data.append(step9_info)
-        if not success:
-            raise RuntimeError("Final SoA validation failed.")
+        if not success: raise RuntimeError("LLM reconciliation failed or was skipped.")
+
+        # Step 10: Final Validation
+        step10_info = {"step": "10. Final Validation", "inputs": [PATHS["final_soa"]], "outputs": []}
+        print("\n[STEP 10] Final validation...")
+        success, _ = run_script("validate_usdm_schema.py", [PATHS["final_soa"], "Wrapper-Input"])
+        step10_info["status"] = "Success" if success else "Failed"
+        summary_data.append(step10_info)
+        if not success: raise RuntimeError("Final SoA validation failed.")
 
         print("\n[ALL STEPS COMPLETE]")
-        # Launch Streamlit SoA reviewer with final output
+        print(f"\n[INFO] Final output available at: {PATHS['final_soa']}")
         print("\n[INFO] Launching interactive SoA review UI (Streamlit)...")
-        subprocess.Popen(["streamlit", "run", "soa_streamlit_viewer.py"], encoding="utf-8")
+        subprocess.Popen([sys.executable, "-m", "streamlit", "run", "soa_streamlit_viewer.py", "--", PATHS["final_soa"]], encoding="utf-8")
         print("[INFO] Visit http://localhost:8501 in your browser to review the SoA.")
 
     except (RuntimeError, Exception) as e:
         print(f"\n[FATAL] Pipeline execution halted: {e}")
-        # Ensure the last failed step is marked as failed if it wasn't already
-        if summary_data and summary_data[-1]['status'] not in ['Failed', 'Warning']:
+        if summary_data and summary_data[-1]['status'] not in ['Failed', 'Warning (Failed)', 'Skipped']:
              summary_data[-1]['status'] = 'Failed'
 
     finally:
         print_summary(summary_data)
+        if any(s.get('status') == 'Failed' for s in summary_data):
+            print("\n[FATAL] Pipeline finished with one or more failed steps.")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()

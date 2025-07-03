@@ -14,6 +14,19 @@ except Exception:
     ENTITY_MAP = None
     print("[WARNING] Could not load soa_entity_mapping.json. Post-processing will not fill missing fields.")
 
+def make_hashable(o):
+    """
+    Recursively converts a dictionary or list to a hashable representation
+    (tuples of tuples).
+    """
+    if isinstance(o, (tuple, list)):
+        return tuple((make_hashable(e) for e in o))
+    if isinstance(o, dict):
+        return tuple(sorted((k, make_hashable(v)) for k, v in o.items()))
+    if isinstance(o, (set, frozenset)):
+        return tuple(sorted(make_hashable(e) for e in o))
+    return o
+
 def consolidate_and_fix_soa(input_path, output_path, ref_metadata_path=None):
     """
     Consolidate, normalize, and fully expand a loosely structured SoA file into strict USDM v4.0 Wrapper-Input format.
@@ -109,27 +122,33 @@ def consolidate_and_fix_soa(input_path, output_path, ref_metadata_path=None):
         print("[INFO] Timeline was a list, wrapped as dict.")
 
     # --- Normalize plannedTimepoints and add milestone support ---
-    # --- Strict deduplication: only merge if ALL identifying fields match ---
-    pts = timeline.get('plannedTimepoints', [])
-    seen = set()
     norm_timepoints = []
-    for pt in pts:
-        pt_tuple = tuple(sorted(pt.items()))
-        if pt_tuple not in seen:
+    seen_timepoints = set()
+    pt_map = {}
+    for pt in timeline.get('plannedTimepoints', [],):
+        pt_tuple = make_hashable(pt)
+        if pt_tuple not in seen_timepoints:
+            # Normalize ID fields
+            pt_id = pt.get('plannedTimepointId') or pt.get('id')
+            if not pt_id:
+                print(f"[WARNING] Skipping timepoint with no ID: {pt}")
+                continue
+            pt['id'] = pt_id
+            pt['plannedTimepointId'] = pt_id
+
             # Merge in metadata from reference if available
             if ref_metadata:
-                pt_id = pt.get('plannedTimepointId') or pt.get('plannedId') or pt.get('id')
                 ref_pts = ref_metadata.get('plannedTimepoints', [])
                 ref = next((x for x in ref_pts if (x.get('plannedTimepointId') or x.get('id')) == pt_id), None)
                 if ref:
                     for k in ['description', 'code', 'window']:
                         if k in ref:
                             pt[k] = ref[k]
+            
             norm_timepoints.append(pt)
-            seen.add(pt_tuple)
+            pt_map[pt_id] = pt
+            seen_timepoints.add(pt_tuple)
     timeline['plannedTimepoints'] = norm_timepoints
-    # Ensure pt_map is available for downstream usage
-    pt_map = {pt.get('plannedTimepointId'): pt for pt in norm_timepoints if pt.get('plannedTimepointId')}
 
     # --- Normalize activities ---
     act_map = {}
@@ -160,48 +179,64 @@ def consolidate_and_fix_soa(input_path, output_path, ref_metadata_path=None):
     norm_groups = list(group_map.values())
     timeline['activityGroups'] = norm_groups
 
-    # --- Expand activityTimepoints to explicit pairs ---
+    # --- Process ActivityTimepoints ---
+    atps = timeline.get('activityTimepoints', [])
     new_atps = []
     dropped = []
-    processed_activities = set() # Keep track of activities handled by group expansion
+    
+    # Handle multiple formats in a single pass, robustly handling nested ID objects
+    for atp in atps:
+        try:
+            # Format 1: Direct IDs (most common from vision)
+            if 'activityId' in atp and 'plannedTimepointId' in atp:
+                act_id = atp['activityId']
+                if isinstance(act_id, dict): act_id = act_id.get('id')
 
-    # --- Pass 1: Group-based expansion from activity->group link ---
-    for act in norm_acts:
-        group_id = act.get('activityGroupId')
-        act_id = act.get('activityId')
-        if group_id and act_id:
-            group = group_map.get(group_id)
-            if group:
-                processed_activities.add(act_id)
-                pt_ids = group.get('plannedTimepointIds', [])
-                if pt_ids:
-                    for pt_id in pt_ids:
-                        if pt_id in pt_map:
-                            new_atps.append({'activityId': act_id, 'plannedTimepointId': pt_id})
-                        else:
-                            dropped.append({'activityId': act_id, 'plannedTimepointId': pt_id, 'reason': 'invalid plannedTimepointId in group'})
-                    fixes.append(f"Expanded activity {act_id} via group {group_id}.")
+                pt_id = atp['plannedTimepointId']
+                if isinstance(pt_id, dict): pt_id = pt_id.get('id')
+
+                if act_id and pt_id and act_id in act_map and pt_id in pt_map:
+                    new_atps.append({'activityId': act_id, 'plannedTimepointId': pt_id})
                 else:
-                    dropped.append({'activityId': act_id, 'reason': f'group {group_id} has no plannedTimepointIds'})
+                    dropped.append({**atp, 'reason': 'invalid activityId or plannedTimepointId'})
+            
+            # Format 2: Group-based
+            elif 'activityGroupId' in atp and 'plannedTimepointId' in atp:
+                group = next((g for g in norm_groups if g.get('id') == atp['activityGroupId']), None)
+                pt_id = atp['plannedTimepointId']
+                if isinstance(pt_id, dict): pt_id = pt_id.get('id')
+
+                if group and pt_id and pt_id in pt_map:
+                    for act_id_from_group in group.get('activityIds', []):
+                        if act_id_from_group in act_map:
+                            new_atps.append({'activityId': act_id_from_group, 'plannedTimepointId': pt_id})
+                        else:
+                            dropped.append({'activityId': act_id_from_group, 'plannedTimepointId': pt_id, 'reason': 'invalid activityId in group expansion'})
+                else:
+                    dropped.append({**atp, 'reason': 'group not found or invalid timepointId'})
+            
+            # Format 3: Activity-based with a list of timepoints
+            elif 'activityId' in atp and 'plannedTimepointIds' in atp:
+                act_id = atp['activityId']
+                if isinstance(act_id, dict): act_id = act_id.get('id')
+
+                if act_id and act_id in act_map:
+                    for ptid_item in atp['plannedTimepointIds']:
+                        ptid = ptid_item
+                        if isinstance(ptid, dict): ptid = ptid.get('id')
+
+                        if ptid and ptid in pt_map:
+                            new_atps.append({'activityId': act_id, 'plannedTimepointId': ptid})
+                        else:
+                            dropped.append({'activityId': act_id, 'plannedTimepointId': ptid, 'reason': 'invalid plannedTimepointId in list'})
+                else:
+                    dropped.append({**atp, 'reason': 'invalid activityId'})
+            
+            # Unrecognized format
             else:
-                dropped.append({'activityId': act_id, 'activityGroupId': group_id, 'reason': 'invalid activityGroupId'})
-
-    # --- Pass 2: Handle pre-existing pairwise entries ---
-    for atp in timeline.get('activityTimepoints', []):
-        act_id = atp.get('activityId')
-        pt_id = atp.get('plannedTimepointId') or atp.get('plannedTimepoint')
-
-        if act_id and pt_id:
-            if act_id in processed_activities:
-                continue # Already handled by group expansion
-
-            if act_id in act_map and pt_id in pt_map:
-                new_atps.append({'activityId': act_id, 'plannedTimepointId': pt_id})
-            else:
-                dropped.append({**atp, 'reason': 'invalid activityId or plannedTimepointId'})
-        else:
-            if 'activityGroup' not in atp:
-                 dropped.append({**atp, 'reason': 'unrecognized format'})
+                dropped.append({**atp, 'reason': 'unrecognized format'})
+        except Exception as e:
+            dropped.append({**atp, 'reason': f'processing error: {e}'})
 
     # --- Fallback: If no activityTimepoints, try to infer from activities ---
     if not new_atps:
@@ -214,6 +249,7 @@ def consolidate_and_fix_soa(input_path, output_path, ref_metadata_path=None):
                             new_atps.append({'activityId': aid, 'plannedTimepointId': ptid})
         if new_atps:
             fixes.append('Auto-generated activityTimepoints from per-activity plannedTimepoints.')
+
     timeline['activityTimepoints'] = new_atps
 
     # --- Fill missing fields using entity mapping ---
@@ -273,7 +309,7 @@ def consolidate_and_fix_soa(input_path, output_path, ref_metadata_path=None):
     if fixes:
         print("Fixes applied:")
         for fix in fixes:
-            print("-", fix)
+            print("- ", fix)
     if dropped:
         print("First 10 dropped:")
         for d in dropped[:10]:

@@ -5,3 +5,4 @@ openapi-schema-validator
 PyYAML
 pytest
 referencing
+requests

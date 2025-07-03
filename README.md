@@ -1,114 +1,100 @@
 # Protocol2USDMv3
 
 ## Overview
-Protocol2USDMv3 is an automated pipeline for extracting, validating, and structuring the Schedule of Activities (SoA) from clinical trial protocol PDFs, outputting data conformant to the USDM v4.0 model. The workflow combines LLM text and vision extraction, robust validation, and advanced mapping/regeneration tools for maximum reliability.
+Protocol2USDMv3 is an automated pipeline for extracting, validating, and structuring the Schedule of Activities (SoA) from clinical trial protocol PDFs, outputting data conformant to the USDM v4.0 model. The workflow combines LLM text and vision extraction, robust validation against official schemas and controlled terminology, and advanced mapping/regeneration tools for maximum reliability.
 
 ## Key Features
 - **Automated SoA Extraction**: Extracts SoA tables from protocol PDFs using both LLM text and vision analysis (GPT-4o recommended).
-- **Full Timepoint Preservation**: Prompts and postprocessing logic ensure that *all* extracted timepoints (including ranges and non-canonical labels) are preserved throughout the workflow. No timepoints are dropped or merged unless their IDs and labels are *exact* duplicates.
-- **Timepoint Audit & Reconciliation**: Includes an audit script (`audit_timepoints.py`) that compares timepoints across extraction steps and reports any discrepancies, helping you identify and restore any lost timepoints.
-- **Robust Dual-Path Workflow**: Parallel extraction from PDF text and images. The text-based extraction is optional and the pipeline can proceed with only the vision-based SoA.
-- **Entity Mapping Regeneration**: Regenerate `soa_entity_mapping.json` from the latest USDM Excel mapping (`USDM_CT.xlsx`) at any time using `generate_soa_entity_mapping.py`. The mapping is automatically preserved during cleanup.
-- **Validation & Error Handling**: Validates all outputs against the USDM OpenAPI schema and mapping. The pipeline is resilient to missing or malformed fields (e.g., missing timepoint IDs) and will warn and continue instead of crashing.
+- **Context-Aware Dual Extraction**: A vision step first analyzes the SoA table's visual layout and header structure. This structural context is then provided as a textual "cheat sheet" to *both* the vision and text extraction LLMs, dramatically improving semantic accuracy.
+- **Terminology Validation**: Ensures that extracted activities and other coded values align with controlled terminologies (e.g., NCI EVS), enhancing semantic interoperability and compliance.
+- **Robust Schema-Compliant Output**: A sophisticated post-processing step automatically finds and completes any incomplete `Code` objects in the extracted data. This ensures that all outputs are fully compliant with the USDM v4.0 schema.
 - **Modular & Extensible**: All steps are modular scripts, easily customizable for your workflow.
 
 ## Installation
-```bash
-pip install -r requirements.txt
-```
+1.  Ensure you have Python 3.9+ installed.
+2.  Set up your OpenAI API Key in a `.env` file:
+    ```
+    OPENAI_API_KEY=sk-...
+    ```
+3.  Install the required dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
 
 ## Usage
-
-### Quick start
+Run the entire pipeline with a single command:
 ```bash
-python main.py CDISC_Pilot_Study.pdf  # uses gpt-4o, single batch, 4 workers
-
-python main.py CDISC_Pilot_Study.pdf --model gpt-4o --batch-size 2 --workers 4
+python main.py YOUR_PROTOCOL.pdf --model gpt-4o
 ```
+- Replace `YOUR_PROTOCOL.pdf` with the path to your clinical trial protocol.
+- The `--model` argument is optional and defaults to `gpt-4o`.
 
-### Full options
-1. Place your protocol PDF in the project directory.
-2. Ensure your `.env` file contains your OpenAI API key:
-   ```
-   OPENAI_API_KEY=sk-...
-   ```
-3. (Optional) Regenerate the entity mapping from Excel:
-   ```bash
-   python generate_soa_entity_mapping.py
-   # This reads temp/USDM_CT.xlsx and writes soa_entity_mapping.json
-   ```
-4. Run the main workflow:
-   ```bash
-   python main.py <your_protocol.pdf>
-   ```
+## Pipeline Workflow
+The `main.py` script orchestrates the pipeline. All outputs are saved in a timestamped subdirectory inside `output/`, e.g., `output/CDISC_Pilot_Study/`.
 
-## How to Select the LLM Model
+| Step | Script | Purpose | Output |
+|---|---|---|---|
+| 1 | `generate_soa_llm_prompt.py`| Creates a schema-aware prompt for the LLM. | `1_llm_prompt.txt` |
+| 2 | `find_soa_pages.py`| Locates the pages containing the SoA table. | `2_soa_pages.json` |
+| 3 | `extract_pdf_pages_as_images.py`| Renders the identified pages as PNGs. | `3_soa_images/` |
+| 4 | `analyze_soa_structure.py`| Visually analyzes table headers for context. | `4_soa_header_structure.json` |
+| 5 | `send_pdf_to_openai.py`| Extracts SoA from PDF text, guided by header analysis. | `5_raw_text_soa.json` |
+| 6 | `vision_extract_soa.py`| Extracts SoA from images, catching visual cues. | `6_raw_vision_soa.json` |
+| 7 | `soa_postprocess_consolidated.py`| Cleans and validates the text output. | `7_postprocessed_text_soa.json` |
+| 8 | `soa_postprocess_consolidated.py`| Cleans and validates the vision output. | `8_postprocessed_vision_soa.json` |
+| 9 | `reconcile_soa_llm.py`| Merges text and vision outputs into a single SoA. | `9_reconciled_soa.json` |
+| 10| `validate_usdm_schema.py`| Performs final validation against the USDM schema. | (Validation log) |
 
-You can specify which OpenAI model (e.g., `gpt-4o`, `gpt-3o`, or any other supported model) is used for all LLM-powered pipeline steps. This applies to `main.py`, `find_soa_pages.py`, and all extraction/reconciliation scripts.
+The primary output to review is `9_reconciled_soa.json`.
 
-**Option 1: Command-line argument**
-```bash
-python main.py <your_protocol.pdf> --model gpt-4o --batch-size 2 --workers 4
-python main.py <your_protocol.pdf> --model o3 --batch-size 1 --workers 2
-python main.py <your_protocol.pdf> --model o3-mini-high
-```
+## How to Review Results
+An interactive Streamlit application is provided for reviewing the results.
 
-**Option 2: Environment variable**
-```bash
-set OPENAI_MODEL=gpt-4o  # Windows
-export OPENAI_MODEL=gpt-4o  # Linux/Mac
-python main.py <your_protocol.pdf>
-```
-
-If not specified, the default is `gpt-4o`. The selected model will be used for both text and vision extraction, as well as reconciliation. If `gpt-4o` is unavailable your account, you can switch to `o3` or `o3-mini-high` via the same mechanisms.
-
-5. Optional flags:
-   - `--batch-size`  Images per OpenAI Vision call (default: all images in one call).
-   - `--workers`     Parallel threads for vision batches (default: 4).
-
-6. Outputs:
-   - `STEP1_soa_text.json`: SoA extracted from PDF text.
-   - `STEP2_soa_vision.json`: SoA extracted from images (vision).
-   - `STEP3_soa_vision_fixed.json` and `STEP4_soa_text_fixed.json`: Post-processed, normalized outputs.
-   - `STEP5_soa_final.json`: LLM-adjudicated, merged SoA.
-
-## How to Run the Streamlit SoA Review App
-
-You can launch the interactive SoA review UI at any time to visualize and explore any SoA output JSON file:
-
-```bash
-streamlit run soa_streamlit_viewer.py
-```
-
-- By default, you can select any output file (e.g., `STEP5_soa_final.json`) from the UI sidebar.
-- The app supports all USDM/M11-compliant outputs and will auto-detect the timeline structure.
-- You can also set the model for any LLM-powered features in the viewer using the same `--model` argument or `OPENAI_MODEL` environment variable if applicable.
-
-Visit [http://localhost:8501](http://localhost:8501) in your browser after running the above command.
+1.  **Launch the app:**
+    ```bash
+    streamlit run soa_streamlit_viewer.py
+    ```
+2.  **Open in browser:** Navigate to `http://localhost:8501`.
+3.  **Select a run:** Use the sidebar to choose the pipeline run you want to inspect. The app automatically finds and displays the final and intermediate files.
 
 ## Project Structure
-- `main.py` — Orchestrates the full workflow.
-- `generate_soa_entity_mapping.py` — Regenerates `soa_entity_mapping.json` from `USDM_CT.xlsx`.
-- `generate_soa_llm_prompt.py` — Generates LLM prompt instructions from the mapping.
-- `find_soa_pages.py` — Finds candidate SoA pages in PDFs.
-- `extract_pdf_pages_as_images.py` — Extracts PDF pages as images.
-- `send_pdf_to_openai.py` — LLM text-based SoA extraction (GPT-4o, max_tokens=16384).
-- `vision_extract_soa.py` — LLM vision-based SoA extraction (GPT-4o, max_tokens=16384).
-- `soa_postprocess_consolidated.py` — Consolidates and normalizes extracted SoA JSON, robust to missing/misnamed keys.
-- `soa_extraction_validator.py` — Validates output against USDM mapping and schema.
-- `reconcile_soa_llm.py` — (Optional) LLM-based adjudication/merging of text/vision outputs.
-- `requirements.txt` — All dependencies listed here.
-- `temp/` — Place `USDM_CT.xlsx` here for mapping regeneration.
 
-## Model & Token Settings
-- **gpt-4o** is the default and recommended model for both text and vision extraction. If unavailable to your account, switch to **o3** or **o3-mini-high** which also work (with slightly lower quality for vision extraction).
+### Core Pipeline Scripts
+These scripts are executed in sequence by `main.py`.
+
+- `main.py`: The main orchestrator for the entire pipeline.
+- `generate_soa_llm_prompt.py`: Generates LLM prompt instructions from `soa_entity_mapping.json`.
+- `find_soa_pages.py`: Uses an LLM to find the page numbers of the SoA table in the PDF.
+- `extract_pdf_pages_as_images.py`: Extracts the identified SoA pages as PNG images for vision analysis.
+- `analyze_soa_structure.py`: Performs vision-based analysis of the SoA table headers to understand column structure.
+- `send_pdf_to_openai.py`: Extracts SoA data from the raw PDF text, using the header structure as context.
+- `vision_extract_soa.py`: Extracts SoA data from the PNG images, using the header structure as context.
+- `soa_postprocess_consolidated.py`: Cleans, normalizes, and validates the raw JSON outputs from both text and vision extraction.
+- `reconcile_soa_llm.py`: Merges the post-processed text and vision outputs into a single, final SoA JSON.
+- `validate_usdm_schema.py`: Validates a given JSON file against the official USDM schema.
+
+### Utility & Manual Scripts
+These scripts are not part of the automated pipeline but provide useful functionality.
+
+- `soa_streamlit_viewer.py`: The interactive Streamlit review application.
+- `generate_soa_entity_mapping.py`: A manual script to regenerate the `soa_entity_mapping.json` file from the `USDM_CT.xlsx` file (which must be placed in the `temp/` directory). This is useful when the USDM controlled terminology is updated.
+- `json_utils.py`: Provides helper functions for cleaning and processing JSON data returned by the LLM.
+- `evs_client.py`: A client for interacting with the NCI Enterprise Vocabulary Services (EVS) API to validate controlled terminology.
+- `mapping_pre_scan.py`: A utility to pre-scan the entity mapping file and warm the EVS cache, which can speed up pipeline runs.
+
+### Configuration & Data
+- `requirements.txt`: Python package dependencies.
+- `.env`: Used for storing the `OPENAI_API_KEY`.
+- `soa_entity_mapping.json`: A critical file containing the USDM entity definitions, attributes, and allowed values. It is used to generate prompts and validate outputs.
+- `USDM OpenAPI schema/`: Contains the official USDM OpenAPI schema files.
+- `temp/`: A directory for temporary files, such as the `USDM_CT.xlsx` used for mapping regeneration.
 - The pipeline automatically sets `max_tokens=90000` for `o3` and `o3-mini-high`, or `16384` for `gpt-4o`.
 - All scripts respect the `--model` command-line argument or `OPENAI_MODEL` environment variable.
 - The pipeline prints which model is being used and if fallback is triggered.
 - If you see truncation warnings, consider splitting large PDFs or reducing prompt size.
 
 ## Troubleshooting
-- **KeyError: 'activityGroupId'**: The post-processing script is now robust to missing `activityGroupId` keys in the input JSON. It will fall back to other possible ID keys (`id`, `groupId`) and normalize the group objects before processing.
+- **Schema Validation Errors**: The `soa_postprocess_consolidated.py` script is designed to fix the most common schema validation errors automatically. It ensures all required wrapper keys are present and recursively finds and completes any incomplete `Code` objects. If you still encounter validation errors, it likely indicates a new or unusual issue with the LLM's output that may require a new rule in the post-processor.
 - **LLM Output Truncation**: The pipeline uses the maximum allowed tokens for completions, but very large protocols may still require splitting.
 - **Mapping Issues**: Regenerate `soa_entity_mapping.json` anytime the Excel mapping changes.
 - **Validation**: All outputs are validated against both the mapping and USDM schema. Warnings are issued for missing or non-conformant fields.
