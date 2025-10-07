@@ -1,4 +1,6 @@
 .env
+google-cloud-key.json
+*-key.json
 Dave articles/(1) Corners and Edges _ LinkedIn.pdf
 Dave articles/(1) Mapping ICH M11 to USDM_ A Visual Guide _ LinkedIn.pdf
 Dave articles/(1) The Document Model Dichotomy _ LinkedIn.pdf

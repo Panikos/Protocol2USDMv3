@@ -1,0 +1,15 @@
+[2025-10-06 01:17:26] [INFO] Processing image: output\CDISC_Pilot_Study\3_soa_images\soa_page_52.png
+[2025-10-06 01:17:26] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
+[2025-10-06 01:17:27] [INFO] Sending request to Gemini API...
+[2025-10-06 01:18:02] [INFO] [SUCCESS] Extracted SoA from output\CDISC_Pilot_Study\3_soa_images\soa_page_52.png.
+[2025-10-06 01:18:02] [INFO] Processing image: output\CDISC_Pilot_Study\3_soa_images\soa_page_53.png
+[2025-10-06 01:18:02] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
+[2025-10-06 01:18:03] [INFO] Sending request to Gemini API...
+[2025-10-06 01:19:15] [INFO] [SUCCESS] Extracted SoA from output\CDISC_Pilot_Study\3_soa_images\soa_page_53.png.
+[2025-10-06 01:19:15] [INFO] Processing image: output\CDISC_Pilot_Study\3_soa_images\soa_page_54.png
+[2025-10-06 01:19:15] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
+[2025-10-06 01:19:15] [INFO] Sending request to Gemini API...
+[2025-10-06 01:20:42] [INFO] [SUCCESS] Extracted SoA from output\CDISC_Pilot_Study\3_soa_images\soa_page_54.png.
+[2025-10-06 01:20:42] [INFO] Successfully extracted SoA data from 3 images. Merging...
+[2025-10-06 01:20:42] [WARNING] Skipping malformed SoA part: {'Wrapper-Input': {'study': {'name': 'Protocol H2Q-MC-LZZT(c)', 'instanceType': 'Study', 'versions': [{'id': 'v1', 'versionIdentifier': '1.0', 'rationale': 'Initial version', 'studyIdentifiers': [], '
+[2025-10-06 01:20:42] [INFO] Wrote merged_soa SoA vision output to output\CDISC_Pilot_Study\6_raw_vision_soa.json

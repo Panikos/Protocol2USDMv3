@@ -1,0 +1,12 @@
+[2025-10-04 19:44:08] [INFO] Processing image: output\CDISC_Pilot_Study\3_soa_images\soa_page_52.png
+[2025-10-04 19:44:08] [INFO] Processing 1 images with model 'gpt-4o'.
+[2025-10-04 19:44:11] [INFO] [SUCCESS] Extracted SoA from output\CDISC_Pilot_Study\3_soa_images\soa_page_52.png.
+[2025-10-04 19:44:11] [INFO] Processing image: output\CDISC_Pilot_Study\3_soa_images\soa_page_53.png
+[2025-10-04 19:44:11] [INFO] Processing 1 images with model 'gpt-4o'.
+[2025-10-04 19:46:45] [INFO] [SUCCESS] Extracted SoA from output\CDISC_Pilot_Study\3_soa_images\soa_page_53.png.
+[2025-10-04 19:46:45] [INFO] Processing image: output\CDISC_Pilot_Study\3_soa_images\soa_page_54.png
+[2025-10-04 19:46:45] [INFO] Processing 1 images with model 'gpt-4o'.
+[2025-10-04 19:49:56] [INFO] [SUCCESS] Extracted SoA from output\CDISC_Pilot_Study\3_soa_images\soa_page_54.png.
+[2025-10-04 19:49:56] [INFO] Successfully extracted SoA data from 3 images. Merging...
+[2025-10-04 19:49:56] [WARNING] Skipping malformed SoA part: {'study': {'versions': []}, 'usdmVersion': '4.0.0'}
+[2025-10-04 19:49:56] [INFO] Wrote merged_soa SoA vision output to output\CDISC_Pilot_Study\6_raw_vision_soa.json

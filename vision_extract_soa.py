@@ -13,6 +13,14 @@ from json_utils import clean_llm_json
 import io
 from PIL import Image
 
+# Prompt template system
+try:
+    from prompt_templates import PromptTemplate
+    TEMPLATES_AVAILABLE = True
+except ImportError:
+    print("[WARNING] PromptTemplate not available, using fallback prompts")
+    TEMPLATES_AVAILABLE = False
+
 # Load environment variables from .env file
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
@@ -20,6 +28,59 @@ load_dotenv(env_path)
 # API clients are initialized on-demand in the extraction function
 openai_client = None
 gemini_client = None
+
+# Load vision extraction template
+def load_vision_template():
+    """Load vision extraction prompt from YAML template (v2.0) or fallback to hardcoded (v1.0)."""
+    if TEMPLATES_AVAILABLE:
+        try:
+            template = PromptTemplate.load("vision_soa_extraction", "prompts")
+            print(f"[INFO] Loaded vision extraction template v{template.metadata.version}")
+            return template
+        except Exception as e:
+            print(f"[WARNING] Could not load YAML template: {e}. Using fallback.")
+    return None
+
+VISION_TEMPLATE = load_vision_template()
+
+# Fallback prompts (v1.0 - deprecated but kept for backward compatibility)
+FALLBACK_SYSTEM_PROMPT = (
+    "You are an expert medical writer specializing in authoring clinical trial protocols. "
+    "Your task is to analyze the provided image(s) of a Schedule of Activities (SoA) table and extract its contents into a structured JSON format that strictly adheres to the provided USDM schema. "
+    "CRITICAL: You MUST return ONLY a single, valid JSON object. Do not include any markdown formatting (like ```json), explanations, or any other text outside of the JSON object itself. "
+    "Pay close attention to the provided header structure and schema definitions to ensure all entities and relationships are mapped correctly."
+)
+
+FALLBACK_OPENAI_SYSTEM_PROMPT = (
+    "You are an expert medical writer specializing in authoring clinical trial protocols. "
+    "When extracting text from the image, you MUST ignore any single-letter footnote markers (e.g., a, b, c) that are appended to words. "
+    "Return ONLY a single valid JSON object that matches the USDM Wrapper-Input schema. "
+    "To conserve space, use short but unique identifiers for all `id` fields (e.g., `act-1`, `tp-2`). "
+    "Do NOT output any markdown, explanation, or additional text."
+)
+
+def get_vision_prompts(base_prompt: str, header_structure: str = ""):
+    """
+    Get system and user prompts for vision extraction, using YAML template if available.
+    
+    Args:
+        base_prompt: Base USDM prompt with schema
+        header_structure: JSON string of header structure
+    
+    Returns:
+        tuple: (system_prompt, user_prompt_content)
+    """
+    if VISION_TEMPLATE:
+        # Use v2.0 YAML template
+        messages = VISION_TEMPLATE.render(
+            base_prompt=base_prompt,
+            header_structure=header_structure or "No header structure provided"
+        )
+        return messages[0]["content"], messages[1]["content"]
+    else:
+        # Use v1.0 fallback - return different prompts for Gemini vs OpenAI
+        # (caller will choose which to use based on model)
+        return None, base_prompt  # Signal to use fallback
 
 # Ensure console can print UTF-8 (Windows default codepage causes logging errors)
 if hasattr(sys.stdout, "reconfigure"):
@@ -85,14 +146,15 @@ def extract_soa_from_image_batch(image_paths, model_name, usdm_prompt):
                 return None
 
         try:
-            # For Gemini, construct a list of content parts (system instruction, text prompt, then images)
-            system_instruction = (
-                "You are an expert medical writer specializing in authoring clinical trial protocols. "
-                "Your task is to analyze the provided image(s) of a Schedule of Activities (SoA) table and extract its contents into a structured JSON format that strictly adheres to the provided USDM schema. "
-                "CRITICAL: You MUST return ONLY a single, valid JSON object. Do not include any markdown formatting (like ```json), explanations, or any other text outside of the JSON object itself. "
-                "Pay close attention to the provided header structure and schema definitions to ensure all entities and relationships are mapped correctly."
-            )
-            prompt_parts = [system_instruction, usdm_prompt]
+            # Get prompts using template system (v2.0) or fallback (v1.0)
+            system_prompt, user_prompt = get_vision_prompts(usdm_prompt, header_structure="")
+            
+            if system_prompt:
+                # v2.0: Use template-generated prompts
+                prompt_parts = [system_prompt, user_prompt]
+            else:
+                # v1.0: Use fallback
+                prompt_parts = [FALLBACK_SYSTEM_PROMPT, usdm_prompt]
             for img_path in image_paths:
                 try:
                     img = Image.open(img_path)
@@ -129,17 +191,17 @@ def extract_soa_from_image_batch(image_paths, model_name, usdm_prompt):
                 logger.error(f"Failed to configure OpenAI client: {e}")
                 return None
 
-        system_msg = {
-            "role": "system",
-            "content": (
-                "You are an expert medical writer specializing in authoring clinical trial protocols. "
-                "When extracting text from the image, you MUST ignore any single-letter footnote markers (e.g., a, b, c) that are appended to words. "
-                "Return ONLY a single valid JSON object that matches the USDM Wrapper-Input schema. "
-                "To conserve space, use short but unique identifiers for all `id` fields (e.g., `act-1`, `tp-2`). "
-                "Do NOT output any markdown, explanation, or additional text."
-            ),
-        }
-        user_content = [{"type": "text", "text": usdm_prompt}]
+        # Get prompts using template system (v2.0) or fallback (v1.0)
+        system_prompt, user_prompt_text = get_vision_prompts(usdm_prompt, header_structure="")
+        
+        if system_prompt:
+            # v2.0: Use template-generated prompts
+            system_msg = {"role": "system", "content": system_prompt}
+            user_content = [{"type": "text", "text": user_prompt_text}]
+        else:
+            # v1.0: Use fallback
+            system_msg = {"role": "system", "content": FALLBACK_OPENAI_SYSTEM_PROMPT}
+            user_content = [{"type": "text", "text": usdm_prompt}]
         for img_path in image_paths:
             user_content.append({"type": "image_url", "image_url": {"url": encode_image_to_data_url(img_path)}})
 

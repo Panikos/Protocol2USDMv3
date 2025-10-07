@@ -1,0 +1,1055 @@
+
+════════════════════════════════════════════════════════════════════
+ OBJECTIVE
+════════════════════════════════════════════════════════════════════
+You are an expert at extracting structured data from clinical trial protocols.
+Your task is to extract the Schedule of Activities (SoA) and return it as a JSON object graph conforming to the USDM v4.0 model.
+
+════════════════════════════════════════════════════════════════════
+ USDM WRAPPER-INPUT SCHEMA (AUTHORITATIVE)
+════════════════════════════════════════════════════════════════════
+The JSON you produce MUST validate against this schema structure:
+
+{"Wrapper-Input":{"properties":{"study":{"$ref":"#/components/schemas/Study-Input"},"usdmVersion":{"type":"string","title":"Usdmversion"},"systemName":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Systemname"},"systemVersion":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Systemversion"}},"type":"object","required":["study","usdmVersion"],"title":"Wrapper"},"Study-Input":{"properties":{"id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}],"title":"Id"},"extensionAttributes":{"items":{"$ref":"#/components/schemas/ExtensionAttribute-Input"},"type":"array","title":"Extensionattributes","default":[]},"name":{"type":"string","minLength":1,"title":"Name"},"description":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Description"},"label":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Label"},"versions":{"items":{"$ref":"#/components/schemas/StudyVersion-Input"},"type":"array","title":"Versions","default":[]},"documentedBy":{"items":{"$ref":"#/components/schemas/StudyDefinitionDocument-Input"},"type":"array","title":"Documentedby","default":[]},"instanceType":{"type":"string","enum":["Study"],"const":"Study","title":"Instancetype"}},"type":"object","required":["name","instanceType"],"title":"Study"},"StudyVersion-Input":{"properties":{"id":{"type":"string","minLength":1,"title":"Id"},"extensionAttributes":{"items":{"$ref":"#/components/schemas/ExtensionAttribute-Input"},"type":"array","title":"Extensionattributes","default":[]},"versionIdentifier":{"type":"string","title":"Versionidentifier"},"rationale":{"type":"string","title":"Rationale"},"documentVersionIds":{"items":{"type":"string"},"type":"array","title":"Documentversionids","default":[]},"dateValues":{"items":{"$ref":"#/components/schemas/GovernanceDate-Input"},"type":"array","title":"Datevalues","default":[]},"amendments":{"items":{"$ref":"#/components/schemas/StudyAmendment-Input"},"type":"array","title":"Amendments","default":[]},"businessTherapeuticAreas":{"items":{"$ref":"#/components/schemas/Code-Input"},"type":"array","title":"Businesstherapeuticareas","default":[]},"studyIdentifiers":{"items":{"$ref":"#/components/schemas/StudyIdentifier-Input"},"type":"array","title":"Studyidentifiers"},"referenceIdentifiers":{"items":{"$ref":"#/components/schemas/ReferenceIdentifier-Input"},"type":"array","title":"Referenceidentifiers","default":[]},"studyDesigns":{"items":{"anyOf":[{"$ref":"#/components/schemas/InterventionalStudyDesign-Input"},{"$ref":"#/components/schemas/ObservationalStudyDesign-Input"}]},"type":"array","title":"Studydesigns","default":[]},"titles":{"items":{"$ref":"#/components/schemas/StudyTitle-Input"},"type":"array","title":"Titles"},"eligibilityCriterionItems":{"items":{"$ref":"#/components/schemas/EligibilityCriterionItem-Input"},"type":"array","title":"Eligibilitycriterionitems","default":[]},"narrativeContentItems":{"items":{"$ref":"#/components/schemas/NarrativeContentItem-Input"},"type":"array","title":"Narrativecontentitems","default":[]},"abbreviations":{"items":{"$ref":"#/components/schemas/Abbreviation-Input"},"type":"array","title":"Abbreviations","default":[]},"roles":{"items":{"$ref":"#/components/schemas/StudyRole-Input"},"type":"array","title":"Roles","default":[]},"organizations":{"items":{"$ref":"#/components/schemas/Organization-Input"},"type":"array","title":"Organizations","default":[]},"studyInterventions":{"items":{"$ref":"#/components/schemas/StudyIntervention-Input"},"type":"array","title":"Studyinterventions","default":[]},"administrableProducts":{"items":{"$ref":"#/components/schemas/AdministrableProduct-Input"},"type":"array","title":"Administrableproducts","default":[]},"medicalDevices":{"items":{"$ref":"#/components/schemas/MedicalDevice-Input"},"type":"array","title":"Medicaldevices","default":[]},"productOrganizationRoles":{"items":{"$ref":"#/components/schemas/ProductOrganizationRole-Input"},"type":"array","title":"Productorganizationroles","default":[]},"biomedicalConcepts":{"items":{"$ref":"#/components/schemas/BiomedicalConcept-Input"},"type":"array","title":"Biomedicalconcepts","default":[]},"bcCategories":{"items":{"$ref":"#/components/schemas/BiomedicalConceptCategory-Input"},"type":"array","title":"Bccategories","default":[]},"bcSurrogates":{"items":{"$ref":"#/components/schemas/BiomedicalConceptSurrogate-Input"},"type":"array","title":"Bcsurrogates","default":[]},"dictionaries":{"items":{"$ref":"#/components/schemas/SyntaxTemplateDictionary-Input"},"type":"array","title":"Dictionaries","default":[]},"conditions":{"items":{"$ref":"#/components/schemas/Condition-Input"},"type":"array","title":"Conditions","default":[]},"notes":{"items":{"$ref":"#/components/schemas/CommentAnnotation-Input"},"type":"array","title":"Notes","default":[]},"instanceType":{"type":"string","enum":["StudyVersion"],"const":"StudyVersion","title":"Instancetype"}},"type":"object","required":["id","versionIdentifier","rationale","studyIdentifiers","titles","instanceType"],"title":"StudyVersion"}}
+
+════════════════════════════════════════════════════════════════════
+ STUDY DESIGN CLASSIFICATION
+════════════════════════════════════════════════════════════════════
+1.  **Analyze and Classify the Study Design:** First, determine if the study is an **Interventional** or **Observational** study based on the protocol description.
+2.  **Generate the Correct StudyDesign Object:** The `study.versions[0].studyDesigns` array must contain exactly ONE study design object. Based on your classification, you MUST generate either an `InterventionalStudyDesign` or an `ObservationalStudyDesign` object.
+
+    *   **If Interventional:**
+        *   Set `instanceType` to `InterventionalStudyDesign`.
+        *   You MUST include the `trialType` attribute.
+        *   Only include the fields listed below for `InterventionalStudyDesign`.
+
+    *   **If Observational:**
+        *   Set `instanceType` to `ObservationalStudyDesign`.
+        *   You MUST include the `observationalStudyModel` attribute.
+        *   Only include the fields listed below for `ObservationalStudyDesign`.
+
+════════════════════════════════════════════════════════════════════
+ ENTITY DEFINITIONS
+════════════════════════════════════════════════════════════════════
+
+For Abbreviation:
+  - id [Attribute] (required)
+  - abbreviatedText [Attribute] (required)
+  - expandedText [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Activity:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - previousId [Attribute]
+  - nextId [Attribute]
+  - childIds [Attribute]
+  - biomedicalConceptIds [Attribute]
+  - bcCategoryIds [Attribute]
+  - bcSurrogateIds [Attribute]
+  - timelineId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - definedProcedures [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Address:
+  - id [Attribute] (required)
+  - text [Attribute]
+  - lines [Attribute]
+  - city [Attribute]
+  - district [Attribute]
+  - state [Attribute]
+  - postalCode [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - country [Complex Datatype Relationship]
+
+For AdministrableProduct:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - properties [Relationship]
+  - identifiers [Relationship]
+  - ingredients [Relationship]
+  - pharmacologicClass [Complex Datatype Relationship]
+  - administrableDoseForm [Complex Datatype Relationship] (required)
+  - productDesignation [Complex Datatype Relationship] (allowed: IMP, NIMP) (required)
+  - sourcing [Complex Datatype Relationship] (allowed: Centrally Sourced, Locally Sourced)
+  - notes [Complex Datatype Relationship]
+
+For AdministrableProductIdentifier:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - scopeId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For AdministrableProductProperty:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - text [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: pH) (required)
+  - quantity [Complex Datatype Relationship]
+
+For Administration:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - administrableProductId [Attribute]
+  - medicalDeviceId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - duration [Complex Datatype Relationship] (required)
+  - dose [Complex Datatype Relationship]
+  - route [Complex Datatype Relationship]
+  - frequency [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For AliasCode:
+  - id [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - standardCode [Complex Datatype Relationship] (required)
+  - standardCodeAliases [Complex Datatype Relationship]
+
+For AnalysisPopulation:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - subsetOfIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For AssignedPerson:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - jobTitle [Attribute] (required)
+  - organizationId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - personName [Complex Datatype Relationship] (required)
+
+For BiomedicalConcept:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - synonyms [Attribute]
+  - reference [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - properties [Relationship]
+  - code [Complex Datatype Relationship] (required)
+  - notes [Complex Datatype Relationship]
+
+For BiomedicalConceptCategory:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - childIds [Attribute]
+  - memberIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - code [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For BiomedicalConceptProperty:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - isRequired [Attribute] (required)
+  - isEnabled [Attribute] (required)
+  - datatype [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - responseCodes [Relationship]
+  - code [Complex Datatype Relationship] (required)
+  - notes [Complex Datatype Relationship]
+
+For BiomedicalConceptSurrogate:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - reference [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For BiospecimenRetention:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - isRetained [Attribute] (required)
+  - includesDNA [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For Characteristic:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - dictionaryId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Code:
+  - id [Attribute] (required)
+  - code [Attribute] (required)
+  - codeSystem [Attribute] (required)
+  - codeSystemVersion [Attribute] (required)
+  - decode [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For CommentAnnotation:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - codes [Complex Datatype Relationship]
+
+For Condition:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - dictionaryId [Attribute]
+  - contextIds [Attribute]
+  - appliesToIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For ConditionAssignment:
+  - id [Attribute] (required)
+  - condition [Attribute] (required)
+  - conditionTargetId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For DocumentContentReference:
+  - id [Attribute] (required)
+  - sectionNumber [Attribute] (required)
+  - sectionTitle [Attribute] (required)
+  - appliesToId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For Duration:
+  - id [Attribute] (required)
+  - text [Attribute]
+  - durationWillVary [Attribute] (required)
+  - reasonDurationWillVary [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - quantity [Complex Datatype Relationship]
+
+For EligibilityCriterion:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - identifier [Attribute] (required)
+  - criterionItemId [Attribute] (required)
+  - nextId [Attribute]
+  - previousId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - category [Complex Datatype Relationship] (required)
+  - notes [Complex Datatype Relationship]
+
+For EligibilityCriterionItem:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - dictionaryId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Encounter:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - previousId [Attribute]
+  - nextId [Attribute]
+  - scheduledAtId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - transitionStartRule [Relationship]
+  - transitionEndRule [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Visit) (required)
+  - environmentalSettings [Complex Datatype Relationship]
+  - contactModes [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Endpoint:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - dictionaryId [Attribute]
+  - purpose [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+  - level [Complex Datatype Relationship] (allowed: Exploratory Endpoint, Primary Endpoint, Secondary Endpoint) (required)
+
+For Estimand:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - populationSummary [Attribute] (required)
+  - analysisPopulationId [Attribute] (required)
+  - interventionIds [Attribute] (required)
+  - variableOfInterestId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - intercurrentEvents [Relationship] (required)
+  - notes [Complex Datatype Relationship]
+
+For ExtensionAttribute:
+  - id [Attribute] (required)
+  - url [Attribute] (required)
+  - valueString [Attribute]
+  - valueBoolean [Attribute]
+  - valueInteger [Attribute]
+  - valueId [Attribute]
+  - valueQuantity [Attribute]
+  - valueRange [Attribute]
+  - valueCode [Attribute]
+  - valueAliasCode [Attribute]
+  - valueExtensionClass [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For ExtensionClass:
+  - id [Attribute] (required)
+  - url [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship] (required)
+
+For GeographicScope:
+  - id [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Country, Global, Region) (required)
+  - code [Complex Datatype Relationship]
+
+For GovernanceDate:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - dateValue [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - geographicScopes [Relationship] (required)
+  - type [Complex Datatype Relationship] (allowed: Approval Date, Effective Date, Issued Date) (required)
+
+For Indication:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - isRareDisease [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - codes [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Ingredient:
+  - id [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - substance [Relationship] (required)
+  - role [Complex Datatype Relationship] (required)
+
+For IntercurrentEvent:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - dictionaryId [Attribute]
+  - strategy [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For InterventionalStudyDesign:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - rationale [Attribute] (required)
+  - studyInterventionIds [Attribute]
+  - documentVersionIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - encounters [Relationship]
+  - activities [Relationship]
+  - arms [Relationship] (required)
+  - studyCells [Relationship] (required)
+  - epochs [Relationship] (required)
+  - elements [Relationship]
+  - estimands [Relationship]
+  - indications [Relationship]
+  - objectives [Relationship]
+  - population [Relationship] (required)
+  - scheduleTimelines [Relationship]
+  - biospecimenRetentions [Relationship]
+  - eligibilityCriteria [Relationship] (required)
+  - analysisPopulations [Relationship]
+  - studyType [Complex Datatype Relationship]
+  - studyPhase [Complex Datatype Relationship]
+  - therapeuticAreas [Complex Datatype Relationship]
+  - characteristics [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+  - subTypes [Complex Datatype Relationship]
+  - model [Complex Datatype Relationship] (required)
+  - intentTypes [Complex Datatype Relationship]
+  - blindingSchema [Complex Datatype Relationship]
+
+For Masking:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - isMasked [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For MedicalDevice:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - hardwareVersion [Attribute]
+  - softwareVersion [Attribute]
+  - embeddedProductId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - identifiers [Relationship]
+  - sourcing [Complex Datatype Relationship] (allowed: Centrally Sourced, Locally Sourced)
+  - notes [Complex Datatype Relationship]
+
+For MedicalDeviceIdentifier:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - scopeId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Batch Number, FDA Unique Device Identification, Lot Number, Model Number) (required)
+
+For NarrativeContent:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - sectionNumber [Attribute]
+  - sectionTitle [Attribute]
+  - displaySectionNumber [Attribute] (required)
+  - displaySectionTitle [Attribute] (required)
+  - childIds [Attribute]
+  - previousId [Attribute]
+  - nextId [Attribute]
+  - contentItemId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For NarrativeContentItem:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - text [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For Objective:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - dictionaryId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - endpoints [Relationship]
+  - notes [Complex Datatype Relationship]
+  - level [Complex Datatype Relationship] (allowed: Exploratory Objective, Primary Objective, Secondary Objective) (required)
+
+For ObservationalStudyDesign:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - rationale [Attribute] (required)
+  - studyInterventionIds [Attribute]
+  - documentVersionIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - encounters [Relationship]
+  - activities [Relationship]
+  - arms [Relationship] (required)
+  - studyCells [Relationship] (required)
+  - epochs [Relationship] (required)
+  - elements [Relationship]
+  - estimands [Relationship]
+  - indications [Relationship]
+  - objectives [Relationship]
+  - population [Relationship] (required)
+  - scheduleTimelines [Relationship]
+  - biospecimenRetentions [Relationship]
+  - eligibilityCriteria [Relationship] (required)
+  - analysisPopulations [Relationship]
+  - studyType [Complex Datatype Relationship]
+  - studyPhase [Complex Datatype Relationship]
+  - therapeuticAreas [Complex Datatype Relationship]
+  - characteristics [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+  - subTypes [Complex Datatype Relationship] (allowed: Disease Prevalence, Disease Incidence, Disease Determinants, Disease Prognosis, Drug Utilization, Safety, Clinical Education, Disease Etiology)
+  - model [Complex Datatype Relationship] (required)
+  - timePerspective [Complex Datatype Relationship] (required)
+  - samplingMethod [Complex Datatype Relationship]
+
+For Organization:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - identifierScheme [Attribute] (required)
+  - identifier [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - legalAddress [Relationship]
+  - managedSites [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Clinical Study Registry, Regulatory Agency, Healthcare Facility, Pharmaceutical Company, Laboratory, Contract Research Organization, Government Institute, Academic Institution, Medical Device Company) (required)
+
+For ParameterMap:
+  - id [Attribute] (required)
+  - tag [Attribute] (required)
+  - reference [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For PersonName:
+  - id [Attribute] (required)
+  - text [Attribute]
+  - familyName [Attribute]
+  - givenNames [Attribute]
+  - prefixes [Attribute]
+  - suffixes [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For Procedure:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - procedureType [Attribute] (required)
+  - studyInterventionId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - code [Complex Datatype Relationship] (required)
+  - notes [Complex Datatype Relationship]
+
+For ProductOrganizationRole:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - appliesToIds [Attribute]
+  - organizationId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - code [Complex Datatype Relationship] (allowed: Manufacturer, Supplier) (required)
+
+For Quantity:
+  - id [Attribute] (required)
+  - value [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - unit [Complex Datatype Relationship]
+
+For Range:
+  - id [Attribute] (required)
+  - isApproximate [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - minValue [Complex Datatype Relationship] (required)
+  - maxValue [Complex Datatype Relationship] (required)
+
+For ReferenceIdentifier:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - scopeId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Pediatric Investigation Plan, Clinical Development Plan) (required)
+
+For ResponseCode:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - isEnabled [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - code [Complex Datatype Relationship] (required)
+
+For ScheduleTimeline:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - mainTimeline [Attribute] (required)
+  - entryCondition [Attribute] (required)
+  - entryId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - exits [Relationship]
+  - timings [Relationship]
+  - instances [Relationship]
+  - plannedDuration [Complex Datatype Relationship]
+
+For ScheduleTimelineExit:
+  - id [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For ScheduledActivityInstance:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - defaultConditionId [Attribute]
+  - epochId [Attribute]
+  - timelineId [Attribute]
+  - timelineExitId [Attribute]
+  - activityIds [Attribute]
+  - encounterId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For ScheduledDecisionInstance:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - defaultConditionId [Attribute]
+  - epochId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - conditionAssignments [Relationship] (required)
+
+For Strength:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - numerator [Complex Datatype Relationship] (required)
+  - denominator [Complex Datatype Relationship]
+
+For Study:
+  - id [Attribute]
+  - name [Attribute] (required)
+  - description [Attribute]
+  - label [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - versions [Relationship]
+  - documentedBy [Relationship]
+  - studyTitles [Relationship] (required)
+
+For StudyAmendment:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - number [Attribute] (required)
+  - summary [Attribute] (required)
+  - previousId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - primaryReason [Relationship] (required)
+  - secondaryReasons [Relationship]
+  - changes [Relationship] (required)
+  - impacts [Relationship]
+  - geographicScopes [Relationship] (required)
+  - enrollments [Relationship]
+  - dateValues [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For StudyAmendmentImpact:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - isSubstantial [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Study Subject Safety, Study Subject Rights, Study Data Reliability, Study Data Robustness) (required)
+  - notes [Complex Datatype Relationship]
+
+For StudyAmendmentReason:
+  - id [Attribute] (required)
+  - otherReason [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - code [Complex Datatype Relationship] (allowed: Change In Standard Of Care, Change In Strategy, IMP Addition, Inconsistency And/Or Error In The Protocol, Investigator/Site Feedback, IRB/IEC Feedback, Manufacturing Change, New Data Available (Other Than Safety Data), New Regulatory Guidance, New Safety Information Available, Protocol Design Error, Recruitment Difficulty, Regulatory Agency Request To Amend, Other, Not Applicable) (required)
+
+For StudyArm:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - dataOriginDescription [Attribute] (required)
+  - populationIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (required)
+  - dataOriginType [Complex Datatype Relationship] (allowed: Data Generated Within Study, Historical Data, Real World Data, Synthetic Data) (required)
+  - notes [Complex Datatype Relationship]
+
+For StudyCell:
+  - id [Attribute] (required)
+  - armId [Attribute] (required)
+  - epochId [Attribute] (required)
+  - elementIds [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For StudyChange:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - summary [Attribute] (required)
+  - rationale [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - changedSections [Relationship] (required)
+
+For StudyCohort:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - includesHealthySubjects [Attribute] (required)
+  - criterionIds [Attribute]
+  - indicationIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - characteristics [Relationship]
+  - plannedEnrollmentNumber [Complex Datatype Relationship]
+  - plannedCompletionNumber [Complex Datatype Relationship]
+  - plannedSex [Complex Datatype Relationship]
+  - plannedAge [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For StudyDefinitionDocument:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - templateName [Attribute] (required)
+  - childIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - versions [Relationship]
+  - language [Complex Datatype Relationship] (required)
+  - type [Complex Datatype Relationship] (allowed: Protocol) (required)
+  - notes [Complex Datatype Relationship]
+
+For StudyDefinitionDocumentVersion:
+  - id [Attribute] (required)
+  - version [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - dateValues [Relationship]
+  - contents [Relationship]
+  - status [Complex Datatype Relationship] (allowed: Approved, Draft, Final, Obsolete, Pending Review) (required)
+  - notes [Complex Datatype Relationship]
+
+For StudyDesignPopulation:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - includesHealthySubjects [Attribute] (required)
+  - criterionIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - cohorts [Relationship]
+  - plannedEnrollmentNumber [Complex Datatype Relationship]
+  - plannedCompletionNumber [Complex Datatype Relationship]
+  - plannedSex [Complex Datatype Relationship]
+  - plannedAge [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For StudyElement:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - studyInterventionIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - transitionStartRule [Relationship]
+  - transitionEndRule [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For StudyEpoch:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - previousId [Attribute]
+  - nextId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (required)
+  - notes [Complex Datatype Relationship]
+
+For StudyIdentifier:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - scopeId [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For StudyIntervention:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - administrations [Relationship]
+  - role [Complex Datatype Relationship] (allowed: Additional Required Treatment, Background Treatment, Challenge Agent, Diagnostic, Experimental Intervention, Placebo, Rescue Medicine, Active Comparator) (required)
+  - type [Complex Datatype Relationship] (required)
+  - minimumResponseDuration [Complex Datatype Relationship]
+  - codes [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For StudyRole:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - appliesToIds [Attribute]
+  - organizationIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - assignedPersons [Relationship]
+  - masking [Relationship]
+  - code [Complex Datatype Relationship] (allowed: Care Provider, Investigator, Outcomes Assessor, Sponsor, Study Subject, Adjudication Committee, Co-Sponsor, Manufacturer, Local Sponsor, Regulatory Agency , Medical Expert, Independent Data Monitoring Committee, Dose Escalation Committee, Data Safety Monitoring Board, Principal investigator, Clinical Trial Physician, Project Manager, Laboratory, Pharmacovigilance, Contract Research, Study Site, Statistician) (required)
+  - notes [Complex Datatype Relationship]
+
+For StudySite:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - country [Complex Datatype Relationship] (required)
+
+For StudyTitle:
+  - id [Attribute] (required)
+  - text [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - studyTitleType [Relationship] (required)
+  - type [Complex Datatype Relationship] (allowed: Brief Study Title, Official Study Title, Public Study Title, Scientific Study Title, Study Acronym) (required)
+
+For StudyVersion:
+  - id [Attribute] (required)
+  - versionIdentifier [Attribute] (required)
+  - rationale [Attribute] (required)
+  - documentVersionIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - dateValues [Relationship]
+  - amendments [Relationship]
+  - studyIdentifiers [Relationship] (required)
+  - referenceIdentifiers [Relationship]
+  - studyDesigns [Relationship]
+  - titles [Relationship] (required)
+  - eligibilityCriterionItems [Relationship]
+  - narrativeContentItems [Relationship]
+  - abbreviations [Relationship]
+  - roles [Relationship]
+  - organizations [Relationship]
+  - studyInterventions [Relationship]
+  - administrableProducts [Relationship]
+  - medicalDevices [Relationship]
+  - productOrganizationRoles [Relationship]
+  - biomedicalConcepts [Relationship]
+  - bcCategories [Relationship]
+  - bcSurrogates [Relationship]
+  - dictionaries [Relationship]
+  - conditions [Relationship]
+  - businessTherapeuticAreas [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For SubjectEnrollment:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - forStudyCohortId [Attribute]
+  - forStudySiteId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - forGeographicScope [Relationship]
+  - quantity [Complex Datatype Relationship] (required)
+
+For Substance:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - strengths [Relationship] (required)
+  - referenceSubstance [Relationship]
+  - codes [Complex Datatype Relationship]
+
+For SyntaxTemplateDictionary:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - parameterMaps [Relationship] (required)
+
+For TransitionRule:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - text [Attribute] (required)
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+
+For Wrapper:
+  - usdmVersion [Attribute] (required)
+  - systemName [Attribute]
+  - systemVersion [Attribute]
+  - study [Relationship] (required)
+
+For StudyDesign:
+  - trialType [Attribute] (required)
+  - observationalStudyModel [Attribute] (required)
+
+For ActivityGroup:
+  - name [Attribute]
+  - id [Attribute] (required)
+  - activities [Relationship] (required)
+
+For PlannedTimepoint:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - value [Attribute] (required)
+  - valueLabel [Attribute] (required)
+  - relativeFromScheduledInstanceId [Attribute] (required)
+  - relativeToScheduledInstanceId [Attribute]
+  - windowLower [Attribute]
+  - windowUpper [Attribute]
+  - windowLabel [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: After, Before, Fixed Reference) (required)
+  - relativeToFrom [Complex Datatype Relationship] (allowed: End to End, End to Start, Start to End, Start to Start) (required)
+
+For ActivityTimepoint:
+  - id [Attribute] (required)
+  - activityId [Attribute] (required)
+  - plannedTimepointId [Attribute] (required)
+
+
+**Naming vs. Timing Rule**
+
+For every visit you must output **two linked objects**: an `Encounter` and a `PlannedTimepoint` (PT).
+
+1. `Encounter.name` **and** `PlannedTimepoint.name` **must be identical** and contain ONLY the visit label — e.g., `"Visit 1"`. **Do NOT** include timing details such as weeks or days.
+2. Put timing information (e.g., `"Week -2"`, `"Day 1 ±2"`) in *exactly one* of these places:
+   • Preferred: `Encounter.timing.windowLabel` (and use `timing.windowLower/Upper` if you have numeric bounds).
+   • Acceptable fallback: `PlannedTimepoint.description` if a window label is not applicable.
+3. Never repeat the timing text inside the `name` field.
+
+
+**Mini Example (correct split):**
+
+Encounter snippet
+```json
+{ "id": "enc-1", "name": "Visit 1",
+  "timing": { "windowLabel": "Week -2" } }
+```
+
+Linked PlannedTimepoint snippet
+```json
+{ "id": "pt-1", "encounterId": "enc-1",
+  "name": "Visit 1", "description": "Week -2" }
+```
+
+
+════════════════════════════════════════════════════════════════════
+ OUTPUT REQUIREMENTS
+════════════════════════════════════════════════════════════════════
+
+- Use unique IDs for all cross-referencing.
+- The output MUST be a single JSON object that exactly matches the **Wrapper-Input** schema (top-level keys: `study`, `usdmVersion`).
+- The `studyDesigns` object must also contain the `epochs` array. The `epochs` array should contain `StudyEpoch` objects. `StudyEpoch` objects contain `encounters`, which in turn contain `plannedTimepoints`. The `timeline` object should still contain the full list of `activities`.
+- Include empty arrays/objects for any optional fields that are not present in the protocol.
+- Set `usdmVersion` to `4.0.0`.
+
+
+════════════════════════════════════════════════════════════════════
+ REQUIRED OUTPUT (JSON ONLY)
+════════════════════════════════════════════════════════════════════
+- Return **one** JSON object that **conforms to the USDM Wrapper-Input schema**.
+- Set "usdmVersion" to "4.0.0".
+- Top-level keys MUST include: "study", "usdmVersion".
+- **No prose, no Markdown, no code fences**. The string must be directly loadable by `json.loads()`.
+
+❌ Bad: "Here is your JSON:
+{ ... }"
+✅ Good: { ... }
+
+════════════════════════════════════════════════════════════════════
+ MODELING RULES
+════════════════════════════════════════════════════════════════════
+- Use **stable, unique IDs** for all entities and maintain cross-references.
+- Do **not invent** assessments, visits, windows, or epochs that are not implied by the SoA.
+- When data is missing, **use empty arrays/objects** rather than hallucinating values.
+- Normalize repeated labels (e.g., "Visit 3", "Visit 3.1") consistently across `Encounter` + `PlannedTimepoint`.
+- Keep all activities in `timeline.activities`, even if some are unscheduled.
+- Every visit should produce exactly ONE `Encounter` + ONE `PlannedTimepoint` with matching names.
+

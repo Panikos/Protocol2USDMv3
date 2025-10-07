@@ -2,6 +2,119 @@
 
 All notable changes after the last GitHub check-in (2025-07-13) are documented here.  Dates in ISO-8601.
 
+## [Unreleased] – 2025-10-04
+### Added
+* **Multi-Model Provider Abstraction** – New `llm_providers.py` module providing unified interface for GPT and Gemini models
+  * `LLMProvider` abstract base class with `OpenAIProvider` and `GeminiProvider` implementations
+  * `LLMProviderFactory` with auto-detection from model names (e.g., "gpt-5", "gemini-2.5-pro")
+  * GPT-5 support with automatic handling of `max_completion_tokens` parameter (differs from GPT-4)
+  * Automatic fallback to legacy code if provider layer fails
+  * 23 comprehensive unit tests (100% passing)
+* **Prompt Template System** – New `prompt_templates.py` module for centralized prompt management
+  * YAML-based template storage in `prompts/` directory
+  * Variable substitution with defaults
+  * Template validation following OpenAI best practices
+  * `PromptRegistry` for caching and management
+  * 19 comprehensive unit tests (100% passing)
+* **Optimized SoA Extraction Prompt** – `prompts/soa_extraction.yaml` v2.0
+  * Clear role & objective section
+  * Step-by-step extraction process (6 explicit steps)
+  * "What to DO" and "What NOT to DO" lists
+  * Quality checklist before output
+  * Visual separators for readability
+  * Follows OpenAI cookbook optimization best practices
+* **Enhanced send_pdf_to_llm.py** – Refactored to use provider layer
+  * New `use_provider_layer` parameter (default: True)
+  * Enhanced logging with token usage tracking
+  * Full backward compatibility maintained
+* **Prompt System Modernization** (Phases 1-3 Complete) – 2025-10-05
+  * **Phase 1 - Critical Bug Fixes:**
+    * Fixed `soa_prompt_example.json` to follow naming vs. timing rule
+      * PlannedTimepoint.name now matches Encounter.name (no timing in name)
+      * Added all required PlannedTimepoint fields (value, valueLabel, type, relativeToFrom)
+      * Includes proper complex type structure for Encounter.type
+    * Added comprehensive PlannedTimepoint field guidance in prompts
+      * 8 required fields explained with examples
+      * Common patterns documented (screening, baseline, follow-up)
+      * Simple and windowed timepoint examples
+    * Added Encounter.type field guidance with proper Code object structure
+  * **Phase 2 - Enhanced Schema Embedding:**
+    * Expanded embedded schema from 3 to 10 USDM components
+    * Now includes: Timeline, Epoch, Encounter, PlannedTimepoint, Activity, ActivityTimepoint, ActivityGroup
+    * LLMs now have complete field definitions for all SoA core entities
+    * Smart truncation at entity boundaries (not mid-field)
+    * Schema size tracking and logging (~2000 tokens)
+  * **Phase 3 - YAML Template Migration:**
+    * Created `prompts/soa_reconciliation.yaml` (v2.0)
+    * Migrated reconciliation prompt from hardcoded string to YAML template
+    * Added template versioning and changelog tracking
+    * Backward compatible fallback to v1.0 hardcoded prompt
+    * Template system integrated into `reconcile_soa_llm.py`
+    * Prompts now have version numbers and change history
+
+### Changed
+* README.md updated with multi-model support, architecture section, and new test counts
+* Installation instructions now include both OPENAI_API_KEY and GOOGLE_API_KEY
+* Default model remains `gemini-2.5-pro` (from user preference memory)
+* Model selection examples show GPT-4, GPT-5, and Gemini options
+
+### Documentation
+* New `MULTI_MODEL_IMPLEMENTATION.md` – Complete implementation guide for Phase 4
+* Updated `README.md` – Architecture section, model selection guide, test information
+* Updated `CHANGELOG.md` – This file
+
+### Fixed
+* GPT-5 parameter handling in `find_soa_pages.py` (text and vision adjudication)
+  * Now correctly uses `max_completion_tokens` instead of `max_tokens`
+  * Removes `temperature` parameter for GPT-5 (reasoning model)
+  * Fixes Step 2 failures when using `--model gpt-5`
+* **CRITICAL:** Text extraction Wrapper-Input handling in `send_pdf_to_llm.py` (Step 5)
+  * **Part 1 (Validation):** Now detects USDM Wrapper-Input format correctly
+    * Previously rejected valid JSON with `Wrapper-Input.study` structure
+    * Fixed "lacks SoA data (study.versions)" false negative errors
+  * **Part 2 (Normalization):** Normalizes Wrapper-Input to direct format before merge
+    * Previously passed validation but merge function skipped the data
+    * Result: Text extraction returned empty timeline despite LLM success
+    * Now extracts full SoA data from text (epochs, encounters, activities)
+  * Affects all models (GPT-4o, Gemini, GPT-5) in text extraction step
+  * **Impact:** Restores text extraction to full working state
+
+### Changed
+* Commented out verbose `[DEBUG] Raw LLM output` in `send_pdf_to_llm.py`
+  * Prevents entire USDM JSON from flooding console output
+  * Model usage and token info still logged
+  * Improves readability of pipeline logs
+* Made `validate_soa_structure.py` non-fatal for linkage errors
+  * Now logs warnings instead of exiting with error code
+  * Allows reconciliation steps (7-11) to fix issues like missing encounters
+  * Prevents pipeline halt on common LLM extraction gaps (e.g., ET/RT visits)
+* Added required USDM fields to `reconcile_soa_llm.py` output (Step 9)
+  * Now adds `rationale`, `studyIdentifiers`, and `titles` with defaults
+  * Fixes Step 10 schema validation failures
+  * Ensures output complies with USDM v4.0 Wrapper-Input requirements
+* **Enhanced provenance tracking system** (`reconcile_soa_llm.py`) - Phases 1 & 2
+  * **Phase 1 - Provenance Split:** Step 9 now creates separate `_provenance.json` file
+    * Pure USDM in `9_reconciled_soa.json` (no embedded provenance)
+    * Traceability in `9_reconciled_soa_provenance.json` (parallel file)
+    * Consistent with Steps 7 & 8 pattern
+    * Aligns with user preference for separate provenance files
+  * **Phase 2 - "Both" Detection:** Enhanced source tracking
+    * Entities found in text only: `"text"`
+    * Entities found in vision only: `"vision"`
+    * **NEW:** Entities found in both sources: `"both"` (high confidence indicator)
+    * Improved traceability and quality assurance
+  * Provenance summary logged: total entities and "both" count
+  * Backward compatible: falls back to embedded provenance if separate files missing
+
+### Testing
+* Total test suite now: **94 tests (100% passing)**
+  * 23 provider abstraction tests (added GPT-5 test)
+  * 19 template system tests
+  * 30 Phase 1-3 tests (schema, JSON parsing, normalization)
+  * 22 original tests
+
+---
+
 ## [Unreleased] – 2025-07-14
 ### Added
 * **Gemini-2.5-Pro default model** – `main.py` now defaults to this model unless `--model` overrides.

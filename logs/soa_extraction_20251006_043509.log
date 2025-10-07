@@ -1,0 +1,11 @@
+[2025-10-06 04:35:09] [INFO] Processing image: output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_14.png
+[2025-10-06 04:35:09] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
+[2025-10-06 04:35:09] [INFO] Sending request to Gemini API...
+[2025-10-06 04:36:42] [INFO] [SUCCESS] Extracted SoA from output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_14.png.
+[2025-10-06 04:36:42] [INFO] Processing image: output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_15.png
+[2025-10-06 04:36:42] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
+[2025-10-06 04:36:42] [INFO] Sending request to Gemini API...
+[2025-10-06 04:39:21] [INFO] [SUCCESS] Extracted SoA from output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_15.png.
+[2025-10-06 04:39:21] [INFO] Successfully extracted SoA data from 2 images. Merging...
+[2025-10-06 04:39:21] [WARNING] Skipping malformed SoA part: {'id': 'study-1', 'studyVisits': [{'id': 'sv-1', 'name': 'Screening'}, {'id': 'sv-2', 'name': 'C-I'}, {'id': 'sv-3', 'name': 'Inpatient Period 1'}, {'id': 'sv-4', 'name': 'OP'}, {'id': 'sv-5', 'name':
+[2025-10-06 04:39:21] [INFO] Wrote merged_soa SoA vision output to output\Alexion_NCT04573309_Wilsons\6_raw_vision_soa.json

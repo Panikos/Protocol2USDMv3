@@ -7,9 +7,19 @@ import time
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 import fitz  # PyMuPDF
 import textwrap
+import yaml
+from pathlib import Path
 from openai import OpenAI
 import google.generativeai as genai
 from dotenv import load_dotenv
+
+# Prompt template system
+try:
+    from prompt_templates import PromptTemplate
+    TEMPLATES_AVAILABLE = True
+except ImportError:
+    print("[WARNING] PromptTemplate not available, using fallback prompts")
+    TEMPLATES_AVAILABLE = False
 
 # --- CONFIG ---
 KEYWORDS = [
@@ -35,6 +45,20 @@ google_api_key = os.environ.get("GOOGLE_API_KEY")
 if google_api_key:
     genai.configure(api_key=google_api_key)
 
+# Load find SoA pages template
+def load_find_soa_template():
+    """Load find SoA pages prompt from YAML template (v2.0) or fallback to hardcoded (v1.0)."""
+    if TEMPLATES_AVAILABLE:
+        try:
+            template = PromptTemplate.load("find_soa_pages", "prompts")
+            print(f"[INFO] Loaded find SoA pages template v{template.metadata.version}", file=sys.stderr)
+            return template
+        except Exception as e:
+            print(f"[WARNING] Could not load YAML template: {e}. Using fallback.", file=sys.stderr)
+    return None
+
+FIND_SOA_TEMPLATE = load_find_soa_template()
+
 # --- FUNCTIONS ---
 def extract_page_texts(pdf_path):
     doc = fitz.open(pdf_path)
@@ -54,48 +78,81 @@ def llm_is_soa_page(page_text, model, prompt_content):
     """Asks the LLM if a page contains SoA content, using the main prompt for context."""
     unique_run_id = f"RunID:{time.time()}"
     
-    if prompt_content:
-        system_prompt = textwrap.dedent(f"""
-            You are an expert document analysis assistant for clinical trial protocols. Your task is to determine if the provided text from a single page contains the primary 'Schedule of Activities' (SoA) table.
+    # Shorten page text to avoid token limits
+    shortened_text = textwrap.shorten(page_text, width=12000)
+    user_content = f"Page Text:\n{shortened_text}\n{unique_run_id}"
+    
+    # Get prompts using template system (v2.0) or fallback (v1.0)
+    if FIND_SOA_TEMPLATE:
+        # v2.0: Use YAML template
+        if prompt_content:
+            # Use version with schema context
+            # Load the system_prompt_with_context from template data
+            template_path = Path("prompts") / "find_soa_pages.yaml"
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_data = yaml.safe_load(f)
+            
+            system_prompt = template_data.get("system_prompt_with_context", "").format(
+                prompt_content=prompt_content
+            )
+            if not system_prompt:
+                # Fallback to regular system prompt
+                messages = FIND_SOA_TEMPLATE.render(page_text=user_content, context_note="")
+                system_prompt = messages[0]["content"]
+        else:
+            messages = FIND_SOA_TEMPLATE.render(
+                page_text=user_content,
+                context_note=""
+            )
+            system_prompt = messages[0]["content"]
+    else:
+        # v1.0: Use hardcoded fallback
+        if prompt_content:
+            system_prompt = textwrap.dedent(f"""
+                You are an expert document analysis assistant for clinical trial protocols. Your task is to determine if the provided text from a single page contains the primary 'Schedule of Activities' (SoA) table.
 
-            **CRITICAL INSTRUCTIONS:**
-            1.  The SoA is a specific, detailed table, often spanning multiple pages, that lists study visits, timepoints, and all procedures performed at each visit.
-            2.  You MUST respond 'yes' if the page contains the title 'Schedule of Activities' (or similar) and the beginning of the main SoA table, or if it contains a clear continuation of that table from a previous page. The page must show a tabular structure with rows and columns for visits and procedures.
-            3.  You MUST respond 'no' if the page only contains mentions of activities, a list of abbreviations, a table of contents, a list of figures, or general descriptions of the study design.
-            4.  A page that only MENTIONS 'Schedule of Activities' but does not SHOW the actual table is NOT the SoA table. You must respond 'no'.
-            5.  Footnotes or definitions pages are NOT the SoA table itself. You must respond 'no'.
-            6.  Your response MUST be a single word: 'yes' or 'no'. Do not provide any other explanation.
+                **CRITICAL INSTRUCTIONS:**
+                1.  The SoA is a specific, detailed table, often spanning multiple pages, that lists study visits, timepoints, and all procedures performed at each visit.
+                2.  You MUST respond 'yes' if the page contains the title 'Schedule of Activities' (or similar) and the beginning of the main SoA table, or if it contains a clear continuation of that table from a previous page. The page must show a tabular structure with rows and columns for visits and procedures.
+                3.  You MUST respond 'no' if the page only contains mentions of activities, a list of abbreviations, a table of contents, a list of figures, or general descriptions of the study design.
+                4.  A page that only MENTIONS 'Schedule of Activities' but does not SHOW the actual table is NOT the SoA table. You must respond 'no'.
+                5.  Footnotes or definitions pages are NOT the SoA table itself. You must respond 'no'.
+                6.  Your response MUST be a single word: 'yes' or 'no'. Do not provide any other explanation.
 
-            Here is the schema context for the key SoA-related entities, which may appear in the table:
-            ---
-            {prompt_content}
-            ---
-        """)
-    else: # Fallback to the old prompt if no context is provided
-        system_prompt = textwrap.dedent("""
-            You are a text classification assistant. Your only task is to determine if the text from a clinical trial protocol page contains the 'Schedule of Activities' (SoA).
-            The SoA can be a table, a title, or a header.
-            IMPORTANT: A 'Table of Contents' page is NOT a Schedule of Activities, even if it lists the SoA as a section. If the page is a Table of Contents, respond 'no'.
-            If the text contains 'Schedule of Activities', 'SoA', 'Schedule of Events', or a similar title, OR if it contains a table with visits, timepoints, and medical procedures, you must respond 'yes'.
-            Otherwise, respond 'no'.
-            Your response must be a single word: 'yes' or 'no'.
-        """)
-
-    user_content = f"Page Text:\n{textwrap.shorten(page_text, width=12000)}\n{unique_run_id}"
+                Here is the schema context for the key SoA-related entities, which may appear in the table:
+                ---
+                {prompt_content}
+                ---
+            """)
+        else:
+            system_prompt = textwrap.dedent("""
+                You are a text classification assistant. Your only task is to determine if the text from a clinical trial protocol page contains the 'Schedule of Activities' (SoA).
+                The SoA can be a table, a title, or a header.
+                IMPORTANT: A 'Table of Contents' page is NOT a Schedule of Activities, even if it lists the SoA as a section. If the page is a Table of Contents, respond 'no'.
+                If the text contains 'Schedule of Activities', 'SoA', 'Schedule of Events', or a similar title, OR if it contains a table with visits, timepoints, and medical procedures, you must respond 'yes'.
+                Otherwise, respond 'no'.
+                Your response must be a single word: 'yes' or 'no'.
+            """)
     
     params = dict(model=model, messages=[
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_content}
     ])
 
-    if model != "o3":
+    # GPT-5 and o-series models don't support temperature
+    if model not in ['o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini']:
         params["temperature"] = 0
-    if model in ['o3', 'o3-mini', 'o3-mini-high']:
+    
+    # GPT-5 and o-series use max_completion_tokens instead of max_tokens
+    if model in ['o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini']:
         params['max_completion_tokens'] = 5
+        print(f"[DEBUG] Using max_completion_tokens for reasoning model: {model}", file=sys.stderr)
     else:
         params['max_tokens'] = 5
+        print(f"[DEBUG] Using max_tokens for standard model: {model}", file=sys.stderr)
 
     print(f"[DEBUG] Sending request to {model} for page adjudication...", file=sys.stderr)
+    print(f"[DEBUG] Request params keys: {list(params.keys())}", file=sys.stderr)
     try:
         if 'gemini' in model.lower():
             if not google_api_key:
@@ -178,10 +235,18 @@ def llm_is_soa_page_image(pdf_path, page_num, model):
                             },
                         ],
                     }
-                ],
-                max_tokens=5,
-                temperature=0
+                ]
             )
+            
+            # GPT-5 and o-series models don't support temperature
+            if model not in ['o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini']:
+                params['temperature'] = 0
+            
+            # GPT-5 and o-series use max_completion_tokens instead of max_tokens  
+            if model in ['o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini']:
+                params['max_completion_tokens'] = 5
+            else:
+                params['max_tokens'] = 5
             response = client.chat.completions.create(**params)
             answer = response.choices[0].message.content.strip().lower()
 
@@ -201,6 +266,9 @@ def llm_is_soa_page_image(pdf_path, page_num, model):
 print("[DEBUG] find_soa_pages.py script execution started.", file=sys.stderr, flush=True)
 
 def main():
+    print("=" * 80, file=sys.stderr, flush=True)
+    print("[DEBUG] *** USING UPDATED find_soa_pages.py WITH GPT-5 FIX ***", file=sys.stderr, flush=True)
+    print("=" * 80, file=sys.stderr, flush=True)
     print("[DEBUG] find_soa_pages.py main() started", file=sys.stderr, flush=True)
     import argparse
     import textwrap

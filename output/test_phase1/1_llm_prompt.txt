@@ -1,0 +1,229 @@
+
+════════════════════════════════════════════════════════════════════
+ OBJECTIVE
+════════════════════════════════════════════════════════════════════
+You are an expert at extracting the Schedule of Activities (SoA) from a clinical trial protocol and converting it to a structured JSON object compliant with USDM v4.0.
+
+Your task is to analyze the provided SoA table(s) and generate a JSON object containing the full timeline of study events.
+
+════════════════════════════════════════════════════════════════════
+ USDM WRAPPER-INPUT SCHEMA (AUTHORITATIVE)
+════════════════════════════════════════════════════════════════════
+The JSON you produce MUST validate against this schema structure:
+
+{"Wrapper-Input":{"properties":{"study":{"$ref":"#/components/schemas/Study-Input"},"usdmVersion":{"type":"string","title":"Usdmversion"},"systemName":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Systemname"},"systemVersion":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Systemversion"}},"type":"object","required":["study","usdmVersion"],"title":"Wrapper"},"Study-Input":{"properties":{"id":{"anyOf":[{"type":"string","format":"uuid"},{"type":"null"}],"title":"Id"},"extensionAttributes":{"items":{"$ref":"#/components/schemas/ExtensionAttribute-Input"},"type":"array","title":"Extensionattributes","default":[]},"name":{"type":"string","minLength":1,"title":"Name"},"description":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Description"},"label":{"anyOf":[{"type":"string"},{"type":"null"}],"title":"Label"},"versions":{"items":{"$ref":"#/components/schemas/StudyVersion-Input"},"type":"array","title":"Versions","default":[]},"documentedBy":{"items":{"$ref":"#/components/schemas/StudyDefinitionDocument-Input"},"type":"array","title":"Documentedby","default":[]},"instanceType":{"type":"string","enum":["Study"],"const":"Study","title":"Instancetype"}},"type":"object","required":["name","instanceType"],"title":"Study"},"StudyVersion-Input":{"properties":{"id":{"type":"string","minLength":1,"title":"Id"},"extensionAttributes":{"items":{"$ref":"#/components/schemas/ExtensionAttribute-Input"},"type":"array","title":"Extensionattributes","default":[]},"versionIdentifier":{"type":"string","title":"Versionidentifier"},"rationale":{"type":"string","title":"Rationale"},"documentVersionIds":{"items":{"type":"string"},"type":"array","title":"Documentversionids","default":[]},"dateValues":{"items":{"$ref":"#/components/schemas/GovernanceDate-Input"},"type":"array","title":"Datevalues","default":[]},"amendments":{"items":{"$ref":"#/components/schemas/StudyAmendment-Input"},"type":"array","title":"Amendments","default":[]},"businessTherapeuticAreas":{"items":{"$ref":"#/components/schemas/Code-Input"},"type":"array","title":"Businesstherapeuticareas","default":[]},"studyIdentifiers":{"items":{"$ref":"#/components/schemas/StudyIdentifier-Input"},"type":"array","title":"Studyidentifiers"},"referenceIdentifiers":{"items":{"$ref":"#/components/schemas/ReferenceIdentifier-Input"},"type":"array","title":"Referenceidentifiers","default":[]},"studyDesigns":{"items":{"anyOf":[{"$ref":"#/components/schemas/InterventionalStudyDesign-Input"},{"$ref":"#/components/schemas/ObservationalStudyDesign-Input"}]},"type":"array","title":"Studydesigns","default":[]},"titles":{"items":{"$ref":"#/components/schemas/StudyTitle-Input"},"type":"array","title":"Titles"},"eligibilityCriterionItems":{"items":{"$ref":"#/components/schemas/EligibilityCriterionItem-Input"},"type":"array","title":"Eligibilitycriterionitems","default":[]},"narrativeContentItems":{"items":{"$ref":"#/components/schemas/NarrativeContentItem-Input"},"type":"array","title":"Narrativecontentitems","default":[]},"abbreviations":{"items":{"$ref":"#/components/schemas/Abbreviation-Input"},"type":"array","title":"Abbreviations","default":[]},"roles":{"items":{"$ref":"#/components/schemas/StudyRole-Input"},"type":"array","title":"Roles","default":[]},"organizations":{"items":{"$ref":"#/components/schemas/Organization-Input"},"type":"array","title":"Organizations","default":[]},"studyInterventions":{"items":{"$ref":"#/components/schemas/StudyIntervention-Input"},"type":"array","title":"Studyinterventions","default":[]},"administrableProducts":{"items":{"$ref":"#/components/schemas/AdministrableProduct-Input"},"type":"array","title":"Administrableproducts","default":[]},"medicalDevices":{"items":{"$ref":"#/components/schemas/MedicalDevice-Input"},"type":"array","title":"Medicaldevices","default":[]},"productOrganizationRoles":{"items":{"$ref":"#/components/schemas/ProductOrganizationRole-Input"},"type":"array","title":"Productorganizationroles","default":[]},"biomedicalConcepts":{"items":{"$ref":"#/components/schemas/BiomedicalConcept-Input"},"type":"array","title":"Biomedicalconcepts","default":[]},"bcCategories":{"items":{"$ref":"#/components/schemas/BiomedicalConceptCategory-Input"},"type":"array","title":"Bccategories","default":[]},"bcSurrogates":{"items":{"$ref":"#/components/schemas/BiomedicalConceptSurrogate-Input"},"type":"array","title":"Bcsurrogates","default":[]},"dictionaries":{"items":{"$ref":"#/components/schemas/SyntaxTemplateDictionary-Input"},"type":"array","title":"Dictionaries","default":[]},"conditions":{"items":{"$ref":"#/components/schemas/Condition-Input"},"type":"array","title":"Conditions","default":[]},"notes":{"items":{"$ref":"#/components/schemas/CommentAnnotation-Input"},"type":"array","title":"Notes","default":[]},"instanceType":{"type":"string","enum":["StudyVersion"],"const":"StudyVersion","title":"Instancetype"}},"type":"object","required":["id","versionIdentifier","rationale","studyIdentifiers","titles","instanceType"],"title":"StudyVersion"}}
+
+════════════════════════════════════════════════════════════════════
+ KEY CONCEPTS AND ENTITY RELATIONSHIPS
+════════════════════════════════════════════════════════════════════
+
+The SoA is structured around a few core entities. Understanding their relationships is crucial for correct extraction:
+
+*   **Epochs:** These are the major phases of the study (e.g., Screening, Treatment, Follow-up).
+*   **Encounters:** These represent the specific visits or time windows within an Epoch (e.g., "Screening Visit", "Week 4 Visit").
+*   **PlannedTimepoints:** These are the precise moments or intervals when activities happen. They are often linked to Encounters. (e.g., "Day 1", "Week 4").
+*   **Activities:** These are the individual procedures or assessments performed (e.g., "Physical Exam", "Blood Draw").
+*   **ActivityTimepoints:** This is the mapping that links an Activity to a PlannedTimepoint, indicating *what* happens *when*.
+*   **ActivityGroups:** These are optional groupings for related activities (e.g., "Vital Signs"). When an activity belongs to a group, you **MUST** set the `activityGroupId` field on the Activity object to the ID of the corresponding ActivityGroup.
+
+**Naming vs. Timing Rule**
+
+For every visit you must output **two linked objects**: an `Encounter` and a `PlannedTimepoint` (PT).
+
+1. `Encounter.name` **and** `PlannedTimepoint.name` **must be identical** and contain ONLY the visit label — e.g., `"Visit 1"`. **Do NOT** include timing details such as weeks or days.
+2. Put timing information (e.g., `"Week -2"`, `"Day 1 ±2"`) in *exactly one* of these places:
+   • Preferred: `Encounter.timing.windowLabel` (and use `timing.windowLower/Upper` if you have numeric bounds).
+   • Acceptable fallback: `PlannedTimepoint.description` if a window label is not applicable.
+3. Never repeat the timing text inside the `name` field.
+
+
+**Mini Example (correct split):**
+
+Encounter snippet
+```json
+{ "id": "enc-1", "name": "Visit 1",
+  "timing": { "windowLabel": "Week -2" } }
+```
+
+Linked PlannedTimepoint snippet
+```json
+{ "id": "pt-1", "encounterId": "enc-1",
+  "name": "Visit 1", "description": "Week -2" }
+```
+
+
+════════════════════════════════════════════════════════════════════
+ EXAMPLE OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════
+
+To ensure you produce the correct output, here is a small, valid example of the JSON structure. Your output MUST follow this format exactly.
+
+```json
+{
+  "study": {
+    "versions": [
+      {
+        "timeline": {
+          "epochs": [
+            {
+              "id": "epoch_1",
+              "name": "Screening",
+              "instanceType": "Epoch"
+            }
+          ],
+          "encounters": [
+            {
+              "id": "enc_1",
+              "name": "Screening Visit",
+              "epochId": "epoch_1",
+              "instanceType": "Encounter"
+            }
+          ],
+          "plannedTimepoints": [
+            {
+              "id": "pt_1",
+              "name": "Day -7",
+              "encounterId": "enc_1",
+              "instanceType": "PlannedTimepoint"
+            }
+          ],
+          "activities": [
+            {
+              "id": "act_1",
+              "name": "Informed Consent",
+              "instanceType": "Activity"
+            }
+          ],
+          "activityTimepoints": [
+            {
+              "id": "atp_1",
+              "activityId": "act_1",
+              "plannedTimepointId": "pt_1",
+              "instanceType": "ActivityTimepoint"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "usdmVersion": "4.0.0"
+}
+
+```
+
+════════════════════════════════════════════════════════════════════
+ DETAILED SCHEMA DEFINITIONS
+════════════════════════════════════════════════════════════════════
+
+Below are the specific fields you must use for each entity. Do not invent new fields or entity types.
+
+For Activity:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - previousId [Attribute]
+  - nextId [Attribute]
+  - childIds [Attribute]
+  - biomedicalConceptIds [Attribute]
+  - bcCategoryIds [Attribute]
+  - bcSurrogateIds [Attribute]
+  - timelineId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - definedProcedures [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For Encounter:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - previousId [Attribute]
+  - nextId [Attribute]
+  - scheduledAtId [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - transitionStartRule [Relationship]
+  - transitionEndRule [Relationship]
+  - type [Complex Datatype Relationship] (allowed: Visit) (required)
+  - environmentalSettings [Complex Datatype Relationship]
+  - contactModes [Complex Datatype Relationship]
+  - notes [Complex Datatype Relationship]
+
+For StudyArm:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - dataOriginDescription [Attribute] (required)
+  - populationIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (required)
+  - dataOriginType [Complex Datatype Relationship] (allowed: Data Generated Within Study, Historical Data, Real World Data, Synthetic Data) (required)
+  - notes [Complex Datatype Relationship]
+
+For StudyElement:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - studyInterventionIds [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - transitionStartRule [Relationship]
+  - transitionEndRule [Relationship]
+  - notes [Complex Datatype Relationship]
+
+For ActivityGroup:
+  - name [Attribute]
+  - id [Attribute] (required)
+  - activities [Relationship] (required)
+
+For PlannedTimepoint:
+  - id [Attribute] (required)
+  - name [Attribute] (required)
+  - label [Attribute]
+  - description [Attribute]
+  - value [Attribute] (required)
+  - valueLabel [Attribute] (required)
+  - relativeFromScheduledInstanceId [Attribute] (required)
+  - relativeToScheduledInstanceId [Attribute]
+  - windowLower [Attribute]
+  - windowUpper [Attribute]
+  - windowLabel [Attribute]
+  - instanceType [Attribute] (required)
+  - extensionAttributes [Relationship]
+  - type [Complex Datatype Relationship] (allowed: After, Before, Fixed Reference) (required)
+  - relativeToFrom [Complex Datatype Relationship] (allowed: End to End, End to Start, Start to End, Start to Start) (required)
+
+For ActivityTimepoint:
+  - id [Attribute] (required)
+  - activityId [Attribute] (required)
+  - plannedTimepointId [Attribute] (required)
+
+
+
+════════════════════════════════════════════════════════════════════
+ REQUIRED OUTPUT (JSON ONLY)
+════════════════════════════════════════════════════════════════════
+- Return **one** JSON object that **conforms to the USDM Wrapper-Input schema**.
+- Set "usdmVersion" to "4.0.0".
+- Top-level keys MUST include: "study", "usdmVersion".
+- **No prose, no Markdown, no code fences**. The string must be directly loadable by `json.loads()`.
+
+❌ Bad: "Here is your JSON:
+{ ... }"
+✅ Good: { ... }
+
+════════════════════════════════════════════════════════════════════
+ MODELING RULES
+════════════════════════════════════════════════════════════════════
+- Use **stable, unique IDs** for all entities and maintain cross-references.
+- Do **not invent** assessments, visits, windows, or epochs that are not implied by the SoA.
+- When data is missing, **use empty arrays/objects** rather than hallucinating values.
+- Normalize repeated labels (e.g., "Visit 3", "Visit 3.1") consistently across `Encounter` + `PlannedTimepoint`.
+- Keep all activities in `timeline.activities`, even if some are unscheduled.
+- Every visit should produce exactly ONE `Encounter` + ONE `PlannedTimepoint` with matching names.
+

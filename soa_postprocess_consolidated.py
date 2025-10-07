@@ -44,6 +44,223 @@ def standardize_ids_recursive(obj):
             standardize_ids_recursive(item)
     return obj
 
+def normalize_names_vs_timing(timeline: dict) -> int:
+    """
+    Enforce the naming vs. timing rule: extract timing patterns from entity names
+    and move them to proper timing fields.
+    
+    Rules:
+    - Encounter.name should NOT contain timing text like "Week -2", "Day 1"
+    - Timing goes in Encounter.timing.windowLabel (preferred) or PlannedTimepoint.description
+    - Both Encounter and PlannedTimepoint names should match and be clean
+    
+    Args:
+        timeline: The timeline object containing encounters and plannedTimepoints
+    
+    Returns:
+        Number of entities normalized
+    """
+    # Regex pattern to match timing text: Week ±N, Day ±N, ±N days, etc.
+    timing_pattern = re.compile(
+        r'(Week\s*[-+]?\d+|Day\s*[-+]?\d+|±\s*\d+\s*(day|week)s?|'
+        r'\(\s*Week\s*[-+]?\d+\s*\)|\(\s*Day\s*[-+]?\d+\s*\))',
+        re.IGNORECASE
+    )
+    
+    normalized_count = 0
+    
+    # Process Encounters
+    for enc in timeline.get('encounters', []):
+        name = enc.get('name', '')
+        if not name:
+            continue
+        
+        matches = timing_pattern.findall(name)
+        if matches:
+            # Extract timing text
+            timing_text = matches[0][0] if isinstance(matches[0], tuple) else matches[0]
+            
+            # Clean the name by removing timing text
+            clean_name = timing_pattern.sub('', name).strip()
+            # Clean up extra spaces, dashes, and parentheses
+            clean_name = re.sub(r'\s+', ' ', clean_name)
+            clean_name = re.sub(r'\s*[-–—:]+\s*$', '', clean_name)
+            clean_name = re.sub(r'^\s*[-–—:]+\s*', '', clean_name)
+            clean_name = clean_name.strip('() ')
+            
+            if clean_name and clean_name != name:
+                enc['name'] = clean_name
+                
+                # Move timing to windowLabel if not already present
+                if 'timing' not in enc:
+                    enc['timing'] = {}
+                if not enc['timing'].get('windowLabel'):
+                    enc['timing']['windowLabel'] = timing_text.strip()
+                
+                normalized_count += 1
+    
+    # Process PlannedTimepoints
+    for pt in timeline.get('plannedTimepoints', []):
+        name = pt.get('name', '')
+        if not name:
+            continue
+        
+        matches = timing_pattern.findall(name)
+        if matches:
+            # Extract timing text
+            timing_text = matches[0][0] if isinstance(matches[0], tuple) else matches[0]
+            
+            # Clean the name
+            clean_name = timing_pattern.sub('', name).strip()
+            clean_name = re.sub(r'\s+', ' ', clean_name)
+            clean_name = re.sub(r'\s*[-–—:]+\s*$', '', clean_name)
+            clean_name = re.sub(r'^\s*[-–—:]+\s*', '', clean_name)
+            clean_name = clean_name.strip('() ')
+            
+            if clean_name and clean_name != name:
+                pt['name'] = clean_name
+                
+                # Move timing to description if not already present
+                if not pt.get('description'):
+                    pt['description'] = timing_text.strip()
+                
+                normalized_count += 1
+    
+    return normalized_count
+
+def ensure_required_fields(data: dict) -> list:
+    """
+    Ensure required USDM fields exist with sensible defaults.
+    
+    Adds:
+    - study.versions array if missing
+    - timeline object if missing
+    - Required arrays (activities, plannedTimepoints, encounters, etc.)
+    - Default epoch if none present
+    - Wrapper-level fields (usdmVersion, systemName, systemVersion)
+    
+    Args:
+        data: The USDM JSON object (Wrapper-Input format)
+    
+    Returns:
+        List of fields that were added
+    """
+    added_fields = []
+    
+    # Ensure top-level wrapper fields
+    if 'usdmVersion' not in data:
+        data['usdmVersion'] = USDM_VERSION
+        added_fields.append('usdmVersion')
+    
+    if 'systemName' not in data:
+        data['systemName'] = SYSTEM_NAME
+        added_fields.append('systemName')
+    
+    if 'systemVersion' not in data:
+        data['systemVersion'] = SYSTEM_VERSION
+        added_fields.append('systemVersion')
+    
+    # Ensure study object exists
+    if 'study' not in data:
+        data['study'] = {}
+        added_fields.append('study')
+    
+    study = data['study']
+    
+    # Ensure versions array (support both 'versions' and legacy 'studyVersions')
+    if 'versions' not in study and 'studyVersions' not in study:
+        study['versions'] = [{}]
+        added_fields.append('study.versions')
+    
+    # Normalize to 'versions' if 'studyVersions' is present
+    if 'studyVersions' in study and 'versions' not in study:
+        study['versions'] = study.pop('studyVersions')
+    
+    versions = study.get('versions', [])
+    if not versions:
+        study['versions'] = [{}]
+        versions = study['versions']
+        added_fields.append('study.versions[0]')
+    
+    version = versions[0]
+    
+    # Ensure timeline object
+    if 'timeline' not in version:
+        version['timeline'] = {}
+        added_fields.append('timeline')
+    
+    timeline = version['timeline']
+    
+    # Ensure required arrays in timeline
+    required_arrays = [
+        'activities',
+        'plannedTimepoints',
+        'encounters',
+        'activityTimepoints',
+        'activityGroups',
+        'epochs'
+    ]
+    
+    for array_name in required_arrays:
+        if array_name not in timeline:
+            timeline[array_name] = []
+            added_fields.append(f'timeline.{array_name}')
+    
+    # Ensure at least one epoch exists
+    if not timeline.get('epochs'):
+        timeline['epochs'] = [{
+            'id': 'epoch_1',
+            'name': 'Study Period',
+            'instanceType': 'Epoch',
+            'position': 1
+        }]
+        added_fields.append('timeline.epochs (default)')
+    
+    return added_fields
+
+def postprocess_usdm(data: dict, verbose: bool = False) -> dict:
+    """
+    Orchestrator function for all post-processing normalizations.
+    
+    Applies in order:
+    1. Ensure required fields with defaults
+    2. Normalize names vs. timing separation
+    3. Standardize IDs (existing function)
+    
+    Args:
+        data: Raw USDM JSON object from LLM
+        verbose: Print normalization statistics
+    
+    Returns:
+        Normalized USDM JSON object
+    """
+    if verbose:
+        print("[POST-PROCESS] Starting USDM normalization...")
+    
+    # Step 1: Ensure required fields
+    added_fields = ensure_required_fields(data)
+    if verbose and added_fields:
+        print(f"[POST-PROCESS] Added {len(added_fields)} missing fields: {', '.join(added_fields[:5])}{'...' if len(added_fields) > 5 else ''}")
+    
+    # Step 2: Normalize naming vs. timing
+    study = data.get('study', {})
+    versions = study.get('versions', []) or study.get('studyVersions', [])
+    if versions:
+        timeline = versions[0].get('timeline', {})
+        normalized_count = normalize_names_vs_timing(timeline)
+        if verbose and normalized_count > 0:
+            print(f"[POST-PROCESS] Normalized {normalized_count} entity names (removed timing text)")
+    
+    # Step 3: Standardize IDs
+    standardize_ids_recursive(data)
+    if verbose:
+        print("[POST-PROCESS] Standardized all entity IDs (- → _)")
+    
+    if verbose:
+        print("[POST-PROCESS] Normalization complete")
+    
+    return data
+
 def consolidate_and_fix_soa(input_path, output_path, header_structure_path=None, ref_metadata_path=None):
     """
     Consolidate, normalize, and fully expand a loosely structured SoA file into strict USDM v4.0 Wrapper-Input format.

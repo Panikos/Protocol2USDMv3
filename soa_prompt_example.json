@@ -1,8 +1,19 @@
 {
   "study": {
+    "name": "Example Study",
+    "instanceType": "Study",
     "versions": [
       {
+        "id": "v1",
+        "versionIdentifier": "1.0",
+        "rationale": "Initial version",
+        "studyIdentifiers": [],
+        "titles": [],
+        "instanceType": "StudyVersion",
         "timeline": {
+          "id": "timeline_1",
+          "name": "Study Timeline",
+          "instanceType": "Timeline",
           "epochs": [
             {
               "id": "epoch_1",
@@ -14,15 +25,35 @@
             {
               "id": "enc_1",
               "name": "Screening Visit",
+              "description": "Day -7 screening visit",
               "epochId": "epoch_1",
+              "type": {
+                "code": "C25426",
+                "decode": "Visit"
+              },
+              "timing": {
+                "windowLabel": "Day -7"
+              },
               "instanceType": "Encounter"
             }
           ],
           "plannedTimepoints": [
             {
               "id": "pt_1",
-              "name": "Day -7",
+              "name": "Screening Visit",
+              "description": "Day -7",
               "encounterId": "enc_1",
+              "value": -7,
+              "valueLabel": "Day -7",
+              "relativeFromScheduledInstanceId": "enc_1",
+              "type": {
+                "code": "C99073",
+                "decode": "Fixed Reference"
+              },
+              "relativeToFrom": {
+                "code": "C99074",
+                "decode": "Start to Start"
+              },
               "instanceType": "PlannedTimepoint"
             }
           ],
@@ -30,6 +61,7 @@
             {
               "id": "act_1",
               "name": "Informed Consent",
+              "description": "Obtain informed consent from participant",
               "instanceType": "Activity"
             }
           ],

@@ -5,6 +5,8 @@ import glob
 import pandas as pd  # for reading the M11 mapping workbook
 import re
 import html
+from pathlib import Path
+from datetime import datetime
 
 # --- Data Access Functions --------------------------------------------------
 
@@ -34,12 +36,96 @@ def get_activity_timepoints(timeline):
 
     return activity_timepoints
 
-st.set_page_config(page_title="SoA Extraction Review", layout="wide")
-st.title('Schedule of Activities (SoA) Extraction Review')
+st.set_page_config(page_title="SoA Extraction Review", layout="wide", page_icon="📊")
+st.title('📊 Schedule of Activities (SoA) Extraction Review')
+st.markdown("**Protocol to USDM v4.0 Converter** | Enhanced with USDM-specific metrics")
 # Placeholder for dynamic file display; will be updated after run selection.
 file_placeholder = st.empty()
 
 # --- Utility Functions ---
+
+def compute_usdm_metrics(soa, gold_standard=None):
+    """Compute comprehensive USDM-specific metrics including visit accuracy, linkage, and field population."""
+    if not isinstance(soa, dict):
+        return {}
+    timeline = get_timeline(soa)
+    if not timeline:
+        return {}
+    
+    metrics = {}
+    
+    # Entity counts
+    metrics['visits'] = len(timeline.get('plannedTimepoints', []))
+    metrics['activities'] = len(timeline.get('activities', []))
+    metrics['activityTimepoints'] = len(timeline.get('activityTimepoints', []))
+    metrics['encounters'] = len(timeline.get('encounters', []))
+    metrics['epochs'] = len(timeline.get('epochs', []))
+    
+    # Visit accuracy (if gold standard provided)
+    if gold_standard:
+        gold_timeline = get_timeline(gold_standard)
+        if gold_timeline:
+            gold_visits = len(gold_timeline.get('plannedTimepoints', []))
+            metrics['visit_accuracy'] = (min(metrics['visits'], gold_visits) / gold_visits * 100) if gold_visits > 0 else 0
+            gold_acts = len(gold_timeline.get('activities', []))
+            metrics['activity_accuracy'] = (min(metrics['activities'], gold_acts) / gold_acts * 100) if gold_acts > 0 else 0
+    
+    # Linkage accuracy
+    activities = {a['id']: a for a in timeline.get('activities', [])}
+    planned_timepoints = {pt['id']: pt for pt in timeline.get('plannedTimepoints', [])}
+    encounters = {e['id']: e for e in timeline.get('encounters', [])}
+    
+    correct_linkages = 0
+    total_linkages = 0
+    
+    # Check PlannedTimepoint → Encounter linkages
+    for pt in timeline.get('plannedTimepoints', []):
+        enc_id = pt.get('encounterId')
+        if enc_id:
+            total_linkages += 1
+            if enc_id in encounters:
+                correct_linkages += 1
+    
+    # Check ActivityTimepoint linkages
+    for at in timeline.get('activityTimepoints', []):
+        act_id = at.get('activityId')
+        pt_id = at.get('plannedTimepointId') or at.get('timepointId')
+        if act_id:
+            total_linkages += 1
+            if act_id in activities:
+                correct_linkages += 1
+        if pt_id:
+            total_linkages += 1
+            if pt_id in planned_timepoints:
+                correct_linkages += 1
+    
+    metrics['linkage_accuracy'] = (correct_linkages / total_linkages * 100) if total_linkages > 0 else 100
+    
+    # Field population rate
+    required_fields = {
+        'PlannedTimepoint': ['id', 'name', 'instanceType', 'encounterId', 'value', 'unit', 'relativeToId', 'relativeToType'],
+        'Activity': ['id', 'name', 'instanceType'],
+        'Encounter': ['id', 'name', 'type', 'instanceType'],
+    }
+    
+    total_required = 0
+    total_present = 0
+    
+    for pt in timeline.get('plannedTimepoints', []):
+        for field in required_fields['PlannedTimepoint']:
+            total_required += 1
+            if field in pt and pt[field] is not None and pt[field] != '':
+                total_present += 1
+    
+    for act in timeline.get('activities', []):
+        for field in required_fields['Activity']:
+            total_required += 1
+            if field in act and act[field] is not None and act[field] != '':
+                total_present += 1
+    
+    metrics['field_population_rate'] = (total_present / total_required * 100) if total_required > 0 else 100
+    
+    return metrics
 
 def compute_completeness_metrics(soa):
     """Return a list of dicts summarising attribute coverage for key USDM entities."""
@@ -446,38 +532,149 @@ def render_flexible_soa(data):
             if (act_id, pt_id) in activity_pt_links:
                 df.loc[row_label, col_tuple] = 'X'
 
-    st.dataframe(df)
+    # Add provenance styling if available
+    provenance = data.get('p2uProvenance', {})
+    if provenance:
+        # Display provenance legend
+        st.markdown("""
+        <h3 style="font-weight: 600;">Provenance Legend</h3>
+        <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #60a5fa;"></div><span>Text</span></div>
+            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #facc15;"></div><span>Vision</span></div>
+            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #4ade80;"></div><span>Both</span></div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Apply provenance styling
+        def apply_provenance_style(row, col):
+            """Apply provenance color to cells with 'X'"""
+            try:
+                # Safely get cell value - handle multi-index
+                cell_value = df.loc[row, col]
+                # If it's a Series (multi-index edge case), get the first value
+                if hasattr(cell_value, 'item'):
+                    cell_value = cell_value.item()
+                elif hasattr(cell_value, 'iloc'):
+                    cell_value = cell_value.iloc[0]
+                
+                if cell_value != 'X':
+                    return ''
+            except (KeyError, IndexError, ValueError):
+                return ''
+            
+            # Get activity ID from row
+            act_id = None
+            for i, row_tuple in enumerate(row_index_data):
+                if row_tuple == row:
+                    act_id = ordered_activities[i].get('id')
+                    break
+            
+            # Get timepoint ID from column  
+            pt_id = None
+            for col_tuple, pt_info in zip(col_index_data, ordered_pt_for_cols):
+                if col_tuple == col:
+                    pt_id = pt_info['id']
+                    break
+            
+            if not act_id or not pt_id:
+                return ''
+            
+            # Check provenance
+            act_prov = get_provenance_sources(provenance, 'activities', act_id)
+            pt_prov = get_provenance_sources(provenance, 'plannedTimepoints', pt_id)
+            
+            from_text = act_prov['text'] or pt_prov['text']
+            from_vision = act_prov['vision'] or pt_prov['vision']
+            
+            if from_text and from_vision:
+                return 'background-color: #4ade80'  # green - both
+            elif from_text:
+                return 'background-color: #60a5fa'  # blue - text
+            elif from_vision:
+                return 'background-color: #facc15'  # yellow - vision
+            return ''
+        
+        # Apply styling directly - bypass Styler to avoid multi-index issues
+        # Build a style map with integer positions instead of labels
+        style_map = {}
+        for i, row_idx in enumerate(df.index):
+            for j, col_idx in enumerate(df.columns):
+                style = apply_provenance_style(row_idx, col_idx)
+                if style:
+                    style_map[(i, j)] = style
+        
+        # Convert DataFrame to HTML manually with styles
+        html_parts = ['<style>']
+        html_parts.append('.soa-table { border-collapse: collapse; width: 100%; }')
+        html_parts.append('.soa-table th, .soa-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }')
+        html_parts.append('.soa-table th { background-color: #f2f2f2; font-weight: bold; }')
+        html_parts.append('</style>')
+        html_parts.append('<table class="soa-table">')
+        
+        # Header - simplified for multi-index
+        html_parts.append('<thead>')
+        if isinstance(df.columns, pd.MultiIndex):
+            # Multi-level column headers
+            for level in range(df.columns.nlevels):
+                html_parts.append('<tr>')
+                if level == 0:
+                    html_parts.append(f'<th rowspan="{df.columns.nlevels}"></th>')
+                for col_idx in df.columns:
+                    if level < len(col_idx):
+                        html_parts.append(f'<th>{col_idx[level]}</th>')
+                html_parts.append('</tr>')
+        else:
+            html_parts.append('<tr><th></th>')
+            for col in df.columns:
+                html_parts.append(f'<th>{col}</th>')
+            html_parts.append('</tr>')
+        html_parts.append('</thead>')
+        
+        # Body
+        html_parts.append('<tbody>')
+        for i, (row_idx, row) in enumerate(df.iterrows()):
+            html_parts.append('<tr>')
+            # Row header
+            if isinstance(row_idx, tuple):
+                html_parts.append(f'<th>{" | ".join(str(x) for x in row_idx)}</th>')
+            else:
+                html_parts.append(f'<th>{row_idx}</th>')
+            # Cells with provenance styling
+            for j, (col_idx, value) in enumerate(row.items()):
+                style_attr = f' style="{style_map.get((i, j), "")}"' if (i, j) in style_map else ''
+                html_parts.append(f'<td{style_attr}>{value}</td>')
+            html_parts.append('</tr>')
+        html_parts.append('</tbody></table>')
+        
+        html = ''.join(html_parts)
+        st.markdown(html, unsafe_allow_html=True)
+    else:
+        # No provenance available, just show the dataframe
+        st.dataframe(df)
 
 def get_provenance_sources(provenance, item_type, item_id):
     """
     Determines the provenance (text, vision, or both) for a given item ID.
-    This logic is specific to the key format in '9_reconciled_soa.json'.
+    Updated to work with actual provenance data structure.
     """
     sources = {'text': False, 'vision': False}
     if not provenance or item_type not in provenance or not item_id:
         return sources
 
-    id_num_match = re.search(r'-(\d+)$', item_id)
-    if not id_num_match:
-        return sources
-    
-    id_num = id_num_match.group(1)
-
-    # Define the keys based on the pattern in the JSON file
-    key_map = {
-        'activities': (f"activity-{id_num}", f"act{id_num}"),
-        'encounters': (f"encounter-{id_num}", f"enc_{id_num}")
-    }
-
-    if item_type not in key_map:
-        return sources
-
-    text_key, vision_key = key_map[item_type]
-    
+    # Get provenance data for this entity type
     provenance_data = provenance.get(item_type, {})
-    if provenance_data.get(text_key) == 'text':
+    if not provenance_data:
+        return sources
+    
+    # Look up the entity ID directly in provenance
+    entity_source = provenance_data.get(item_id)
+    
+    if entity_source == 'text':
         sources['text'] = True
-    if provenance_data.get(vision_key) == 'vision':
+    elif entity_source == 'vision':
+        sources['vision'] = True
+    elif entity_source == 'both':
+        sources['text'] = True
         sources['vision'] = True
         
     return sources
@@ -554,9 +751,19 @@ def render_soa_table(data):
     planned_timepoints = timeline.get('plannedTimepoints', [])
     activity_timepoints = timeline.get('activityTimepoints', [])
 
-    if not all([epochs, encounters, activities, activity_groups, planned_timepoints, activity_timepoints]):
-        st.warning("SoA data is missing one or more key entities (epochs, encounters, activities, etc.). Cannot render table.")
+    # Check only critical entities (activities and timepoints are essential)
+    if not activities or not planned_timepoints or not activity_timepoints:
+        st.warning("SoA data is missing critical entities (activities, plannedTimepoints, or activityTimepoints). Cannot render table.")
+        st.info("Try using the flexible renderer instead by checking intermediate outputs.")
         return
+    
+    # Warn about missing optional entities
+    if not epochs:
+        st.info("Note: No epochs found in the data. Timeline grouping will be simplified.")
+    if not encounters:
+        st.warning("Warning: No encounters found. This may affect visit window grouping.")
+    if not activity_groups:
+        st.info("Note: No activity groups found. Activities will not be categorized.")
 
     # Create maps for efficient lookups
     planned_timepoint_map = {pt['id']: pt for pt in planned_timepoints}
@@ -677,22 +884,48 @@ run_path = os.path.join(OUTPUT_DIR, selected_run)
 file_placeholder.markdown(f"**SoA from:** `{selected_run}`")
 inventory = get_file_inventory(run_path)
 
-# --- Completeness badge ---
+# --- USDM Metrics Dashboard in Sidebar ---
 if inventory['final_soa']:
-    tl = get_timeline(inventory['final_soa']['content'])
-    if tl:
-        total_links = sum(len(v) for v in get_activity_timepoints(tl).values())
-        num_acts = len(tl.get('activities', []))
-        num_tps = len(tl.get('plannedTimepoints', []))
-        denom = num_acts * num_tps if num_acts and num_tps else 0
-        completeness = (total_links / denom * 100) if denom else 0
-        if completeness >= 95:
-            badge_color = '#4caf50'
-        elif completeness >= 80:
-            badge_color = '#ff9800'
-        else:
-            badge_color = '#f44336'
-        st.sidebar.markdown(f"<div style='background:{badge_color};color:white;padding:6px;border-radius:4px;text-align:center;'>Completeness {completeness:.0f}%</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("📊 USDM Quality Metrics")
+    
+    # Check for gold standard
+    gold_path = Path("test_data/medium") / f"{selected_run}_gold.json"
+    gold_standard = None
+    if gold_path.exists():
+        try:
+            with open(gold_path, 'r', encoding='utf-8') as f:
+                gold_standard = json.load(f)
+        except:
+            pass
+    
+    metrics = compute_usdm_metrics(inventory['final_soa']['content'], gold_standard)
+    
+    if metrics:
+        # Entity counts
+        st.sidebar.markdown("**Entity Counts:**")
+        st.sidebar.metric("Visits (PlannedTimepoints)", metrics['visits'])
+        st.sidebar.metric("Activities", metrics['activities'])
+        st.sidebar.metric("Activity-Visit Mappings", metrics['activityTimepoints'])
+        
+        # Quality metrics
+        st.sidebar.markdown("**Quality Scores:**")
+        
+        # Linkage accuracy
+        linkage_color = '#4caf50' if metrics['linkage_accuracy'] >= 95 else '#ff9800' if metrics['linkage_accuracy'] >= 85 else '#f44336'
+        st.sidebar.markdown(f"<div style='background:{linkage_color};color:white;padding:6px;border-radius:4px;text-align:center;margin-bottom:8px;'>Linkage Accuracy: {metrics['linkage_accuracy']:.1f}%</div>", unsafe_allow_html=True)
+        
+        # Field population
+        field_color = '#4caf50' if metrics['field_population_rate'] >= 70 else '#ff9800' if metrics['field_population_rate'] >= 50 else '#f44336'
+        st.sidebar.markdown(f"<div style='background:{field_color};color:white;padding:6px;border-radius:4px;text-align:center;margin-bottom:8px;'>Field Population: {metrics['field_population_rate']:.1f}%</div>", unsafe_allow_html=True)
+        
+        # Visit/Activity accuracy if gold standard available
+        if gold_standard and 'visit_accuracy' in metrics:
+            visit_color = '#4caf50' if metrics['visit_accuracy'] >= 95 else '#ff9800' if metrics['visit_accuracy'] >= 80 else '#f44336'
+            st.sidebar.markdown(f"<div style='background:{visit_color};color:white;padding:6px;border-radius:4px;text-align:center;margin-bottom:8px;'>Visit Accuracy: {metrics['visit_accuracy']:.1f}%</div>", unsafe_allow_html=True)
+            
+            act_color = '#4caf50' if metrics['activity_accuracy'] >= 95 else '#ff9800' if metrics['activity_accuracy'] >= 80 else '#f44336'
+            st.sidebar.markdown(f"<div style='background:{act_color};color:white;padding:6px;border-radius:4px;text-align:center;'>Activity Accuracy: {metrics['activity_accuracy']:.1f}%</div>", unsafe_allow_html=True)
 
 
 
@@ -704,8 +937,8 @@ st.header("Final Reconciled SoA")
 if not inventory['final_soa']:
     st.warning("The final reconciled SoA (`9_reconciled_soa.json`) was not found for this run.")
 else:
-    # The main view always shows the final, precise render
-    render_soa_table(inventory['final_soa']['content'])
+    # Use the flexible renderer which handles missing entities gracefully
+    render_flexible_soa(inventory['final_soa']['content'])
     with st.expander("Show Full JSON Output"):
         st.json(inventory['final_soa']['content'])
 
@@ -714,13 +947,15 @@ st.markdown("--- ")
 st.header("Intermediate Outputs & Debugging")
 
 # Create tabs for the different categories of intermediate files
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "Raw Outputs", 
     "Post-Processed", 
     "Data Files", 
     "Config Files", 
     "SoA Images",
-    "Completeness Report"
+    "Completeness Report",
+    "USDM Metrics",
+    "Benchmark Results"
 ])
 
 with tab1:
@@ -795,3 +1030,146 @@ with tab6:
             st.table(metrics)
         else:
             st.info("Could not compute metrics; timeline missing or malformed.")
+
+with tab7:
+    st.subheader("USDM-Specific Quality Metrics")
+    if not inventory['final_soa']:
+        st.info("Run a pipeline to generate a final SoA first.")
+    else:
+        # Check for gold standard
+        gold_path = Path("test_data/medium") / f"{selected_run}_gold.json"
+        gold_standard = None
+        if gold_path.exists():
+            try:
+                with open(gold_path, 'r', encoding='utf-8') as f:
+                    gold_standard = json.load(f)
+                st.success(f"✅ Gold standard found: `{gold_path.name}`")
+            except Exception as e:
+                st.warning(f"Could not load gold standard: {e}")
+        else:
+            st.info("No gold standard found. Showing metrics without comparison.")
+        
+        metrics = compute_usdm_metrics(inventory['final_soa']['content'], gold_standard)
+        
+        if metrics:
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.metric("Visits (PlannedTimepoints)", metrics['visits'])
+                st.metric("Activities", metrics['activities'])
+                st.metric("Encounters", metrics['encounters'])
+            
+            with col2:
+                st.metric("ActivityTimepoints", metrics['activityTimepoints'])
+                st.metric("Epochs", metrics['epochs'])
+                st.metric("Linkage Accuracy", f"{metrics['linkage_accuracy']:.1f}%")
+            
+            with col3:
+                st.metric("Field Population", f"{metrics['field_population_rate']:.1f}%")
+                if 'visit_accuracy' in metrics:
+                    st.metric("Visit Accuracy", f"{metrics['visit_accuracy']:.1f}%")
+                if 'activity_accuracy' in metrics:
+                    st.metric("Activity Accuracy", f"{metrics['activity_accuracy']:.1f}%")
+            
+            # Detailed breakdown
+            st.markdown("---")
+            st.subheader("Metric Interpretation")
+            
+            # Linkage quality
+            if metrics['linkage_accuracy'] >= 95:
+                st.success(f"✅ **Excellent linkage quality** ({metrics['linkage_accuracy']:.1f}%) - All entity references are valid")
+            elif metrics['linkage_accuracy'] >= 85:
+                st.warning(f"⚠️ **Good linkage quality** ({metrics['linkage_accuracy']:.1f}%) - Minor linkage issues detected")
+            else:
+                st.error(f"❌ **Poor linkage quality** ({metrics['linkage_accuracy']:.1f}%) - Significant broken references")
+            
+            # Field population
+            if metrics['field_population_rate'] >= 70:
+                st.success(f"✅ **Good field coverage** ({metrics['field_population_rate']:.1f}%) - Most required fields populated")
+            elif metrics['field_population_rate'] >= 50:
+                st.warning(f"⚠️ **Moderate field coverage** ({metrics['field_population_rate']:.1f}%) - Some required fields missing")
+            else:
+                st.error(f"❌ **Low field coverage** ({metrics['field_population_rate']:.1f}%) - Many required fields missing")
+            
+            # Visit accuracy (if available)
+            if 'visit_accuracy' in metrics:
+                if metrics['visit_accuracy'] >= 95:
+                    st.success(f"✅ **Complete visit extraction** ({metrics['visit_accuracy']:.1f}%) - All visits captured")
+                elif metrics['visit_accuracy'] >= 80:
+                    st.warning(f"⚠️ **Most visits extracted** ({metrics['visit_accuracy']:.1f}%) - Some visits may be missing")
+                else:
+                    st.error(f"❌ **Incomplete visit extraction** ({metrics['visit_accuracy']:.1f}%) - Significant visits missing")
+        else:
+            st.error("Could not compute USDM metrics")
+
+with tab8:
+    st.subheader("Benchmark Results")
+    
+    # Look for benchmark results
+    benchmark_dir = Path("benchmark_results")
+    if benchmark_dir.exists():
+        benchmark_files = sorted(benchmark_dir.glob("benchmark_*.json"), key=lambda x: x.stat().st_mtime, reverse=True)
+        
+        if benchmark_files:
+            st.success(f"Found {len(benchmark_files)} benchmark result(s)")
+            
+            selected_benchmark = st.selectbox(
+                "Select benchmark result:",
+                [f.name for f in benchmark_files],
+                format_func=lambda x: f"{x} ({datetime.fromtimestamp(Path(benchmark_dir / x).stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')})"
+            )
+            
+            if selected_benchmark:
+                benchmark_path = benchmark_dir / selected_benchmark
+                try:
+                    with open(benchmark_path, 'r', encoding='utf-8') as f:
+                        benchmark_data = json.load(f)
+                    
+                    st.markdown(f"**Timestamp:** {benchmark_data.get('timestamp', 'N/A')}")
+                    st.markdown(f"**Model:** {benchmark_data.get('model', 'N/A')}")
+                    
+                    test_cases = benchmark_data.get('test_cases', {})
+                    if test_cases:
+                        for case_name, metrics in test_cases.items():
+                            st.markdown(f"### Test Case: {case_name}")
+                            
+                            if metrics.get('error_occurred'):
+                                st.error(f"❌ Error: {metrics.get('error_message', 'Unknown error')[:200]}...")
+                            else:
+                                col1, col2, col3 = st.columns(3)
+                                
+                                with col1:
+                                    st.metric("Validation Pass", "✅" if metrics.get('validation_pass') else "❌")
+                                    st.metric("Completeness", f"{metrics.get('completeness_score', 0):.1f}%")
+                                    st.metric("Linkage Accuracy", f"{metrics.get('linkage_accuracy', 0):.1f}%")
+                                
+                                with col2:
+                                    st.metric("Field Population", f"{metrics.get('field_population_rate', 0):.1f}%")
+                                    usdm_metrics = metrics.get('usdm_metrics', {})
+                                    st.metric("Visit Accuracy", f"{usdm_metrics.get('visit_count_accuracy', 0):.1f}%")
+                                    st.metric("Activity Accuracy", f"{usdm_metrics.get('activity_count_accuracy', 0):.1f}%")
+                                
+                                with col3:
+                                    st.metric("AT Completeness", f"{usdm_metrics.get('activitytimepoint_completeness', 0):.1f}%")
+                                    st.metric("Execution Time", f"{metrics.get('execution_time_seconds', 0):.1f}s")
+                                    
+                                    # Show actual vs expected counts
+                                    if usdm_metrics:
+                                        st.metric(
+                                            "Visits", 
+                                            f"{usdm_metrics.get('actual_visits', 0)}/{usdm_metrics.get('expected_visits', 0)}",
+                                            delta=usdm_metrics.get('actual_visits', 0) - usdm_metrics.get('expected_visits', 0)
+                                        )
+                    else:
+                        st.info("No test case results in this benchmark file")
+                    
+                    # Show raw JSON
+                    with st.expander("Show Full Benchmark JSON"):
+                        st.json(benchmark_data)
+                        
+                except Exception as e:
+                    st.error(f"Error loading benchmark file: {e}")
+        else:
+            st.info("No benchmark results found. Run benchmarks using:\n```\npython benchmark_prompts.py --test-set test_data --model gemini-2.5-pro\n```")
+    else:
+        st.info("Benchmark results directory not found. Run benchmarks to generate results.")

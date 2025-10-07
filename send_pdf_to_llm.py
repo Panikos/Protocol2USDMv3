@@ -1,32 +1,78 @@
 import os
 import sys
 import argparse
-import json
 import io
-from openai import OpenAI
-import google.generativeai as genai
+import json
+import re  # Regular expressions for text parsing
+import fitz  # PyMuPDF for PDF text extraction
 from p2u_constants import USDM_VERSION
 
 # Ensure all output is UTF-8 safe for Windows terminals
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 from dotenv import load_dotenv
-import fitz  # PyMuPDF
-from json_utils import clean_llm_json
+import sys
+import io
+import argparse
 
-# Load environment variables from .env file
+# Ensure Windows console can print UTF-8
+if sys.platform == 'win32' and hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
+# Optional provider abstraction
+try:
+    from llm_providers import LLMProviderFactory
+    PROVIDER_LAYER_AVAILABLE = True
+except ImportError:
+    print("[WARNING] Provider layer not available, using legacy direct API calls")
+    PROVIDER_LAYER_AVAILABLE = False
+
+# Prompt template system
+try:
+    from prompt_templates import PromptTemplate
+    TEMPLATES_AVAILABLE = True
+except ImportError:
+    print("[WARNING] PromptTemplate not available, will use file-based prompts")
+    TEMPLATES_AVAILABLE = False
+
+# Load text extraction template
+def load_text_extraction_template():
+    """Load text extraction prompt from YAML template (v2.0) or return None for file-based fallback."""
+    if TEMPLATES_AVAILABLE:
+        try:
+            template = PromptTemplate.load("soa_extraction", "prompts")
+            print(f"[INFO] Loaded text extraction template v{template.metadata.version}")
+            return template
+        except Exception as e:
+            print(f"[WARNING] Could not load YAML template: {e}. Using file-based prompts.")
+    return None
+
+TEXT_EXTRACTION_TEMPLATE = load_text_extraction_template()
+
+# Fallback system message (v1.0 - deprecated but kept for backward compatibility)
+FALLBACK_SYSTEM_MESSAGE = (
+    "You are an expert medical writer specializing in clinical trial protocols. "
+    "When extracting text, you MUST ignore any single-letter footnote markers (e.g., a, b, c) that are appended to words. "
+    "Return ONLY a single valid JSON object that matches the USDM Wrapper-Input schema. "
+    "Do NOT output any markdown, explanation, or additional text."
+)
+
 env_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(env_path)
 
-# Set up API clients from environment variables for security
-openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+# LEGACY: Keep old clients for backward compatibility during transition
+try:
+    from openai import OpenAI
+    openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+except:
+    openai_client = None
 
-# Configure the Gemini client
-google_api_key = os.environ.get("GOOGLE_API_KEY")
-if google_api_key:
-    genai.configure(api_key=google_api_key)
-
-
-import re
+try:
+    import google.generativeai as genai
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
+    if google_api_key:
+        genai.configure(api_key=google_api_key)
+except:
+    google_api_key = None
 
 def extract_pdf_text(pdf_path, page_numbers=None):
     doc = fitz.open(pdf_path)
@@ -75,51 +121,103 @@ def chunk_sections(sections, max_chars=75000):
         chunks.append('\n\n'.join(current))
     return chunks
 
-def send_text_to_llm(text, usdm_prompt, model_name):
-    # This function now receives the fully-formed prompt.
+def send_text_to_llm(text, usdm_prompt, model_name, use_provider_layer=True):
+    """
+    Send text to LLM for processing.
+    
+    Args:
+        text: Protocol text to analyze
+        usdm_prompt: USDM extraction prompt
+        model_name: Model identifier (e.g., 'gpt-4o', 'gemini-2.5-pro')
+        use_provider_layer: If True, use new provider abstraction (default: True)
+    
+    Returns:
+        Raw LLM output text
+    """
     print(f"[DEBUG] Length of extracted PDF text: {len(text)}")
     print(f"[DEBUG] Length of prompt: {len(usdm_prompt)}")
     print(f"[DEBUG] Total prompt+text length: {len(usdm_prompt) + len(text)}")
-    messages = [
-        {"role": "system", "content": "You are an expert medical writer specializing in clinical trial protocols. When extracting text, you MUST ignore any single-letter footnote markers (e.g., a, b, c) that are appended to words. Return ONLY a single valid JSON object that matches the USDM Wrapper-Input schema. Do NOT output any markdown, explanation, or additional text."},
-        {"role": "user", "content": f"{usdm_prompt}\n\nHere is the protocol text to analyze:\n\n---\n\n{text}"}
-    ]
-    try:
-        if 'gemini' in model_name.lower():
-            print(f"[INFO] Using Google Gemini model: {model_name}")
-            if not google_api_key:
-                raise ValueError("GOOGLE_API_KEY environment variable not set.")
-            model = genai.GenerativeModel(model_name)
-            # Gemini uses a different message format
-            full_prompt = f"{messages[0]['content']}\n\n{messages[1]['content']}"
-            response = model.generate_content(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    response_mime_type="application/json",
-                    temperature=0.0
-                )
-            )
-            result = response.text
-        else:
-            print(f"[INFO] Using OpenAI model: {model_name}")
-            params = {
-                "model": model_name,
-                "messages": messages,
-                "response_format": {"type": "json_object"}
-            }
-            # The 'o3' model family does not support temperature=0.0.
-            if model_name not in ['o3', 'o3-mini', 'o3-mini-high']:
-                params["temperature"] = 0.0
+    
+    # Use template system (v2.0) or fallback to hardcoded message (v1.0)
+    if TEXT_EXTRACTION_TEMPLATE:
+        # v2.0: The YAML template expects the full prompt content to be in variables
+        # Since we already have the assembled prompt from the file, we treat it as protocol_text
+        messages = [
+            {"role": "system", "content": TEXT_EXTRACTION_TEMPLATE.system_prompt},
+            {"role": "user", "content": f"{usdm_prompt}\n\nHere is the protocol text to analyze:\n\n---\n\n{text}"}
+        ]
+    else:
+        # v1.0: Use fallback hardcoded message
+        messages = [
+            {"role": "system", "content": FALLBACK_SYSTEM_MESSAGE},
+            {"role": "user", "content": f"{usdm_prompt}\n\nHere is the protocol text to analyze:\n\n---\n\n{text}"}
+        ]
+    
+    # NEW: Use provider abstraction layer
+    if use_provider_layer:
+        try:
+            print(f"[INFO] Using provider layer for model: {model_name}")
             
-            response = openai_client.chat.completions.create(**params)
-            result = response.choices[0].message.content
+            # Auto-detect and create provider
+            provider = LLMProviderFactory.auto_detect(model_name)
+            
+            # Configure for JSON output
+            config = LLMConfig(
+                temperature=0.0,
+                json_mode=True,
+                max_tokens=None  # Use model defaults
+            )
+            
+            # Generate response
+            response = provider.generate(messages, config)
+            
+            # print(f"[DEBUG] Raw LLM output:\n{response.content}")  # Commented out - too verbose
+            print(f"[ACTUAL_MODEL_USED] {model_name}")
+            if response.usage:
+                print(f"[USAGE] Tokens: {response.usage}")
+            
+            return response.content
+        
+        except Exception as e:
+            print(f"[WARNING] Provider layer failed: {e}. Falling back to legacy code.")
+            use_provider_layer = False
+    
+    # LEGACY: Original implementation (kept for backward compatibility)
+    if not use_provider_layer:
+        try:
+            if 'gemini' in model_name.lower():
+                print(f"[INFO] Using Google Gemini model (legacy): {model_name}")
+                if not google_api_key:
+                    raise ValueError("GOOGLE_API_KEY environment variable not set.")
+                model = genai.GenerativeModel(model_name)
+                full_prompt = f"{messages[0]['content']}\n\n{messages[1]['content']}"
+                response = model.generate_content(
+                    full_prompt,
+                    generation_config=genai.types.GenerationConfig(
+                        response_mime_type="application/json",
+                        temperature=0.0
+                    )
+                )
+                result = response.text
+            else:
+                print(f"[INFO] Using OpenAI model (legacy): {model_name}")
+                params = {
+                    "model": model_name,
+                    "messages": messages,
+                    "response_format": {"type": "json_object"}
+                }
+                if model_name not in ['o3', 'o3-mini', 'o3-mini-high']:
+                    params["temperature"] = 0.0
+                
+                response = openai_client.chat.completions.create(**params)
+                result = response.choices[0].message.content
 
-        print(f"[DEBUG] Raw LLM output:\n{result}")
-        print(f"[ACTUAL_MODEL_USED] {model_name}")
-        return result
-    except Exception as e:
-        print(f"[FATAL] Model '{model_name}' failed: {e}")
-        raise RuntimeError(f"Model '{model_name}' failed: {e}")
+            # print(f"[DEBUG] Raw LLM output:\n{result}")  # Commented out - too verbose
+            print(f"[ACTUAL_MODEL_USED] {model_name}")
+            return result
+        except Exception as e:
+            print(f"[FATAL] Model '{model_name}' failed: {e}")
+            raise RuntimeError(f"Model '{model_name}' failed: {e}")
 
 def clean_llm_json(raw):
     # Remove markdown code block fences
@@ -130,6 +228,131 @@ def clean_llm_json(raw):
     # Attempt to fix trailing commas in objects and arrays
     cleaned = re.sub(r",(\s*[]}])", r"\1", cleaned)
     return cleaned
+
+def extract_json_str(s: str) -> str:
+    """
+    Defensive JSON extractor with three-layer parsing strategy:
+    1. Fast path: Try direct parse
+    2. Strip code fences, fix trailing commas, remove prose
+    3. Extract first {...} block and fix trailing commas
+    
+    Raises ValueError if no valid JSON object found.
+    
+    Args:
+        s: Raw string from LLM that should contain JSON
+    
+    Returns:
+        Clean JSON string ready for json.loads()
+    """
+    import json
+    
+    # Layer 1: Fast path - try direct parse
+    try:
+        json.loads(s)
+        return s
+    except Exception:
+        pass
+    
+    # Layer 2: Remove code fences and markdown
+    s2 = re.sub(r"^```(?:json)?\s*|\s*```$", "", s.strip(), flags=re.MULTILINE)
+    
+    # Fix trailing commas before attempting parse
+    s2 = re.sub(r",\s*([}\]])", r"\1", s2)
+    
+    try:
+        json.loads(s2)
+        return s2
+    except Exception:
+        pass
+    
+    # Layer 2b: Remove leading prose like "Here is the JSON:"
+    # Only do this if there's text before a brace
+    if '{' in s2:
+        start_idx = s2.find('{')
+        if start_idx > 0:
+            s2 = s2[start_idx:]
+            # Fix trailing commas again after extraction
+            s2 = re.sub(r",\s*([}\]])", r"\1", s2)
+            try:
+                json.loads(s2)
+                return s2
+            except Exception:
+                pass
+    
+    # Layer 3: Extract first {...} block (greedy match)
+    m = re.search(r"\{.*\}", s2, flags=re.DOTALL)
+    if not m:
+        raise ValueError(f"No JSON object found in LLM output (length: {len(s)})")
+    
+    candidate = m.group(0)
+    
+    # Fix trailing commas one more time
+    candidate = re.sub(r",\s*([}\]])", r"\1", candidate)
+    
+    # Validate before returning
+    try:
+        json.loads(candidate)
+        return candidate
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Extracted JSON block is invalid: {e}")
+
+def call_with_retry(call_fn, text_chunk, prompt, model_name, max_attempts=2):
+    """
+    Execute LLM call with automatic retry on parse failure.
+    Each retry tightens the prompt with stricter JSON-only reminders.
+    
+    Args:
+        call_fn: Function to call (send_text_to_llm)
+        text_chunk: Text to process
+        prompt: Base prompt
+        model_name: LLM model name
+        max_attempts: Maximum retry attempts (default 2)
+    
+    Returns:
+        Clean JSON string ready for parsing
+    
+    Raises:
+        Last exception if all attempts fail
+    """
+    last_err = None
+    local_prompt = prompt
+    
+    for attempt in range(max_attempts):
+        if attempt > 0:
+            print(f"[RETRY] Attempt {attempt + 1}/{max_attempts} with stricter prompt")
+        
+        try:
+            raw_output = call_fn(text_chunk, local_prompt, model_name)
+            
+            # Try to extract clean JSON
+            clean_json = extract_json_str(raw_output)
+            
+            if attempt > 0:
+                print(f"[SUCCESS] Retry attempt {attempt + 1} succeeded")
+            
+            return clean_json
+            
+        except Exception as e:
+            last_err = e
+            print(f"[WARNING] Attempt {attempt + 1} failed: {e}")
+            
+            # Tighten the prompt for next retry
+            if attempt < max_attempts - 1:
+                local_prompt = local_prompt + (
+                    "\n\n"
+                    "═══════════════════════════════════════════════════════════════════════\n"
+                    " STRICT REMINDER (RETRY)\n"
+                    "═══════════════════════════════════════════════════════════════════════\n"
+                    "The previous response could not be parsed. Please fix the following:\n"
+                    "- Return ONE JSON object ONLY\n"
+                    "- NO prose, explanations, or markdown\n"
+                    "- NO code fences (```)\n"
+                    "- Output must be directly loadable by json.loads()\n"
+                    "- Ensure all commas, braces, and brackets are balanced\n"
+                )
+    
+    # All attempts exhausted
+    raise last_err
 
 def merge_soa_jsons(soa_parts):
     """
@@ -350,32 +573,76 @@ def main():
     print(f"[INFO] Split text into {len(chunks)} chunks to send to LLM.")
 
     all_soa_parts = []
+    chunk_retry_count = 0
+    
     for i, chunk in enumerate(chunks):
         print(f"[INFO] Sending chunk {i+1}/{len(chunks)} to LLM...")
-        raw_output = send_text_to_llm(chunk, usdm_prompt, args.model)
-        if not raw_output or not raw_output.strip().startswith(('{', '[')):
-            print(f"[WARNING] LLM output for chunk {i+1} is empty or not valid JSON. Skipping.")
-            continue
+        
         try:
-            # First try direct parsing
-            parsed_json = json.loads(raw_output)
-            study = parsed_json.get('study', {})
+            # Use defensive parser with retry
+            clean_json_str = call_with_retry(
+                send_text_to_llm, 
+                chunk, 
+                usdm_prompt, 
+                args.model, 
+                max_attempts=2
+            )
+            
+            # Parse the clean JSON
+            parsed_json = json.loads(clean_json_str)
+            
+            # Validate structure - handle both direct and Wrapper-Input formats
+            study = parsed_json.get('study')
+            if not study:
+                # Check for Wrapper-Input format
+                wrapper = parsed_json.get('Wrapper-Input', {})
+                study = wrapper.get('study', {})
+                if study:
+                    # Normalize to direct format for merge function
+                    parsed_json = {
+                        'study': study,
+                        'usdmVersion': wrapper.get('usdmVersion', '4.0'),
+                        'systemName': wrapper.get('systemName'),
+                        'systemVersion': wrapper.get('systemVersion')
+                    }
+            
             if not study or ('versions' not in study and 'studyVersions' not in study):
-                print(f"[WARNING] LLM output for chunk {i+1} is valid JSON but lacks SoA data (e.g., study.versions). Skipping.")
+                print(f"[WARNING] Chunk {i+1} parsed but lacks SoA data (study.versions). Skipping.")
+                print(f"[DEBUG] Available keys at root: {list(parsed_json.keys())}")
                 continue
+            
             all_soa_parts.append(parsed_json)
-        except json.JSONDecodeError:
-            # If direct parsing fails, try to clean it
-            cleaned_json = clean_llm_json(raw_output)
-            try:
-                parsed_json = json.loads(cleaned_json)
-                study = parsed_json.get('study', {})
-                if not study or ('versions' not in study and 'studyVersions' not in study):
-                    print(f"[WARNING] LLM output for chunk {i+1} is valid JSON but lacks SoA data (e.g., study.versions). Skipping.")
-                    continue
-                all_soa_parts.append(parsed_json)
-            except json.JSONDecodeError:
-                print(f"[ERROR] Failed to parse JSON from chunk {i+1} even after cleaning. Skipping.")
+            print(f"[SUCCESS] Chunk {i+1}/{len(chunks)} processed successfully")
+            
+        except ValueError as e:
+            # extract_json_str failed to find JSON
+            print(f"[WARNING] Chunk {i+1} extraction failed: {e}")
+            chunk_retry_count += 1
+            continue
+            
+        except json.JSONDecodeError as e:
+            # Even cleaned JSON couldn't parse
+            print(f"[WARNING] Chunk {i+1} JSON decode failed: {e}")
+            chunk_retry_count += 1
+            continue
+            
+        except Exception as e:
+            # Other errors (LLM API failures, etc.)
+            print(f"[ERROR] Chunk {i+1} processing failed: {e}")
+            chunk_retry_count += 1
+            continue
+    
+    # Report statistics
+    total_chunks = len(chunks)
+    success_chunks = len(all_soa_parts)
+    failed_chunks = chunk_retry_count
+    success_rate = (success_chunks / total_chunks * 100) if total_chunks > 0 else 0
+    
+    print(f"\n[STATISTICS] Chunk Processing Results:")
+    print(f"  Total chunks: {total_chunks}")
+    print(f"  Successful: {success_chunks} ({success_rate:.1f}%)")
+    print(f"  Failed: {failed_chunks}")
+    print(f"  Retries triggered: {chunk_retry_count}")
 
     if not all_soa_parts:
         print("[FATAL] No valid SoA JSON could be extracted from any text chunk.")
@@ -390,7 +657,14 @@ def main():
         for obj in items:
             if isinstance(obj, dict) and obj.get('id'):
                 cm[obj['id']] = 'text'
-    tl = final_json.get('study', {}).get('versions', [{}])[0].get('timeline', {}) if isinstance(final_json, dict) else {}
+    
+    # Get study object - handle both direct and Wrapper-Input formats
+    study = final_json.get('study')
+    if not study:
+        wrapper = final_json.get('Wrapper-Input', {})
+        study = wrapper.get('study', {})
+    
+    tl = study.get('versions', [{}])[0].get('timeline', {}) if isinstance(final_json, dict) else {}
     _tag('plannedTimepoints', tl.get('plannedTimepoints', []))
     _tag('activities', tl.get('activities', []))
     _tag('encounters', tl.get('encounters', []))

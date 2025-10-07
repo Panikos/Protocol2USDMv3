@@ -10,3 +10,6 @@ requests
 pandas
 openpyxl
 streamlit
+# Prompt optimization APIs
+google-cloud-aiplatform
+vertexai
