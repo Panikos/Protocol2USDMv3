@@ -61,6 +61,7 @@ pip install -r requirements.txt
 # Create .env file with API keys
 echo "OPENAI_API_KEY=sk-your-key" > .env
 echo "GOOGLE_API_KEY=AIza-your-key" >> .env
+echo "CDISC_API_KEY=your-cdisc-key" >> .env
 ```
 
 ### CDISC CORE Engine (Optional)
@@ -68,6 +69,8 @@ For conformance validation, download the CORE engine:
 ```bash
 python tools/core/download_core.py
 ```
+
+**Note:** Get your CDISC API key from https://library.cdisc.org/ (requires CDISC membership)
 
 ---
 
@@ -240,12 +243,12 @@ pytest tests/test_processing.py -v      # Processing tests
 ### Environment Variables
 
 ```bash
-# Required - at least one
+# Required - at least one LLM provider
 OPENAI_API_KEY=sk-...       # For GPT models
 GOOGLE_API_KEY=AIza...      # For Gemini models
 
-# Optional
-CDISC_API_KEY=...           # For CORE cache updates
+# Required for CDISC conformance validation
+CDISC_API_KEY=...           # For CORE rules cache (get from library.cdisc.org)
 ```
 
 ### Supported Models

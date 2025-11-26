@@ -77,13 +77,14 @@ OPENAI_API_KEY=sk-proj-...
 # Google AI (for Gemini models)
 GOOGLE_API_KEY=AIzaSy...
 
-# Optional: CDISC API for conformance cache
+# CDISC API (for conformance validation)
 CDISC_API_KEY=...
 ```
 
 **Get API keys:**
 - OpenAI: https://platform.openai.com/api-keys
 - Google AI: https://makersuite.google.com/app/apikey
+- CDISC: https://library.cdisc.org/ (requires CDISC membership)
 
 ### Step 5: Install CDISC CORE Engine (Optional)
 For conformance validation:
