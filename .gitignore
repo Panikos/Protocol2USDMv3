@@ -2,8 +2,7 @@
 google-cloud-key.json
 *-key.json
 
-# Large binary files (GitHub 100MB limit)
-*.zip
+# Large binary files (GitHub 100MB limit) - download via tools/core/download_core.py
 tools/core/core-windows.zip
 tools/core/core/
 benchmark_results/
