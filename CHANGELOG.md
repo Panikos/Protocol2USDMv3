@@ -1,11 +1,51 @@
 # Protocol2USDM – Change Log
 
-All notable changes after the last GitHub check-in (2025-07-13) are documented here.  Dates in ISO-8601.
+All notable changes documented here. Dates in ISO-8601.
 
-## [Unreleased] – 2025-11-26
+---
+
+## [5.0] – 2025-11-26
+
+### Major Refactor
+* **New Simplified Pipeline** (`main_v2.py`) – Cleaner modular architecture
+  - Vision extracts STRUCTURE (headers, groups)
+  - Text extracts DATA (activities, ticks) using structure as anchor
+  - Vision validates text extraction
+  - Output is schema-compliant USDM JSON
+* **Modular Extraction Package** (`extraction/`)
+  - `pipeline.py` – Pipeline orchestration
+  - `structure.py` – Header structure analysis
+  - `text.py` – Text extraction
+  - `validator.py` – Vision validation
+* **Core Utilities** (`core/`) – Shared components
 
 ### Added
-* **Gemini 3.0 Support** – Added `gemini-3.0-pro` and `gemini-3.0-flash` to supported models in `llm_providers.py`
+* **Gemini 3 Support** – Added `gemini-3-pro-preview` model
+* **Model Benchmarking** – `benchmark_models.py` compares models across protocols
+* **CDISC CORE Integration** – Built-in conformance validation (Step 9)
+* **Terminology Enrichment** – NCI EVS code enrichment (Step 7)
+* **Schema Validation** – USDM schema validation step (Step 8)
+* **CORE Download Script** – `tools/core/download_core.py` for automatic setup
+* **Validation & Conformance Tab** – New viewer tab showing validation results
+* **Epoch Colspan Merge** – Table headers now properly merge consecutive epochs
+
+### Changed
+* **Documentation Overhaul** – Complete rewrite of README, USER_GUIDE, QUICK_REFERENCE
+* **Pipeline Steps** – Simplified from 11 to 6 core steps (+3 optional post-processing)
+* **Output Files** – New naming convention (e.g., `9_final_soa.json`)
+* **Provenance** – Stored in separate file (`9_final_soa_provenance.json`)
+
+### Archived
+* Legacy pipeline (`main.py`, `reconcile_soa_llm.py`, `soa_postprocess_consolidated.py`)
+* Old documentation (moved to `archive/docs_legacy/`)
+* Unused scripts and tests
+
+---
+
+## [4.x] – 2025-11-26
+
+### Added
+* **Gemini 3.0 Support** – Added models to `llm_providers.py`
 * **Vision Validation with Provenance** – Pipeline now tracks which ticks are:
   - ✓ Confirmed (both text and vision agree)
   - ⚠️ Needs Review (possible hallucinations or vision-only detections)

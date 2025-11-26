@@ -18,8 +18,8 @@ This directory contains version-tracked YAML templates for all LLM prompts used 
 
 ### 2. `vision_soa_extraction.yaml` (v2.0)
 **Purpose:** Extract SoA from table images  
-**Used by:** `vision_extract_soa.py`  
-**Model:** Gemini 2.5 Pro (default) or GPT-4o/4-turbo  
+**Used by:** `extraction/structure.py`, `extraction/validator.py`  
+**Model:** Gemini 2.5 Pro (default) or GPT-4o/5.1  
 **Key features:**
 - Vision-specific instructions
 - Footnote marker handling
@@ -28,16 +28,12 @@ This directory contains version-tracked YAML templates for all LLM prompts used 
 
 ### 3. `soa_reconciliation.yaml` (v2.0)
 **Purpose:** Reconcile text and vision extractions  
-**Used by:** `reconcile_soa_llm.py`  
-**Model:** Gemini 2.5 Pro (default) or OpenAI models  
-**Key features:**
-- Conflict resolution strategies
-- Provenance tracking
-- Quality prioritization (vision for structure, text for precision)
+**Used by:** Legacy (archived)  
+**Note:** Reconciliation now handled programmatically in `extraction/pipeline.py`
 
 ### 4. `find_soa_pages.yaml` (v2.0)
 **Purpose:** Identify which pages contain SoA tables  
-**Used by:** `find_soa_pages.py`  
+**Used by:** `extraction/pipeline.py`  
 **Model:** Any GPT or Gemini model  
 **Key features:**
 - Binary classification (yes/no)
@@ -190,19 +186,13 @@ Track all versions in `VERSION_HISTORY.md` (create as needed):
 ### Quick Test
 ```bash
 # Test one PDF
-python main.py test_data/CDISC_Pilot_Study.pdf --model gemini-2.5-pro
+python main_v2.py input/protocol.pdf --model gemini-2.5-pro
 ```
 
-### Full Benchmark
+### Model Comparison
 ```bash
-# Test entire test set
-python benchmark_prompts.py --test-set test_data/ --model gemini-2.5-pro
-```
-
-### Compare Versions
-```bash
-# Load different template versions and compare
-# (Manual process - swap template file, run benchmark, compare results)
+# Compare models across all input protocols
+python benchmark_models.py --models gpt-5.1 gemini-3-pro-preview
 ```
 
 ---
@@ -218,16 +208,9 @@ When optimizing prompts, track these metrics:
 5. **Execution Time** - How long does it take?
 6. **Error Rate** - How often does it fail?
 
-See `PROMPT_OPTIMIZATION_STRATEGY.md` for complete framework.
-
 ---
 
 ## Troubleshooting
-
-### Template not loading?
-```bash
-python verify_prompt_migration.py
-```
 
 ### Want to see what version is being used?
 Check logs for:
@@ -244,13 +227,11 @@ git checkout HEAD~1 prompts/<template_name>.yaml
 
 ## Documentation
 
-- **Full Strategy:** `../PROMPT_OPTIMIZATION_STRATEGY.md`
-- **Quick Start:** `../PROMPT_OPTIMIZATION_QUICK_START.md`
-- **Migration Complete:** `../PROMPT_MIGRATION_COMPLETE.md`
-- **Session Summary:** `../SESSION_SUMMARY.md`
+- **Main Docs:** `../README.md`, `../USER_GUIDE.md`
+- **Quick Reference:** `../QUICK_REFERENCE.md`
 
 ---
 
-**Last Updated:** 2025-10-05  
+**Last Updated:** 2025-11-26  
 **System Version:** 2.0 (YAML-based templates)  
 **Status:** Production Ready ✅

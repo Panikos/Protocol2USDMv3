@@ -1,241 +1,143 @@
-# Protocol2USDMv3 Quick Reference
+# Protocol2USDM Quick Reference
 
-**Version 4.0** | One-page reference for common tasks
+**v5.0** | One-page command reference
 
 ---
 
-## 🚀 Quick Start (30 seconds)
+## Quick Start
 
 ```bash
 pip install -r requirements.txt
-echo "GOOGLE_API_KEY=your_key" > .env
-python main.py input/protocol.pdf
+echo "OPENAI_API_KEY=sk-..." > .env
+python main_v2.py input/protocol.pdf
 streamlit run soa_streamlit_viewer.py
 ```
 
 ---
 
-## 📝 Common Commands
+## Common Commands
 
-### Running the Pipeline
+### Run Pipeline
 ```bash
-# Default (gpt-5.1 with automatic Gemini fallback)
-python main.py protocol.pdf
+# Default (GPT-5.1)
+python main_v2.py protocol.pdf
 
-# Specific models
-python main.py protocol.pdf --model gpt-5.1
-python main.py protocol.pdf --model gemini-2.5-pro
-python main.py protocol.pdf --model gpt-4o
-python main.py protocol.pdf --model gemini-2.0-flash
+# Specify model
+python main_v2.py protocol.pdf --model gpt-5.1
+python main_v2.py protocol.pdf --model gemini-3-pro-preview
+python main_v2.py protocol.pdf --model gemini-2.5-pro
+
+# Full pipeline with post-processing
+python main_v2.py protocol.pdf --full
 
 # View results
 streamlit run soa_streamlit_viewer.py
 ```
 
-### Testing
+### Options
 ```bash
-# All tests (93 total)
-pytest
-
-# Specific test suites
-pytest tests/test_llm_providers.py -v      # 22 tests
-pytest tests/test_prompt_templates.py -v   # 19 tests
-pytest tests/test_normalization.py -v      # 18 tests
-pytest tests/test_json_extraction.py -v    # 12 tests
+--model, -m         Model to use (default: gpt-5.1)
+--output-dir, -o    Output directory
+--pages, -p         Specific SoA pages (comma-separated)
+--no-validate       Skip vision validation
+--view              Launch viewer after
+--verbose, -v       Detailed logging
+--full              Run all post-processing steps
+--enrich            Step 7: NCI terminology
+--validate-schema   Step 8: Schema validation
+--conformance       Step 9: CORE conformance
 ```
 
 ---
 
-## 🔑 API Keys Setup
+## Models
 
-**.env file:**
+| Model | Speed | Reliability |
+|-------|-------|-------------|
+| **gpt-5.1** ⭐ | Medium | Best (100%) |
+| gemini-3-pro-preview | Slow | 75% |
+| gemini-2.5-pro | Fast | Good |
+| gpt-4o | Medium | Good |
+
+---
+
+## Output Files
+
+```
+output/<protocol>/
+├── 4_header_structure.json    # Table structure
+├── 6_validation_result.json   # Validation details
+├── 9_final_soa.json          ⭐ Main output
+├── 9_final_soa_provenance.json # Source tracking
+└── conformance_report.json    # CORE results
+```
+
+---
+
+## Provenance Colors (Viewer)
+
+| Color | Meaning |
+|-------|---------|
+| 🟦 Blue | Text extraction only |
+| 🟩 Green | Vision confirmed |
+| 🟧 Orange | Needs review |
+
+---
+
+## Testing
+
 ```bash
-# Google (recommended)
-GOOGLE_API_KEY=AIzaSy...
+pytest                              # All tests
+pytest tests/test_pipeline_api.py   # Pipeline tests
+pytest tests/test_llm_providers.py  # Provider tests
 
-# OpenAI (optional)
-OPENAI_API_KEY=sk-proj-...
-```
-
-**Get keys:**
-- Google: https://makersuite.google.com/app/apikey
-- OpenAI: https://platform.openai.com/api-keys
-
----
-
-## 📊 Model Comparison
-
-| Model | Speed | Cost | Quality | Notes |
-|-------|-------|------|---------|-------|
-| **gpt-5.1** ⭐ | Medium | $$$$ | TBD (reasoning) | **Default primary model** |
-| gemini-2.5-pro | Fast | $$ | Excellent | Automatic fallback / alternative |
-| gemini-2.0-flash | Very Fast | $ | Good | Cheap previews |
-| gpt-4o | Medium | $$$ | Excellent | OpenAI chat model |
-
-**Recommendation:** Use `gpt-5.1` by default. The pipeline will automatically fall back to `gemini-2.5-pro` for key steps if GPT-5.1 fails.
-
----
-
-## 📁 Output Files
-
-```
-output/PROTOCOL_NAME/
-├── 9_reconciled_soa.json   ⭐ Main output
-├── 5_raw_text_soa.json     📄 Text extraction
-├── 6_raw_vision_soa.json   👁️ Vision extraction
-├── pipeline.log            📋 Detailed logs
-└── 3_soa_images/          🖼️ Page images
+# Step-by-step debugging
+python test_pipeline_steps.py protocol.pdf --step 3  # Header
+python test_pipeline_steps.py protocol.pdf --step 4  # Text
+python test_pipeline_steps.py protocol.pdf --step 5  # Vision
+python test_pipeline_steps.py protocol.pdf --step 6  # Output
 ```
 
 ---
 
-## 🔍 Checking Quality
-
-### Log Statistics
-```bash
-grep "\[STATISTICS\]" output/PROTOCOL/pipeline.log
-grep "\[POST-PROCESS\]" output/PROTOCOL/pipeline.log
-```
-
-### Expected Output
-```
-[STATISTICS] Chunk Processing Results:
-  Successful: 3 (100.0%)
-  Failed: 0
-
-[POST-PROCESS] Normalized 5 entity names
-[POST-PROCESS] Normalization complete
-```
-
-### Validation
-```bash
-# Final step validates automatically
-# Check for errors:
-grep "ERROR" output/PROTOCOL/pipeline.log
-```
-
----
-
-## 🛠️ Troubleshooting
+## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| **API key error** | Check `.env` file, restart terminal |
-| **Parse failures** | Check `[RETRY]` in logs, should auto-fix |
-| **Missing visits** | Verify `2_soa_pages.json` has correct pages |
-| **Schema errors** | Post-processing auto-fixes most issues |
+| API key error | Check `.env`, restart terminal |
+| Missing visits | Check `4_header_structure.json` |
+| Parse errors | Try different model |
+| Many orange cells | Try `--no-validate` |
 
 ---
 
-## 📚 Documentation
+## API Keys
 
-| Document | Purpose |
-|----------|---------|
-| `README.md` | Overview & quick start |
-| `USER_GUIDE.md` | Comprehensive guide |
-| `QUICK_REFERENCE.md` | This file |
-| `CHANGELOG.md` | Version history |
-| `IMPLEMENTATION_COMPLETE.md` | Technical details |
-| `MULTI_MODEL_IMPLEMENTATION.md` | Provider layer guide |
-
----
-
-## 🎯 Pipeline Steps (11 total)
-
-1. **Generate prompt** (~5s)
-2. **Find SoA pages** (~10s)  
-3. **Extract images** (~5s)
-4. **Analyze structure** (~15s)
-5. **Text extraction** (~60s) ⏱️
-6. **Vision extraction** (~45s) ⏱️
-7. **Post-process text** (~5s)
-8. **Post-process vision** (~5s)
-9. **Validate header** (~2s)
-10. **Reconcile outputs** (~30s)
-11. **Schema validation** (~5s)
-
-**Total:** ~3-5 minutes
-
----
-
-## 💡 Tips
-
-### Best Practices
-- ✅ Use Gemini 2.5 Pro for production
-- ✅ Check logs for warnings
-- ✅ Review in Streamlit viewer
-- ✅ Verify all visits present
-- ✅ Run tests after updates
-
-### Cost Optimization
-- Use `gemini-2.0-flash` for testing
-- Cache results to avoid re-processing
-- Process protocols in batches
-
-### Quality Checks
-- Compare visit count to protocol
-- Check timing information accuracy
-- Verify activity completeness
-- Review orphaned timepoints
-
----
-
-## 🧪 Development
-
-### Running Tests
 ```bash
-# All tests
-pytest -v
-
-# With coverage
-pytest --cov=. tests/
-
-# Specific module
-pytest tests/test_llm_providers.py::TestOpenAIProvider -v
+# .env file
+OPENAI_API_KEY=sk-proj-...   # For GPT models
+GOOGLE_API_KEY=AIzaSy...     # For Gemini models
+CDISC_API_KEY=...            # For CORE (optional)
 ```
 
-### Editing Prompts
-```bash
-# Edit template
-vim prompts/soa_extraction.yaml
-
-# Test changes
-python main.py protocol.pdf
-```
-
-### Adding New Models
-```python
-# No code changes needed!
-# Provider auto-detects from name:
-# - "gpt" → OpenAI
-# - "gemini" → Google
-```
+**Get keys:**
+- OpenAI: https://platform.openai.com/api-keys
+- Google: https://makersuite.google.com/app/apikey
 
 ---
 
-## 📞 Support
+## Key Files
 
-- **Logs:** `output/PROTOCOL/pipeline.log`
-- **Tests:** `pytest tests/ -v`
-- **Docs:** See table above
-
----
-
-## 📌 Key Metrics
-
-- **Tests:** 93/93 passing (100%)
-- **Schema validation:** >95% pass rate
-- **Parse success:** >95%
-- **Clean names:** 100%
-- **Models supported:** 4+ (extensible)
+| File | Purpose |
+|------|---------|
+| `main_v2.py` | Main entry point |
+| `soa_streamlit_viewer.py` | Interactive viewer |
+| `test_pipeline_steps.py` | Step-by-step testing |
+| `benchmark_models.py` | Model comparison |
+| `extraction/` | Core extraction modules |
 
 ---
 
-**Quick Links:**
-- [Full User Guide](USER_GUIDE.md)
-- [Implementation Details](MULTI_MODEL_IMPLEMENTATION.md)
-- [Changelog](CHANGELOG.md)
+**Docs:** [README.md](README.md) | [USER_GUIDE.md](USER_GUIDE.md)
 
----
-
-**Last Updated:** 2025-10-04
+**Last Updated:** 2025-11-26

@@ -26,12 +26,12 @@ cp path/to/protocol.pdf test_data/medium/
 
 1. **Run the pipeline manually:**
    ```bash
-   python main.py test_data/medium/protocol.pdf --model gemini-2.5-pro
+   python main_v2.py test_data/medium/protocol.pdf --model gpt-5.1
    ```
 
 2. **Copy the output as starting point:**
    ```bash
-   cp output/protocol/9_reconciled_soa.json test_data/medium/protocol_gold.json
+   cp output/protocol/9_final_soa.json test_data/medium/protocol_gold.json
    ```
 
 3. **Manually review and correct the gold standard:**
@@ -92,38 +92,27 @@ A good gold standard should:
 
 ## Running Benchmarks
 
-### Baseline Benchmark
+### Model Comparison Benchmark
 
 ```bash
-python benchmark_prompts.py --test-set test_data/ --model gemini-2.5-pro
+# Compare models across all protocols in input/
+python benchmark_models.py --models gpt-5.1 gemini-3-pro-preview
 ```
 
 **Output:**
-- `benchmark_results/benchmark_YYYYMMDD_HHMMSS.json`
-- Summary statistics in console
+- `benchmark_results/benchmark_report.json`
+- `benchmark_results/benchmark_report.txt`
+- Per-protocol outputs in `benchmark_results/<protocol>_<model>/`
 
-### With Auto-Optimization
+### Single Protocol Test
 
 ```bash
-python benchmark_prompts.py --test-set test_data/ --model gemini-2.5-pro --auto-optimize
+python main_v2.py input/protocol.pdf --model gpt-5.1 --full
 ```
 
 **Output:**
-- Optimized templates in `prompts/*_optimized.yaml`
-- Benchmark results with optimized prompts
-
-### Compare Results
-
-```bash
-python compare_benchmark_results.py \
-  benchmark_results/benchmark_baseline.json \
-  benchmark_results/benchmark_optimized.json
-```
-
-**Output:**
-- Detailed comparison
-- Accept/reject recommendation
-- Per-metric analysis
+- Complete extraction in `output/<protocol>/`
+- Validation and conformance reports
 
 ## Metrics Tracked
 
@@ -167,19 +156,19 @@ For each test case, the benchmark measures:
 
 2. **Create gold standards:**
    ```bash
-   python main.py test_data/medium/CDISC_Pilot_Study.pdf
-   cp output/CDISC_Pilot_Study/9_reconciled_soa.json test_data/medium/CDISC_Pilot_Study_gold.json
+   python main_v2.py test_data/medium/CDISC_Pilot_Study.pdf --model gpt-5.1
+   cp output/CDISC_Pilot_Study/9_final_soa.json test_data/medium/CDISC_Pilot_Study_gold.json
    # Now manually review and correct the gold standard!
    ```
 
 3. **Run benchmark:**
    ```bash
-   python benchmark_prompts.py --test-set test_data/
+   python benchmark_models.py
    ```
 
 4. **Review results:**
    - Check console output
-   - Review `benchmark_results/` JSON files
+   - Review `benchmark_results/benchmark_report.txt`
    - Identify areas for improvement
 
 ## Troubleshooting
@@ -210,10 +199,11 @@ Review the gold standard to ensure it's achievable.
 
 ## Support
 
-- Full strategy: `PROMPT_OPTIMIZATION_STRATEGY.md`
-- Quick start: `PROMPT_OPTIMIZATION_QUICK_START.md`
-- API analysis: `PROMPT_OPTIMIZATION_APIS_ANALYSIS.md`
+- Main docs: `README.md`, `USER_GUIDE.md`
+- Quick reference: `QUICK_REFERENCE.md`
 
 ---
 
 **Ready to benchmark!** Create your first gold standard and run your first test.
+
+**Last Updated:** 2025-11-26
