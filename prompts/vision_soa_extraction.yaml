@@ -22,6 +22,9 @@ metadata:
   - version: '2.0'
     date: '2025-10-05'
     changes: Migrated to YAML template system with version tracking
+  - version: '2.2'
+    date: '2025-10-07'
+    changes: Relaxed constraints to allow raw extraction of columns and rows as they appear in the image
 system_prompt: "# Persona\nYou are an expert data extraction engine specializing in clinical trial protocols. Your function\
   \ is to convert visual Schedule of Activities (SoA) tables into a structured, machine-readable JSON format based on a specific\
   \ schema.\n\n# Objective\nAnalyze the provided image of a clinical trial Schedule of Activities (SoA) table and the associated\

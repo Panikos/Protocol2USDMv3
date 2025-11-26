@@ -375,7 +375,7 @@ python generate_soa_llm_prompt.py --output output/test_run/1_llm_prompt.txt
 python main.py input/CDISC_Pilot_Study.pdf --model gemini-2.5-pro
 
 # Validate output
-python validate_usdm_schema.py output/CDISC_Pilot_Study/10_reconciled_soa.json
+python validate_usdm_schema.py output/CDISC_Pilot_Study/9_reconciled_soa.json
 
 # Run tests
 pytest tests/ -v --tb=short

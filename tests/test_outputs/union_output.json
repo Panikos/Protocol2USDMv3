@@ -1,0 +1,67 @@
+{
+  "study": {
+    "versions": [
+      {
+        "timeline": {
+          "activities": [
+            {
+              "id": "act1",
+              "instanceType": "Activity"
+            }
+          ],
+          "plannedTimepoints": [
+            {
+              "id": "tp1",
+              "encounterId": "enc1",
+              "instanceType": "PlannedTimepoint"
+            }
+          ],
+          "encounters": [
+            {
+              "id": "enc1",
+              "instanceType": "Encounter"
+            }
+          ],
+          "activityTimepoints": [
+            {
+              "activityId": "act1",
+              "plannedTimepointId": "tp1"
+            }
+          ],
+          "scheduleTimelines": [
+            {
+              "id": "st_1",
+              "name": "SoA Schedule Timeline",
+              "description": "Derived from reconciled activityTimepoints.",
+              "mainTimeline": true,
+              "entryCondition": "true",
+              "entryId": "sai_1",
+              "instances": [
+                {
+                  "id": "sai_1",
+                  "name": "Scheduled activities for tp1",
+                  "description": "Derived from activityTimepoints matrix (post-union-enforcement).",
+                  "activityIds": [
+                    "act1"
+                  ],
+                  "encounterId": "enc1",
+                  "instanceType": "ScheduledActivityInstance"
+                }
+              ],
+              "instanceType": "ScheduleTimeline"
+            }
+          ],
+          "activityGroups": []
+        },
+        "id": "autogen-version-id-1",
+        "versionIdentifier": "1.0.0",
+        "instanceType": "StudyVersion",
+        "rationale": "Version reconciled from text and vision extractions.",
+        "studyIdentifiers": [],
+        "titles": []
+      }
+    ],
+    "name": "Reconciled Study",
+    "instanceType": "Study"
+  }
+}

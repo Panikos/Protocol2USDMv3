@@ -1,5 +1,7 @@
 {
   "study": {
-    "studyId": "RECONCILED-789"
+    "studyId": "RECONCILED-789",
+    "name": "Reconciled Study",
+    "instanceType": "Study"
   }
 }

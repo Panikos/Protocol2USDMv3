@@ -4,7 +4,7 @@
 Protocol2USDMv3 is an automated pipeline for extracting, validating, and structuring the Schedule of Activities (SoA) from clinical trial protocol PDFs, outputting data conformant to the USDM v4.0 model. The workflow combines LLM text and vision extraction, robust validation against official schemas and controlled terminology, and advanced mapping/regeneration tools for maximum reliability.
 
 ## Key Features
-- **Multi-Model Support**: Seamlessly switch between GPT-4, GPT-5, Gemini 2.x models using unified provider interface.
+- **Multi-Model Support**: Seamlessly switch between GPT-4, GPT-5, Gemini 2.x/3.x models using unified provider interface.
 - **Automated SoA Extraction**: Extracts SoA tables from protocol PDFs using both LLM text and vision analysis.
 - **Modernized Prompt System** (v2.0 - Oct 2025):
   - **Comprehensive PlannedTimepoint Guidance**: 8 required fields explained with examples
@@ -21,6 +21,9 @@ Protocol2USDMv3 is an automated pipeline for extracting, validating, and structu
 - **Header-Aware Dual Extraction**: The header structure is first analysed visually. A *machine-readable* JSON object (`headerHints`) containing timepoints and activity-group metadata is then injected into *both* the vision and text LLM prompts, boosting accuracy while preventing ID hallucination.
 - **Terminology Validation**: Ensures that extracted activities and other coded values align with controlled terminologies (e.g., NCI EVS), enhancing semantic interoperability and compliance.
 - **Header-Driven Enrichment & Validation**: Post-processing now uses the same header structure to auto-fill missing `activityGroupId`s and group memberships, followed by an explicit validation/repair pass (`soa_validate_header.py`).
+- **Extended USDM 4.0 SoA Representation**: The final reconciled SoA exposes both the simple `activityTimepoints` matrix *and* a USDM 4.0 `ScheduleTimeline` with `ScheduledActivityInstance` objects derived from it, enabling consumers to use either representation without data loss.
+- **Rich Provenance Tracking**: Every entity (activities, planned timepoints, encounters, activity groups) and each activity–timepoint cell is tagged with its source (`text`, `vision`, or `both`) in a separate provenance file, while the main SoA JSON remains pure USDM Wrapper-Input.
+- **LLM-Assisted Activity Grouping**: When header-driven row groups are missing or incomplete, an optional LLM pass infers clinically meaningful `ActivityGroup`s (e.g., Safety, Cognitive/Efficacy) and assigns `activityGroupId`s, with all inferred groups clearly marked in provenance.
 - **Template-Based Prompts**: Centralized YAML-based prompt templates for easy maintenance and version control.
 - **Modular & Extensible**: All steps are modular scripts, easily customizable for your workflow.
 
@@ -40,32 +43,49 @@ Protocol2USDMv3 is an automated pipeline for extracting, validating, and structu
     ```
 
 ## Usage
-Run the entire pipeline with a single command:
+
+### Run the Full Pipeline
 ```bash
-python main.py YOUR_PROTOCOL.pdf  # --model optional (defaults to gemini-2.5-pro)
+python main_v2.py YOUR_PROTOCOL.pdf
 ```
 - Replace `YOUR_PROTOCOL.pdf` with the path to your clinical trial protocol.
-- The `--model` argument is optional and defaults to `gemini-2.5-pro`.
+- Default model is `gemini-2.5-pro`.
 
 ### Model Selection
-The pipeline supports multiple models through a unified provider interface:
-
 ```bash
-# Use Gemini 2.5 Pro (default, recommended)
-python main.py protocol.pdf --model gemini-2.5-pro
+# Use Gemini 2.5 Pro (default)
+python main_v2.py protocol.pdf --model gemini-2.5-pro
+
+# Use Gemini 3.0 Pro (latest)
+python main_v2.py protocol.pdf --model gemini-3.0-pro
+
+# Use GPT-5.1 
+python main_v2.py protocol.pdf --model gpt-5.1
 
 # Use GPT-4o
-python main.py protocol.pdf --model gpt-4o
+python main_v2.py protocol.pdf --model gpt-4o
+```
 
-# Use GPT-5 (when available)
-python main.py protocol.pdf --model gpt-5
+### Step-by-Step Testing
+For debugging and quality checks, run individual pipeline steps:
 
-# Use Gemini 2.0 Flash (faster, lower cost)
-python main.py protocol.pdf --model gemini-2.0-flash
+```bash
+python test_pipeline_steps.py YOUR_PROTOCOL.pdf --step all    # All steps
+python test_pipeline_steps.py YOUR_PROTOCOL.pdf --step 3      # Header analysis
+python test_pipeline_steps.py YOUR_PROTOCOL.pdf --step 4      # Text extraction  
+python test_pipeline_steps.py YOUR_PROTOCOL.pdf --step 5      # Vision validation
+python test_pipeline_steps.py YOUR_PROTOCOL.pdf --step 6      # Build final output
+```
+
+### View Results
+Launch the Streamlit viewer to inspect extraction results:
+
+```bash
+streamlit run soa_streamlit_viewer.py
 ```
 
 ## Pipeline Workflow
-The `main.py` script orchestrates the pipeline. All outputs are saved in a timestamped subdirectory inside `output/`, e.g., `output/CDISC_Pilot_Study/`.
+The `main_v2.py` script orchestrates the pipeline. All outputs are saved in a subdirectory inside `output/`, e.g., `output/CDISC_Pilot_Study/`.
 
 | Step | Script | Purpose | Output |
 |---|---|---|---|
@@ -78,8 +98,8 @@ The `main.py` script orchestrates the pipeline. All outputs are saved in a times
 | 7 | `soa_postprocess_consolidated.py`| Enriches text output using header structure. | `7_postprocessed_text_soa.json` |
 | 8 | `soa_postprocess_consolidated.py`| Enriches vision output using header structure. | `8_postprocessed_vision_soa.json` |
 | 9 | `soa_validate_header.py`| Validates & repairs both outputs against header. | (in-place fix log) |
-| 10 | `reconcile_soa_llm.py`| Merges text and vision outputs into a single SoA. | `10_reconciled_soa.json` |
-| 11 | `validate_usdm_schema.py`| Final validation against the USDM schema. | (Validation log) |
+| 10 | `reconcile_soa_llm.py`| Merges text and vision outputs into a single SoA, derives a `ScheduleTimeline`/`ScheduledActivityInstance` layer from the reconciled `activityTimepoints`, and merges provenance. | `9_reconciled_soa.json` + `9_reconciled_soa_provenance.json` |
+| 11 | `validate_usdm_schema.py`| Final validation against the official USDM Wrapper-Input schema. | (Validation log) |
 
 The primary output to review is `9_reconciled_soa.json`.
 
@@ -93,7 +113,7 @@ These scripts are executed in sequence by `main.py`.
 - `find_soa_pages.py`: Uses an LLM to find the page numbers of the SoA table in the PDF.
 - `extract_pdf_pages_as_images.py`: Extracts the identified SoA pages as PNG images for vision analysis.
 - `analyze_soa_structure.py`: Performs vision-based analysis of the SoA table headers to understand column structure.
-- `send_pdf_to_openai.py`: Extracts SoA data from the raw PDF text, using the header structure as context.
+- `send_pdf_to_llm.py`: Extracts SoA data from the raw PDF text, using the header structure as context.
 - `vision_extract_soa.py`: Extracts SoA data from the PNG images, using the header structure as context.
 - `soa_postprocess_consolidated.py`: Enriches and normalises raw JSON outputs using header structure.
 - `soa_validate_header.py`: Compares post-processed outputs against the header structure, applying any final group/timepoint repairs.

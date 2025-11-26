@@ -1,0 +1,393 @@
+"""
+Validator - Vision-based validation of text extraction.
+
+This module validates text extraction results against SoA images:
+- Confirms tick marks are actually present in images
+- Flags potential hallucinations (ticks that may not exist)
+- Detects missed ticks (visible in image but not in text extraction)
+
+This REPLACES the complex reconciliation logic with simple validation.
+Text extraction is the source of truth; vision validates it.
+
+Usage:
+    from extraction.validator import validate_extraction
+    
+    validation = validate_extraction(
+        text_result, 
+        header_structure,
+        image_paths,
+        model_name="gemini-2.5-pro"
+    )
+    
+    if validation.issues:
+        print(f"Found {len(validation.issues)} potential issues")
+"""
+
+import json
+import base64
+import logging
+from typing import List, Optional, Set, Tuple
+from dataclasses import dataclass, field
+from enum import Enum
+
+from core.llm_client import get_llm_client, LLMConfig
+from core.json_utils import parse_llm_json
+from core.usdm_types import HeaderStructure, ActivityTimepoint
+from core.provenance import ProvenanceTracker, ProvenanceSource
+
+logger = logging.getLogger(__name__)
+
+
+class IssueType(Enum):
+    """Types of validation issues."""
+    POSSIBLE_HALLUCINATION = "possible_hallucination"  # Tick in text, not visible in image
+    MISSED_TICK = "missed_tick"                        # Visible in image, not in text
+    UNCERTAIN = "uncertain"                            # Could not determine
+
+
+@dataclass
+class ValidationIssue:
+    """A single validation issue."""
+    issue_type: IssueType
+    activity_id: str
+    activity_name: str
+    timepoint_id: str
+    timepoint_name: str
+    confidence: float  # 0-1, how confident we are this is an issue
+    details: str
+    
+    def to_dict(self):
+        return {
+            'issue_type': self.issue_type.value,
+            'activity_id': self.activity_id,
+            'activity_name': self.activity_name,
+            'timepoint_id': self.timepoint_id,
+            'timepoint_name': self.timepoint_name,
+            'confidence': self.confidence,
+            'details': self.details,
+        }
+
+
+@dataclass
+class ValidationResult:
+    """Result of validation."""
+    success: bool
+    issues: List[ValidationIssue] = field(default_factory=list)
+    confirmed_ticks: int = 0
+    total_ticks_checked: int = 0
+    model_used: str = ""
+    raw_response: str = ""
+    error: Optional[str] = None
+    
+    @property
+    def hallucination_count(self) -> int:
+        return sum(1 for i in self.issues if i.issue_type == IssueType.POSSIBLE_HALLUCINATION)
+    
+    @property
+    def missed_count(self) -> int:
+        return sum(1 for i in self.issues if i.issue_type == IssueType.MISSED_TICK)
+    
+    def to_dict(self):
+        return {
+            'success': self.success,
+            'issues': [i.to_dict() for i in self.issues],
+            'confirmed_ticks': self.confirmed_ticks,
+            'total_ticks_checked': self.total_ticks_checked,
+            'hallucination_count': self.hallucination_count,
+            'missed_count': self.missed_count,
+            'model_used': self.model_used,
+            'error': self.error,
+        }
+
+
+VALIDATION_PROMPT = """You are validating a Schedule of Activities (SoA) extraction.
+
+I will provide:
+1. A list of activities with their IDs
+2. A list of timepoints with their IDs
+3. A list of activity-timepoint ticks (from text extraction)
+4. Image(s) of the actual SoA table
+
+Your task is to verify each tick by checking if it's visible in the image.
+
+ACTIVITIES:
+{activities_json}
+
+TIMEPOINTS:
+{timepoints_json}
+
+TICKS TO VERIFY:
+{ticks_json}
+
+For each tick, check if you can see a mark (X, ✓, •, or similar) in the corresponding cell.
+
+OUTPUT FORMAT:
+Return a JSON object:
+{{
+  "verified_ticks": [
+    {{"activity_id": "act_1", "timepoint_id": "pt_1", "visible": true, "confidence": 0.95}},
+    {{"activity_id": "act_2", "timepoint_id": "pt_3", "visible": false, "confidence": 0.8, "reason": "Cell appears empty"}}
+  ],
+  "possible_missed_ticks": [
+    {{"activity_id": "act_5", "timepoint_id": "pt_2", "confidence": 0.7, "reason": "Visible mark not in provided list"}}
+  ]
+}}
+
+RULES:
+- Set visible=true if you can see a tick mark in that cell
+- Set visible=false if the cell appears empty
+- Confidence should reflect your certainty (0-1)
+- Only report missed_ticks if you're reasonably confident (>0.6)
+- Focus on accuracy over completeness
+
+Output ONLY the JSON object."""
+
+
+def validate_extraction(
+    text_activities: List[dict],
+    text_ticks: List[dict],
+    header_structure: HeaderStructure,
+    image_paths: List[str],
+    model_name: str = "gemini-2.5-pro",
+) -> ValidationResult:
+    """
+    Validate text extraction against SoA images.
+    
+    Args:
+        text_activities: Activities from text extraction
+        text_ticks: ActivityTimepoints from text extraction
+        header_structure: Header structure with timepoint info
+        image_paths: Paths to SoA table images
+        model_name: Vision model to use
+        
+    Returns:
+        ValidationResult with issues found
+    """
+    logger.info(f"Validating {len(text_ticks)} ticks against {len(image_paths)} images")
+    
+    if not image_paths:
+        return ValidationResult(
+            success=False,
+            error="No images provided for validation"
+        )
+    
+    if not text_ticks:
+        return ValidationResult(
+            success=True,
+            confirmed_ticks=0,
+            total_ticks_checked=0,
+            model_used=model_name,
+        )
+    
+    try:
+        # Build activity and timepoint lookup
+        activity_names = {a.get('id'): a.get('name', '') for a in text_activities}
+        tp_names = {pt.id: pt.name for pt in header_structure.plannedTimepoints}
+        
+        # Build prompt with data
+        activities_json = json.dumps(
+            [{'id': a.get('id'), 'name': a.get('name')} for a in text_activities],
+            indent=2
+        )
+        timepoints_json = json.dumps(
+            [{'id': pt.id, 'name': pt.name, 'valueLabel': pt.valueLabel} 
+             for pt in header_structure.plannedTimepoints],
+            indent=2
+        )
+        ticks_json = json.dumps(
+            [{'activity_id': t.get('activityId'), 'timepoint_id': t.get('plannedTimepointId')} 
+             for t in text_ticks],
+            indent=2
+        )
+        
+        prompt = VALIDATION_PROMPT.format(
+            activities_json=activities_json,
+            timepoints_json=timepoints_json,
+            ticks_json=ticks_json,
+        )
+        
+        # Call vision model
+        if 'gemini' in model_name.lower():
+            result = _validate_with_gemini(prompt, image_paths, model_name)
+        else:
+            result = _validate_with_openai(prompt, image_paths, model_name)
+        
+        # Parse results into issues
+        issues = []
+        confirmed = 0
+        
+        data = parse_llm_json(result['response'], fallback={})
+        
+        for tick in data.get('verified_ticks', []):
+            if tick.get('visible', True):
+                confirmed += 1
+            else:
+                # Potential hallucination
+                issues.append(ValidationIssue(
+                    issue_type=IssueType.POSSIBLE_HALLUCINATION,
+                    activity_id=tick.get('activity_id', ''),
+                    activity_name=activity_names.get(tick.get('activity_id', ''), ''),
+                    timepoint_id=tick.get('timepoint_id', ''),
+                    timepoint_name=tp_names.get(tick.get('timepoint_id', ''), ''),
+                    confidence=tick.get('confidence', 0.5),
+                    details=tick.get('reason', 'Tick not visible in image'),
+                ))
+        
+        for missed in data.get('possible_missed_ticks', []):
+            issues.append(ValidationIssue(
+                issue_type=IssueType.MISSED_TICK,
+                activity_id=missed.get('activity_id', ''),
+                activity_name=activity_names.get(missed.get('activity_id', ''), ''),
+                timepoint_id=missed.get('timepoint_id', ''),
+                timepoint_name=tp_names.get(missed.get('timepoint_id', ''), ''),
+                confidence=missed.get('confidence', 0.5),
+                details=missed.get('reason', 'Tick visible but not in text extraction'),
+            ))
+        
+        return ValidationResult(
+            success=True,
+            issues=issues,
+            confirmed_ticks=confirmed,
+            total_ticks_checked=len(text_ticks),
+            model_used=model_name,
+            raw_response=result['response'],
+        )
+        
+    except Exception as e:
+        logger.error(f"Validation failed: {e}")
+        return ValidationResult(
+            success=False,
+            error=str(e),
+            model_used=model_name,
+        )
+
+
+def _validate_with_gemini(prompt: str, image_paths: List[str], model_name: str) -> dict:
+    """Run validation with Gemini."""
+    import google.generativeai as genai
+    from PIL import Image
+    import io
+    import os
+    
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY not set")
+    
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel(model_name)
+    
+    content_parts = [prompt]
+    
+    for img_path in image_paths:
+        img = Image.open(img_path)
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format='PNG')
+        content_parts.append({
+            'inline_data': {
+                'mime_type': 'image/png',
+                'data': base64.b64encode(img_bytes.getvalue()).decode('utf-8')
+            }
+        })
+    
+    response = model.generate_content(
+        content_parts,
+        generation_config=genai.types.GenerationConfig(
+            temperature=0.1,
+            response_mime_type="application/json"
+        )
+    )
+    
+    return {'response': response.text or ""}
+
+
+def _validate_with_openai(prompt: str, image_paths: List[str], model_name: str) -> dict:
+    """Run validation with OpenAI."""
+    from openai import OpenAI
+    import os
+    
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY not set")
+    
+    client = OpenAI(api_key=api_key)
+    
+    content = [{"type": "text", "text": prompt}]
+    
+    for img_path in image_paths:
+        with open(img_path, 'rb') as f:
+            data = base64.b64encode(f.read()).decode('utf-8')
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{data}"}
+        })
+    
+    # Handle reasoning models differently
+    is_reasoning = any(rm in model_name.lower() for rm in ['o1', 'o3', 'gpt-5'])
+    
+    params = {
+        "model": model_name,
+        "messages": [{"role": "user", "content": content}],
+        "response_format": {"type": "json_object"},
+    }
+    
+    if is_reasoning:
+        params["max_completion_tokens"] = 4096
+    else:
+        params["max_tokens"] = 4096
+        params["temperature"] = 0.1
+    
+    response = client.chat.completions.create(**params)
+    
+    return {'response': response.choices[0].message.content or ""}
+
+
+def apply_validation_fixes(
+    text_ticks: List[dict],
+    validation: ValidationResult,
+    remove_hallucinations: bool = True,
+    add_missed: bool = False,
+    confidence_threshold: float = 0.7,
+) -> Tuple[List[dict], ProvenanceTracker]:
+    """
+    Apply validation fixes to the tick list.
+    
+    Args:
+        text_ticks: Original ticks from text extraction
+        validation: Validation result
+        remove_hallucinations: Remove ticks flagged as hallucinations
+        add_missed: Add ticks that were missed
+        confidence_threshold: Only act on issues above this confidence
+        
+    Returns:
+        Tuple of (fixed_ticks, provenance_tracker)
+    """
+    provenance = ProvenanceTracker()
+    fixed_ticks = text_ticks.copy()
+    
+    # Remove hallucinations
+    if remove_hallucinations:
+        hallucinations_to_remove = {
+            (i.activity_id, i.timepoint_id)
+            for i in validation.issues
+            if i.issue_type == IssueType.POSSIBLE_HALLUCINATION
+            and i.confidence >= confidence_threshold
+        }
+        
+        fixed_ticks = [
+            t for t in fixed_ticks
+            if (t.get('activityId'), t.get('plannedTimepointId')) not in hallucinations_to_remove
+        ]
+        
+        logger.info(f"Removed {len(hallucinations_to_remove)} probable hallucinations")
+    
+    # Tag remaining ticks as validated
+    provenance.tag_cells_from_timepoints(fixed_ticks, ProvenanceSource.BOTH)
+    
+    return fixed_ticks, provenance
+
+
+def save_validation_result(validation: ValidationResult, output_path: str) -> None:
+    """Save validation result to JSON file."""
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(validation.to_dict(), f, indent=2, ensure_ascii=False)
+    logger.info(f"Saved validation result to {output_path}")

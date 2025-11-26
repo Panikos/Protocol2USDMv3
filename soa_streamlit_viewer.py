@@ -191,8 +191,14 @@ def get_file_inventory(base_path):
         'images': []
     }
     
-    # New file map based on main.py output paths
+    # File map supporting both old (main.py) and new (main_v2.py) pipeline outputs
     file_map = {
+        # New pipeline outputs (main_v2.py)
+        '9_final_soa.json': ('final_soa', 'Final SoA'),
+        '4_header_structure.json': ('intermediate_data', 'SoA Header Structure'),
+        '5_text_extraction.json': ('primary_outputs', 'Text Extraction'),
+        '6_validation_result.json': ('intermediate_data', 'Validation Result'),
+        # Legacy pipeline outputs (main.py)
         '9_reconciled_soa.json': ('final_soa', 'Final Reconciled SoA'),
         '5_raw_text_soa.json': ('primary_outputs', 'Raw Text Extraction'),
         '6_raw_vision_soa.json': ('primary_outputs', 'Raw Vision Extraction'),
@@ -202,6 +208,10 @@ def get_file_inventory(base_path):
         '2_soa_pages.json': ('intermediate_data', 'Identified SoA Pages'),
         '1_llm_prompt.txt': ('configs', 'Generated LLM Prompt'),
         '1_llm_prompt_full.txt': ('configs', 'Full LLM Prompt'),
+        # Step-by-step test outputs
+        'step3_header_structure.json': ('intermediate_data', 'Header Structure (Step 3)'),
+        'step4_text_extraction.json': ('primary_outputs', 'Text Extraction (Step 4)'),
+        'step6_final_soa.json': ('final_soa', 'Final SoA (Step 6)'),
     }
 
     for f_name, (category, display_name) in file_map.items():
@@ -210,7 +220,7 @@ def get_file_inventory(base_path):
             content, _ = load_file(f_path)
             if content:
                 if category == 'final_soa':
-                    inventory[category] = {'display_name': display_name, 'content': content}
+                    inventory[category] = {'display_name': display_name, 'content': content, 'path': f_path}
                 else:
                     inventory[category][display_name] = content
 
@@ -221,23 +231,48 @@ def get_file_inventory(base_path):
         if content:
             inventory['configs']['SoA Entity Mapping'] = content
 
-    image_dir = os.path.join(base_path, "3_soa_images")
-    if os.path.isdir(image_dir):
-        inventory['images'] = sorted(glob.glob(os.path.join(image_dir, "*.png")))
+    # Check multiple possible image directories
+    for img_dir_name in ["3_soa_images", "step2_images"]:
+        image_dir = os.path.join(base_path, img_dir_name)
+        if os.path.isdir(image_dir):
+            inventory['images'] = sorted(glob.glob(os.path.join(image_dir, "*.png")))
+            break
     
-        # --- Attach provenance if stored in separate file ---
+    # --- Attach provenance if stored in separate file ---
     if inventory['final_soa']:
-        final_path = inventory['final_soa']['path'] if isinstance(inventory['final_soa'], dict) and 'path' in inventory['final_soa'] else None
-        if not final_path:
-            # Attempt to reconstruct path based on base_path
-            final_path = os.path.join(base_path, '9_reconciled_soa.json')
-        prov_path = final_path.replace('.json', '_provenance.json')
-        if os.path.exists(prov_path):
-            prov_content, _ = load_file(prov_path)
-            if isinstance(inventory['final_soa']['content'], dict) and prov_content and isinstance(prov_content, dict):
-                # Only merge if p2uProvenance missing
-                if 'p2uProvenance' not in inventory['final_soa']['content']:
-                    inventory['final_soa']['content']['p2uProvenance'] = prov_content
+        # Try multiple possible provenance file patterns
+        possible_prov_files = [
+            '9_final_soa_provenance.json',      # New pipeline
+            '9_reconciled_soa_provenance.json', # Legacy pipeline
+            'step6_provenance.json',            # Step-by-step test
+        ]
+        
+        for prov_file in possible_prov_files:
+            prov_path = os.path.join(base_path, prov_file)
+            if os.path.exists(prov_path):
+                prov_content, _ = load_file(prov_path)
+                if isinstance(inventory['final_soa']['content'], dict) and prov_content and isinstance(prov_content, dict):
+                    # Convert provenance format if needed (new format has 'entities' and 'cells')
+                    if 'entities' in prov_content:
+                        # New format - merge entities into p2uProvenance format
+                        merged_prov = dict(prov_content.get('entities', {}))
+                        
+                        # Convert cells from flat "actId|ptId" -> nested {actId: {ptId: source}}
+                        cells = prov_content.get('cells', {})
+                        nested_cells = {}
+                        for key, source in cells.items():
+                            if '|' in key:
+                                act_id, pt_id = key.split('|', 1)
+                                if act_id not in nested_cells:
+                                    nested_cells[act_id] = {}
+                                if pt_id:  # Only add if pt_id is not empty
+                                    nested_cells[act_id][pt_id] = source
+                        merged_prov['activityTimepoints'] = nested_cells
+                        inventory['final_soa']['content']['p2uProvenance'] = merged_prov
+                    elif 'p2uProvenance' not in inventory['final_soa']['content']:
+                        # Legacy format - use directly
+                        inventory['final_soa']['content']['p2uProvenance'] = prov_content
+                break
     
     inventory['file_map'] = file_map
     return inventory
@@ -266,16 +301,8 @@ def extract_soa_metadata(soa):
         'num_groups': num_groups
     }
 
-def get_timeline(soa):
-    """Extracts the timeline object robustly from a USDM Wrapper-Input JSON."""
-    if not isinstance(soa, dict):
-        return None
-    try:
-        study = soa.get('study', {})
-        versions = study.get('versions') or study.get('studyVersions')
-        return versions[0].get('timeline')
-    except (KeyError, IndexError, TypeError):
-        return None
+# Note: get_timeline() is defined earlier in this file (lines 13-22)
+# Removed duplicate definition that was here
 
 def _get_timepoint_sort_key(tp_label):
     """Creates a sort key for a timepoint label for chronological sorting."""
@@ -307,21 +334,9 @@ def _get_timepoint_sort_key(tp_label):
     # Default priority
     return (4, label)
 
-def get_timepoints(timeline):
-    pts_raw = timeline.get('plannedTimepoints', [])
-    timepoints = []
-    for pt in pts_raw:
-        if not (isinstance(pt, dict) and pt.get('id') and pt.get('name')):
-            continue
-        
-        name = pt['name']
-        desc = pt.get('description')
-        
-        # Use the timepoint name as the primary label; description will be shown separately in timing band if needed.
-        # Strip redundant parenthetical legacy details (e.g., "Visit 1 (Week -2)")
-        base_name = re.sub(r"\s*\(.*\)$", "", name)
+# Note: Removed incomplete get_timepoints() function - functionality is in render_flexible_soa()
 
-# --- New Python-based SoA Renderer ---
+# --- SoA Renderer ---
 
 from collections import defaultdict
 
@@ -359,7 +374,7 @@ def get_schedule_components(data):
     }
 
 
-def render_flexible_soa(data):
+def render_flexible_soa(data, table_id: str = "main"):
     """
     Parses a potentially incomplete or non-standard USDM file and renders the best possible SoA table.
     """
@@ -453,7 +468,7 @@ def render_flexible_soa(data):
     # Strategy 3: No hierarchy found
     else:
         st.warning("No activity hierarchy found. Displaying a flat list of activities.")
-        parent_name = "Uncategorized Activities"
+        parent_name = "Activities"
         for activity in components['activities']:
             activity_name = activity.get('label', activity.get('name', 'Unnamed Activity'))
             row_index_data.append((parent_name, activity_name))
@@ -493,9 +508,21 @@ def render_flexible_soa(data):
         col_index_data.append((epoch_name, encounter_name, pt_name))
         ordered_pt_for_cols.append({'id': pt_id, 'encounterId': enc_id})
 
+    # Fallback: if we have plannedTimepoints but none with encounterId, still build columns
     if not col_index_data:
-        st.error("Could not build timeline columns – no planned timepoints available.")
-        return
+        if components['plannedTimepoints']:
+            st.warning("No encounterId found on plannedTimepoints; building columns from timepoints only.")
+            for pt in components['plannedTimepoints']:
+                pt_id = pt.get('id')
+                if not pt_id:
+                    continue
+                pt_name = pt.get('name', 'Unnamed TP')
+                # Use generic epoch/visit labels when encounter linkage is missing
+                col_index_data.append(("Timeline", "", pt_name))
+                ordered_pt_for_cols.append({'id': pt_id, 'encounterId': None})
+        else:
+            st.error("Could not build timeline columns  no planned timepoints available.")
+            return
 
     col_multi_index = pd.MultiIndex.from_tuples(col_index_data, names=['Epoch', 'Visit Window', 'Planned TP'])
 
@@ -532,25 +559,88 @@ def render_flexible_soa(data):
             if (act_id, pt_id) in activity_pt_links:
                 df.loc[row_label, col_tuple] = 'X'
 
+    # Display the full dataframe (no filtering of all-X rows)
+    df_display = df
+    row_index_data_display = row_index_data
+    ordered_activities_display = ordered_activities
+
     # Add provenance styling if available
     provenance = data.get('p2uProvenance', {})
     if provenance:
+        at_prov_map = provenance.get('activityTimepoints', {}) if isinstance(provenance, dict) else {}
+        tick_counts = {'text': 0, 'confirmed': 0, 'needs_review': 0}
+        rows_with_review = set()
+        if isinstance(at_prov_map, dict):
+            for idx, activity in zip(row_index_data_display, ordered_activities_display):
+                aid = activity.get('id')
+                if not aid:
+                    continue
+                cell_map = at_prov_map.get(aid, {})
+                if not isinstance(cell_map, dict):
+                    continue
+                has_row_review = False
+                for src in cell_map.values():
+                    if src == 'text':
+                        tick_counts['text'] += 1
+                    elif src == 'both':
+                        tick_counts['confirmed'] += 1
+                    elif src in ('vision', 'needs_review'):
+                        # Vision-only and needs_review both count as needing review
+                        tick_counts['needs_review'] += 1
+                        has_row_review = True
+                if has_row_review:
+                    rows_with_review.add(idx)
+
+        total_ticks = tick_counts['text'] + tick_counts['confirmed'] + tick_counts['needs_review']
+        has_validation = tick_counts['confirmed'] > 0 or tick_counts['needs_review'] > 0
+
+        if total_ticks:
+            summary_text = (
+                f"**Tick provenance:** {total_ticks} total - "
+                f"{tick_counts['confirmed']} ✓ confirmed, "
+                f"{tick_counts['text']} unvalidated, "
+                f"{tick_counts['needs_review']} ⚠️ need review."
+            )
+            st.markdown(summary_text)
+
+        if rows_with_review:
+            st.warning(f"⚠️ **{tick_counts['needs_review']} ticks need human review** (possible hallucinations or vision-only detections)")
+            only_review_rows = st.checkbox(
+                "Show only rows needing review",
+                value=False,
+                key=f"only_review_{table_id}",
+            )
+            if only_review_rows:
+                keep_index = [idx for idx in df_display.index if idx in rows_with_review]
+                df_display = df_display.loc[keep_index]
+                keep_index_set = set(df_display.index)
+                filtered = [
+                    (idx, act)
+                    for idx, act in zip(row_index_data_display, ordered_activities_display)
+                    if idx in keep_index_set
+                ]
+                row_index_data_display = [idx for idx, _ in filtered]
+                ordered_activities_display = [act for _, act in filtered]
+
+        if not has_validation:
+            st.info("Vision validation has not been run. All ticks shown are from text extraction only.")
+
         # Display provenance legend
         st.markdown("""
         <h3 style="font-weight: 600;">Provenance Legend</h3>
         <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1rem;">
-            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #60a5fa;"></div><span>Text</span></div>
-            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #facc15;"></div><span>Vision</span></div>
-            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #4ade80;"></div><span>Both</span></div>
+            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #60a5fa;"></div><span>Text (unvalidated)</span></div>
+            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #4ade80;"></div><span>✓ Confirmed</span></div>
+            <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #fb923c;"></div><span>⚠️ Needs Review</span></div>
         </div>
         """, unsafe_allow_html=True)
         
         # Apply provenance styling
         def apply_provenance_style(row, col):
-            """Apply provenance color to cells with 'X'"""
+            """Apply provenance color to cells with 'X', preferring cell-level provenance when available."""
             try:
                 # Safely get cell value - handle multi-index
-                cell_value = df.loc[row, col]
+                cell_value = df_display.loc[row, col]
                 # If it's a Series (multi-index edge case), get the first value
                 if hasattr(cell_value, 'item'):
                     cell_value = cell_value.item()
@@ -564,9 +654,9 @@ def render_flexible_soa(data):
             
             # Get activity ID from row
             act_id = None
-            for i, row_tuple in enumerate(row_index_data):
+            for i, row_tuple in enumerate(row_index_data_display):
                 if row_tuple == row:
-                    act_id = ordered_activities[i].get('id')
+                    act_id = ordered_activities_display[i].get('id')
                     break
             
             # Get timepoint ID from column  
@@ -578,8 +668,19 @@ def render_flexible_soa(data):
             
             if not act_id or not pt_id:
                 return ''
+
+            # 1) Prefer cell-level provenance if available
+            at_prov_map = provenance.get('activityTimepoints', {}) if isinstance(provenance, dict) else {}
+            if at_prov_map and isinstance(at_prov_map, dict):
+                cell_src = at_prov_map.get(act_id, {}).get(pt_id)
+                if cell_src in ('needs_review', 'vision'):
+                    return 'background-color: #fb923c'  # orange - needs review (includes vision-only)
+                elif cell_src == 'both':
+                    return 'background-color: #4ade80'  # green - confirmed
+                elif cell_src == 'text':
+                    return 'background-color: #60a5fa'  # blue - text (unvalidated)
             
-            # Check provenance
+            # 2) Fallback to entity-level provenance
             act_prov = get_provenance_sources(provenance, 'activities', act_id)
             pt_prov = get_provenance_sources(provenance, 'plannedTimepoints', pt_id)
             
@@ -597,8 +698,8 @@ def render_flexible_soa(data):
         # Apply styling directly - bypass Styler to avoid multi-index issues
         # Build a style map with integer positions instead of labels
         style_map = {}
-        for i, row_idx in enumerate(df.index):
-            for j, col_idx in enumerate(df.columns):
+        for i, row_idx in enumerate(df_display.index):
+            for j, col_idx in enumerate(df_display.columns):
                 style = apply_provenance_style(row_idx, col_idx)
                 if style:
                     style_map[(i, j)] = style
@@ -611,46 +712,117 @@ def render_flexible_soa(data):
         html_parts.append('</style>')
         html_parts.append('<table class="soa-table">')
         
-        # Header - simplified for multi-index
+        # Header - with proper column structure for activity groups
+        has_groups = isinstance(df_display.index, pd.MultiIndex) and df_display.index.nlevels >= 2
         html_parts.append('<thead>')
         if isinstance(df.columns, pd.MultiIndex):
-            # Multi-level column headers
-            for level in range(df.columns.nlevels):
+            # Check if Visit Window (level 1) and Planned TP (level 2) are duplicates
+            # If so, skip one level to avoid redundant rows
+            level_values = [df.columns.get_level_values(i).tolist() for i in range(df.columns.nlevels)]
+            skip_levels = set()
+            if df.columns.nlevels >= 3:
+                # Check if level 1 and level 2 are mostly identical
+                if level_values[1] == level_values[2]:
+                    skip_levels.add(2)  # Skip the duplicate level
+            
+            active_levels = [i for i in range(df.columns.nlevels) if i not in skip_levels]
+            num_header_rows = len(active_levels)
+            
+            # Multi-level column headers with colspan merging
+            for level_idx, level in enumerate(active_levels):
                 html_parts.append('<tr>')
-                if level == 0:
-                    html_parts.append(f'<th rowspan="{df.columns.nlevels}"></th>')
-                for col_idx in df.columns:
-                    if level < len(col_idx):
-                        html_parts.append(f'<th>{col_idx[level]}</th>')
+                if level_idx == 0:
+                    # Two header columns: Activity Group + Activity Name
+                    if has_groups:
+                        html_parts.append(f'<th rowspan="{num_header_rows}" style="background-color: #d1d5db; min-width: 120px;">Category</th>')
+                        html_parts.append(f'<th rowspan="{num_header_rows}" style="background-color: #d1d5db; min-width: 200px;">Activity</th>')
+                    else:
+                        html_parts.append(f'<th rowspan="{num_header_rows}" style="background-color: #d1d5db;">Activity</th>')
+                
+                # Build merged cells with colspan for this level
+                values = level_values[level]
+                i = 0
+                while i < len(values):
+                    val = values[i]
+                    colspan = 1
+                    # Count consecutive identical values
+                    while i + colspan < len(values) and values[i + colspan] == val:
+                        colspan += 1
+                    
+                    # Different styling for epoch row (level 0)
+                    if level == 0:
+                        style = 'background-color: #e5e7eb; font-weight: bold;'
+                    else:
+                        style = ''
+                    
+                    if colspan > 1:
+                        html_parts.append(f'<th colspan="{colspan}" style="{style}">{html.escape(str(val))}</th>')
+                    else:
+                        html_parts.append(f'<th style="{style}">{html.escape(str(val))}</th>')
+                    i += colspan
                 html_parts.append('</tr>')
         else:
-            html_parts.append('<tr><th></th>')
+            html_parts.append('<tr>')
+            if has_groups:
+                html_parts.append('<th style="background-color: #d1d5db;">Category</th>')
+                html_parts.append('<th style="background-color: #d1d5db;">Activity</th>')
+            else:
+                html_parts.append('<th style="background-color: #d1d5db;">Activity</th>')
             for col in df.columns:
                 html_parts.append(f'<th>{col}</th>')
             html_parts.append('</tr>')
         html_parts.append('</thead>')
         
-        # Body
+        # Body - with proper activity group visual structure
         html_parts.append('<tbody>')
-        for i, (row_idx, row) in enumerate(df.iterrows()):
+        
+        # Pre-calculate group spans for proper rowspan rendering
+        group_spans = {}  # group_name -> (start_row, count)
+        prev_group = None
+        for i, row_idx in enumerate(df_display.index):
+            if isinstance(row_idx, tuple) and len(row_idx) >= 2:
+                group_name = row_idx[0]
+                if group_name != prev_group:
+                    group_spans[group_name] = {'start': i, 'count': 1}
+                    prev_group = group_name
+                else:
+                    group_spans[group_name]['count'] += 1
+        
+        rendered_groups = set()
+        for i, (row_idx, row) in enumerate(df_display.iterrows()):
             html_parts.append('<tr>')
-            # Row header
-            if isinstance(row_idx, tuple):
-                html_parts.append(f'<th>{" | ".join(str(x) for x in row_idx)}</th>')
+            
+            if isinstance(row_idx, tuple) and len(row_idx) >= 2:
+                group_name, activity_name = row_idx[0], row_idx[1]
+                
+                # Render group header cell with rowspan (only for first row of group)
+                if group_name not in rendered_groups:
+                    rendered_groups.add(group_name)
+                    span = group_spans.get(group_name, {}).get('count', 1)
+                    html_parts.append(
+                        f'<th rowspan="{span}" style="background-color: #e5e7eb; '
+                        f'font-weight: 600; text-align: left; vertical-align: top; '
+                        f'border-right: 2px solid #9ca3af; padding: 8px 12px;">{group_name}</th>'
+                    )
+                
+                # Activity name cell
+                html_parts.append(f'<th style="text-align: left; font-weight: normal; padding-left: 8px;">{activity_name}</th>')
             else:
-                html_parts.append(f'<th>{row_idx}</th>')
-            # Cells with provenance styling
+                # Flat structure - no grouping
+                html_parts.append(f'<th style="text-align: left;">{row_idx}</th>')
+            
+            # Data cells with provenance styling
             for j, (col_idx, value) in enumerate(row.items()):
                 style_attr = f' style="{style_map.get((i, j), "")}"' if (i, j) in style_map else ''
                 html_parts.append(f'<td{style_attr}>{value}</td>')
             html_parts.append('</tr>')
         html_parts.append('</tbody></table>')
         
-        html = ''.join(html_parts)
-        st.markdown(html, unsafe_allow_html=True)
+        table_html = ''.join(html_parts)
+        st.markdown(table_html, unsafe_allow_html=True)
     else:
-        # No provenance available, just show the dataframe
-        st.dataframe(df)
+        # No provenance available, just show the dataframe (with any applied row filtering)
+        st.dataframe(df_display)
 
 def get_provenance_sources(provenance, item_type, item_id):
     """
@@ -665,9 +837,21 @@ def get_provenance_sources(provenance, item_type, item_id):
     provenance_data = provenance.get(item_type, {})
     if not provenance_data:
         return sources
-    
-    # Look up the entity ID directly in provenance
+
+    # Look up the entity ID directly in provenance, but be tolerant of
+    # hyphen vs underscore differences between extraction/post-processing
     entity_source = provenance_data.get(item_id)
+    if entity_source is None and isinstance(item_id, str):
+        # Try hyphen-normalized variants
+        alt_ids = set()
+        if '-' in item_id:
+            alt_ids.add(item_id.replace('-', '_'))
+        if '_' in item_id:
+            alt_ids.add(item_id.replace('_', '-'))
+        for alt in alt_ids:
+            if alt in provenance_data:
+                entity_source = provenance_data[alt]
+                break
     
     if entity_source == 'text':
         sources['text'] = True
@@ -679,171 +863,8 @@ def get_provenance_sources(provenance, item_type, item_id):
         
     return sources
 
-def style_provenance(df, provenance, activity_map, encounter_map):
-    """
-    Applies background color styling to the DataFrame based on data provenance.
-    Returns a DataFrame of CSS styles.
-    """
-    # Create a new DataFrame of the same size to hold the styles
-    style_df = pd.DataFrame('', index=df.index, columns=df.columns)
-    
-    # Provenance colors
-    colors = {
-        'text': '#60a5fa',    # blue-400
-        'vision': '#facc15',  # yellow-400
-        'both': '#4ade80'     # green-400
-    }
-
-    for (group_name, activity_name), row in df.iterrows():
-        activity_id = activity_map.get((group_name, activity_name))
-        if not activity_id:
-            continue
-
-        for (epoch_name, encounter_name) in df.columns:
-            if row[(epoch_name, encounter_name)] == 'X':
-                encounter_id = encounter_map.get((epoch_name, encounter_name))
-                if not encounter_id:
-                    continue
-
-                # Determine the provenance of the cell's row (activity) and column (encounter)
-                activity_prov = get_provenance_sources(provenance, 'activities', activity_id)
-                encounter_prov = get_provenance_sources(provenance, 'encounters', encounter_id)
-
-                # The cell's provenance is a union of the row's and column's provenance
-                from_text = activity_prov['text'] or encounter_prov['text']
-                from_vision = activity_prov['vision'] or encounter_prov['vision']
-
-                color = ''
-                if from_text and from_vision:
-                    color = colors['both']
-                elif from_text:
-                    color = colors['text']
-                elif from_vision:
-                    color = colors['vision']
-                
-                if color:
-                    style_df.loc[(group_name, activity_name), (epoch_name, encounter_name)] = f'background-color: {color}'
-                    
-    return style_df
-
-
-def render_soa_table(data):
-    """
-    Parses the USDM data and renders a styled Schedule of Activities table.
-    """
-    if not data:
-        st.warning("No SoA data provided to renderer.")
-        return
-
-    try:
-        timeline = data['study']['versions'][0]['timeline']
-        provenance = data.get('p2uProvenance', {})
-    except (KeyError, IndexError, TypeError) as e:
-        st.error(f"Invalid USDM JSON structure. Missing expected key or invalid data: {e}")
-        st.json(data) # Show the problematic data
-        return
-
-    # --- Data Extraction and Mapping ---
-    epochs = timeline.get('epochs', [])
-    encounters = timeline.get('encounters', [])
-    activities = timeline.get('activities', [])
-    activity_groups = timeline.get('activityGroups', [])
-    planned_timepoints = timeline.get('plannedTimepoints', [])
-    activity_timepoints = timeline.get('activityTimepoints', [])
-
-    # Check only critical entities (activities and timepoints are essential)
-    if not activities or not planned_timepoints or not activity_timepoints:
-        st.warning("SoA data is missing critical entities (activities, plannedTimepoints, or activityTimepoints). Cannot render table.")
-        st.info("Try using the flexible renderer instead by checking intermediate outputs.")
-        return
-    
-    # Warn about missing optional entities
-    if not epochs:
-        st.info("Note: No epochs found in the data. Timeline grouping will be simplified.")
-    if not encounters:
-        st.warning("Warning: No encounters found. This may affect visit window grouping.")
-    if not activity_groups:
-        st.info("Note: No activity groups found. Activities will not be categorized.")
-
-    # Create maps for efficient lookups
-    planned_timepoint_map = {pt['id']: pt for pt in planned_timepoints}
-    
-    activity_encounter_map = set()
-    for at in activity_timepoints:
-        pt = planned_timepoint_map.get(at['plannedTimepointId'])
-        if pt and pt.get('encounterId') and at.get('isPerformed'):
-            key = (at['activityId'], pt['encounterId'])
-            activity_encounter_map.add(key)
-
-    # --- Prepare DataFrame Structure ---
-    
-    # Create multi-index for rows
-    row_index_data = []
-    # Create a map to get activity_id from its name and group for the styler
-    activity_id_map = {} 
-    for group in activity_groups:
-        group_id = group['id']
-        group_name = group['name']
-        for act in activities:
-            if act.get('activityGroupId') == group_id:
-                activity_name = act['name']
-                row_index_data.append((group_name, activity_name))
-                activity_id_map[(group_name, activity_name)] = act['id']
-                
-    if not row_index_data:
-        st.info("No activities found to display in the table.")
-        return
-
-    row_multi_index = pd.MultiIndex.from_tuples(row_index_data, names=['Activity Group', 'Activity / Procedure'])
-
-    # Create multi-index for columns
-    col_index_data = []
-    # Create a map to get encounter_id from its name and epoch for the styler
-    encounter_id_map = {} 
-    ordered_encounters = []
-    for epoch in epochs:
-        epoch_id = epoch['id']
-        epoch_name = epoch['name']
-        for enc in encounters:
-            if enc.get('epochId') == epoch_id:
-                encounter_name = enc['name']
-                col_index_data.append((epoch_name, encounter_name))
-                encounter_id_map[(epoch_name, encounter_name)] = enc['id']
-                ordered_encounters.append(enc) # Keep a simple ordered list for data filling
-
-    if not col_index_data:
-        st.info("No encounters found to display in the table.")
-        return
-
-    col_multi_index = pd.MultiIndex.from_tuples(col_index_data, names=['Epoch', 'Encounter'])
-
-    # --- Create and Populate DataFrame ---
-    df = pd.DataFrame("", index=row_multi_index, columns=col_multi_index)
-
-    for (group_name, activity_name), activity_id in activity_id_map.items():
-        for enc in ordered_encounters:
-            encounter_id = enc['id']
-            epoch_name = next((e['name'] for e in epochs if e['id'] == enc.get('epochId')), None)
-            encounter_name = enc['name']
-            
-            if (activity_id, encounter_id) in activity_encounter_map:
-                if (epoch_name, encounter_name) in df.columns:
-                    df.loc[(group_name, activity_name), (epoch_name, encounter_name)] = 'X'
-
-    # --- Display Legend and Table ---
-    st.markdown("""
-    <h3 style="font-weight: 600;">Provenance Legend</h3>
-    <div style="display: flex; align-items: center; gap: 1.5rem;">
-        <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #60a5fa;"></div><span>Text</span></div>
-        <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #facc15;"></div><span>Vision</span></div>
-        <div style="display: flex; align-items: center;"><div style="width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 0.25rem; background-color: #4ade80;"></div><span>Both</span></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Convert the styled DataFrame to HTML to get the desired merged-cell effect for the index
-    styler = df.style.apply(style_provenance, provenance=provenance, activity_map=activity_id_map, encounter_map=encounter_id_map, axis=None)
-    html = styler.to_html(sparse_index=True)
-    st.markdown(html, unsafe_allow_html=True)
+# Note: Removed unused style_provenance() and render_soa_table() functions
+# The viewer now uses render_flexible_soa() which handles all rendering with provenance styling
 
 # --- Main App Layout ---
 
@@ -888,44 +909,27 @@ inventory = get_file_inventory(run_path)
 if inventory['final_soa']:
     st.sidebar.markdown("---")
     st.sidebar.subheader("📊 USDM Quality Metrics")
-    
-    # Check for gold standard
-    gold_path = Path("test_data/medium") / f"{selected_run}_gold.json"
-    gold_standard = None
-    if gold_path.exists():
-        try:
-            with open(gold_path, 'r', encoding='utf-8') as f:
-                gold_standard = json.load(f)
-        except:
-            pass
-    
-    metrics = compute_usdm_metrics(inventory['final_soa']['content'], gold_standard)
-    
+
+    # Compute metrics solely from the reconciled SoA (no external gold standard).
+    metrics = compute_usdm_metrics(inventory['final_soa']['content'])
+
     if metrics:
         # Entity counts
         st.sidebar.markdown("**Entity Counts:**")
         st.sidebar.metric("Visits (PlannedTimepoints)", metrics['visits'])
         st.sidebar.metric("Activities", metrics['activities'])
         st.sidebar.metric("Activity-Visit Mappings", metrics['activityTimepoints'])
-        
+
         # Quality metrics
         st.sidebar.markdown("**Quality Scores:**")
-        
+
         # Linkage accuracy
         linkage_color = '#4caf50' if metrics['linkage_accuracy'] >= 95 else '#ff9800' if metrics['linkage_accuracy'] >= 85 else '#f44336'
         st.sidebar.markdown(f"<div style='background:{linkage_color};color:white;padding:6px;border-radius:4px;text-align:center;margin-bottom:8px;'>Linkage Accuracy: {metrics['linkage_accuracy']:.1f}%</div>", unsafe_allow_html=True)
-        
+
         # Field population
         field_color = '#4caf50' if metrics['field_population_rate'] >= 70 else '#ff9800' if metrics['field_population_rate'] >= 50 else '#f44336'
         st.sidebar.markdown(f"<div style='background:{field_color};color:white;padding:6px;border-radius:4px;text-align:center;margin-bottom:8px;'>Field Population: {metrics['field_population_rate']:.1f}%</div>", unsafe_allow_html=True)
-        
-        # Visit/Activity accuracy if gold standard available
-        if gold_standard and 'visit_accuracy' in metrics:
-            visit_color = '#4caf50' if metrics['visit_accuracy'] >= 95 else '#ff9800' if metrics['visit_accuracy'] >= 80 else '#f44336'
-            st.sidebar.markdown(f"<div style='background:{visit_color};color:white;padding:6px;border-radius:4px;text-align:center;margin-bottom:8px;'>Visit Accuracy: {metrics['visit_accuracy']:.1f}%</div>", unsafe_allow_html=True)
-            
-            act_color = '#4caf50' if metrics['activity_accuracy'] >= 95 else '#ff9800' if metrics['activity_accuracy'] >= 80 else '#f44336'
-            st.sidebar.markdown(f"<div style='background:{act_color};color:white;padding:6px;border-radius:4px;text-align:center;'>Activity Accuracy: {metrics['activity_accuracy']:.1f}%</div>", unsafe_allow_html=True)
 
 
 
@@ -938,7 +942,7 @@ if not inventory['final_soa']:
     st.warning("The final reconciled SoA (`9_reconciled_soa.json`) was not found for this run.")
 else:
     # Use the flexible renderer which handles missing entities gracefully
-    render_flexible_soa(inventory['final_soa']['content'])
+    render_flexible_soa(inventory['final_soa']['content'], table_id="final_soa")
     with st.expander("Show Full JSON Output"):
         st.json(inventory['final_soa']['content'])
 
@@ -946,46 +950,28 @@ else:
 st.markdown("--- ")
 st.header("Intermediate Outputs & Debugging")
 
-# Create tabs for the different categories of intermediate files
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-    "Raw Outputs", 
-    "Post-Processed", 
+# Create tabs for intermediate files (simplified - removed legacy Post-Processed tab)
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "Text Extraction", 
     "Data Files", 
     "Config Files", 
     "SoA Images",
-    "Completeness Report",
-    "USDM Metrics",
-    "Benchmark Results"
+    "Quality Metrics",
+    "Validation & Conformance",
 ])
 
 with tab1:
-    st.subheader("Primary Extraction Outputs (Raw)")
+    st.subheader("Text Extraction Output")
     if not inventory['primary_outputs']:
-        st.info("No raw text or vision output files found.")
+        st.info("No text extraction output found. Run the pipeline to generate.")
     else:
-        if inventory['primary_outputs']:
-            output_tabs = st.tabs(list(inventory['primary_outputs'].keys()))
-            for i, (key, content) in enumerate(inventory['primary_outputs'].items()):
-                with output_tabs[i]:
-                    render_flexible_soa(content)
-                    if st.checkbox("Show Full JSON Output", key=f"json_primary_{i}"):
-                        st.json(content)
+        for i, (key, content) in enumerate(inventory['primary_outputs'].items()):
+            st.markdown(f"**{key}**")
+            render_flexible_soa(content, table_id=f"primary_{i}")
+            with st.expander("Show Raw JSON"):
+                st.json(content)
 
 with tab2:
-    st.subheader("Post-Processed Outputs")
-    if not inventory['post_processed']:
-        st.info("No post-processed output files found.")
-    else:
-        if inventory['post_processed']:
-            # The key is the filename, the value is the content
-            output_tabs = st.tabs([inventory['file_map'].get(k, k) for k in inventory['post_processed'].keys()])
-            for i, (filename, content) in enumerate(inventory['post_processed'].items()):
-                with output_tabs[i]:
-                    render_flexible_soa(content)
-                    if st.checkbox("Show Full JSON Output", key=f"json_post_{i}"):
-                        st.json(content)
-
-with tab3:
     st.subheader("Intermediate Data Files")
     if not inventory['intermediate_data']:
         st.info("No intermediate data files found.")
@@ -994,7 +980,7 @@ with tab3:
             with st.expander(key):
                 st.json(content if isinstance(content, dict) else str(content))
 
-with tab4:
+with tab3:
     st.subheader("Configuration Files")
     if not inventory['configs']:
         st.info("No configuration files found.")
@@ -1006,170 +992,193 @@ with tab4:
                 else:
                     st.text(content)
 
-with tab5:
+with tab4:
     st.subheader("Extracted SoA Images")
     if not inventory['images']:
-        st.info("No images found in `3_soa_images/`")
+        st.info("No images found.")
     else:
-        for img_path in inventory['images']:
+        cols = st.columns(2)
+        for i, img_path in enumerate(inventory['images']):
             if not os.path.exists(img_path):
-                st.warning(f"Image not found: {img_path}")
                 continue
             try:
-                st.image(img_path, caption=os.path.basename(img_path), use_container_width=True)
+                with cols[i % 2]:
+                    st.image(img_path, caption=os.path.basename(img_path), use_container_width=True)
             except Exception as e:
                 st.warning(f"Could not load image {img_path}: {e}")
 
-with tab6:
-    st.subheader("USDM Completeness Report")
+with tab5:
+    st.subheader("Quality Metrics")
     if not inventory['final_soa']:
         st.info("Run a pipeline to generate a final SoA first.")
     else:
-        metrics = compute_completeness_metrics(inventory['final_soa']['content'])
-        if metrics:
-            st.table(metrics)
-        else:
-            st.info("Could not compute metrics; timeline missing or malformed.")
-
-with tab7:
-    st.subheader("USDM-Specific Quality Metrics")
-    if not inventory['final_soa']:
-        st.info("Run a pipeline to generate a final SoA first.")
-    else:
-        # Check for gold standard
-        gold_path = Path("test_data/medium") / f"{selected_run}_gold.json"
-        gold_standard = None
-        if gold_path.exists():
-            try:
-                with open(gold_path, 'r', encoding='utf-8') as f:
-                    gold_standard = json.load(f)
-                st.success(f"✅ Gold standard found: `{gold_path.name}`")
-            except Exception as e:
-                st.warning(f"Could not load gold standard: {e}")
-        else:
-            st.info("No gold standard found. Showing metrics without comparison.")
-        
-        metrics = compute_usdm_metrics(inventory['final_soa']['content'], gold_standard)
+        # Entity counts and quality metrics
+        metrics = compute_usdm_metrics(inventory['final_soa']['content'])
         
         if metrics:
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.metric("Visits (PlannedTimepoints)", metrics['visits'])
+                st.metric("Visits", metrics['visits'])
                 st.metric("Activities", metrics['activities'])
                 st.metric("Encounters", metrics['encounters'])
             
             with col2:
-                st.metric("ActivityTimepoints", metrics['activityTimepoints'])
                 st.metric("Epochs", metrics['epochs'])
-                st.metric("Linkage Accuracy", f"{metrics['linkage_accuracy']:.1f}%")
+                st.metric("Tick Marks", metrics['activityTimepoints'])
             
             with col3:
+                st.metric("Linkage Accuracy", f"{metrics['linkage_accuracy']:.1f}%")
                 st.metric("Field Population", f"{metrics['field_population_rate']:.1f}%")
-                if 'visit_accuracy' in metrics:
-                    st.metric("Visit Accuracy", f"{metrics['visit_accuracy']:.1f}%")
-                if 'activity_accuracy' in metrics:
-                    st.metric("Activity Accuracy", f"{metrics['activity_accuracy']:.1f}%")
             
-            # Detailed breakdown
+            # Quality interpretation
             st.markdown("---")
-            st.subheader("Metric Interpretation")
-            
-            # Linkage quality
             if metrics['linkage_accuracy'] >= 95:
-                st.success(f"✅ **Excellent linkage quality** ({metrics['linkage_accuracy']:.1f}%) - All entity references are valid")
+                st.success(f"✅ Excellent linkage ({metrics['linkage_accuracy']:.1f}%)")
             elif metrics['linkage_accuracy'] >= 85:
-                st.warning(f"⚠️ **Good linkage quality** ({metrics['linkage_accuracy']:.1f}%) - Minor linkage issues detected")
+                st.warning(f"⚠️ Good linkage ({metrics['linkage_accuracy']:.1f}%)")
             else:
-                st.error(f"❌ **Poor linkage quality** ({metrics['linkage_accuracy']:.1f}%) - Significant broken references")
+                st.error(f"❌ Poor linkage ({metrics['linkage_accuracy']:.1f}%)")
             
-            # Field population
-            if metrics['field_population_rate'] >= 70:
-                st.success(f"✅ **Good field coverage** ({metrics['field_population_rate']:.1f}%) - Most required fields populated")
-            elif metrics['field_population_rate'] >= 50:
-                st.warning(f"⚠️ **Moderate field coverage** ({metrics['field_population_rate']:.1f}%) - Some required fields missing")
-            else:
-                st.error(f"❌ **Low field coverage** ({metrics['field_population_rate']:.1f}%) - Many required fields missing")
-            
-            # Visit accuracy (if available)
-            if 'visit_accuracy' in metrics:
-                if metrics['visit_accuracy'] >= 95:
-                    st.success(f"✅ **Complete visit extraction** ({metrics['visit_accuracy']:.1f}%) - All visits captured")
-                elif metrics['visit_accuracy'] >= 80:
-                    st.warning(f"⚠️ **Most visits extracted** ({metrics['visit_accuracy']:.1f}%) - Some visits may be missing")
-                else:
-                    st.error(f"❌ **Incomplete visit extraction** ({metrics['visit_accuracy']:.1f}%) - Significant visits missing")
+            # Completeness table
+            st.markdown("---")
+            st.subheader("Field Completeness")
+            completeness = compute_completeness_metrics(inventory['final_soa']['content'])
+            if completeness:
+                st.table(completeness)
         else:
-            st.error("Could not compute USDM metrics")
+            st.error("Could not compute metrics")
 
-with tab8:
-    st.subheader("Benchmark Results")
+with tab6:
+    st.subheader("Validation & Conformance Results")
     
-    # Look for benchmark results
-    benchmark_dir = Path("benchmark_results")
-    if benchmark_dir.exists():
-        benchmark_files = sorted(benchmark_dir.glob("benchmark_*.json"), key=lambda x: x.stat().st_mtime, reverse=True)
-        
-        if benchmark_files:
-            st.success(f"Found {len(benchmark_files)} benchmark result(s)")
-            
-            selected_benchmark = st.selectbox(
-                "Select benchmark result:",
-                [f.name for f in benchmark_files],
-                format_func=lambda x: f"{x} ({datetime.fromtimestamp(Path(benchmark_dir / x).stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')})"
-            )
-            
-            if selected_benchmark:
-                benchmark_path = benchmark_dir / selected_benchmark
-                try:
-                    with open(benchmark_path, 'r', encoding='utf-8') as f:
-                        benchmark_data = json.load(f)
-                    
-                    st.markdown(f"**Timestamp:** {benchmark_data.get('timestamp', 'N/A')}")
-                    st.markdown(f"**Model:** {benchmark_data.get('model', 'N/A')}")
-                    
-                    test_cases = benchmark_data.get('test_cases', {})
-                    if test_cases:
-                        for case_name, metrics in test_cases.items():
-                            st.markdown(f"### Test Case: {case_name}")
-                            
-                            if metrics.get('error_occurred'):
-                                st.error(f"❌ Error: {metrics.get('error_message', 'Unknown error')[:200]}...")
-                            else:
-                                col1, col2, col3 = st.columns(3)
-                                
-                                with col1:
-                                    st.metric("Validation Pass", "✅" if metrics.get('validation_pass') else "❌")
-                                    st.metric("Completeness", f"{metrics.get('completeness_score', 0):.1f}%")
-                                    st.metric("Linkage Accuracy", f"{metrics.get('linkage_accuracy', 0):.1f}%")
-                                
-                                with col2:
-                                    st.metric("Field Population", f"{metrics.get('field_population_rate', 0):.1f}%")
-                                    usdm_metrics = metrics.get('usdm_metrics', {})
-                                    st.metric("Visit Accuracy", f"{usdm_metrics.get('visit_count_accuracy', 0):.1f}%")
-                                    st.metric("Activity Accuracy", f"{usdm_metrics.get('activity_count_accuracy', 0):.1f}%")
-                                
-                                with col3:
-                                    st.metric("AT Completeness", f"{usdm_metrics.get('activitytimepoint_completeness', 0):.1f}%")
-                                    st.metric("Execution Time", f"{metrics.get('execution_time_seconds', 0):.1f}s")
-                                    
-                                    # Show actual vs expected counts
-                                    if usdm_metrics:
-                                        st.metric(
-                                            "Visits", 
-                                            f"{usdm_metrics.get('actual_visits', 0)}/{usdm_metrics.get('expected_visits', 0)}",
-                                            delta=usdm_metrics.get('actual_visits', 0) - usdm_metrics.get('expected_visits', 0)
-                                        )
-                    else:
-                        st.info("No test case results in this benchmark file")
-                    
-                    # Show raw JSON
-                    with st.expander("Show Full Benchmark JSON"):
-                        st.json(benchmark_data)
-                        
-                except Exception as e:
-                    st.error(f"Error loading benchmark file: {e}")
-        else:
-            st.info("No benchmark results found. Run benchmarks using:\n```\npython benchmark_prompts.py --test-set test_data --model gemini-2.5-pro\n```")
+    # Get the output directory from the current file path
+    if inventory['final_soa'] and inventory['final_soa'].get('path'):
+        output_dir = Path(inventory['final_soa']['path']).parent
     else:
-        st.info("Benchmark results directory not found. Run benchmarks to generate results.")
+        output_dir = None
+    
+    if not output_dir or not output_dir.exists():
+        st.info("Select an output directory to view validation results.")
+    else:
+        # --- Terminology Enrichment ---
+        st.markdown("### 🏷️ Terminology Enrichment (Step 7)")
+        
+        # Check both test pipeline and main pipeline output for enrichment
+        enriched_data = None
+        for fname in ["step7_enriched_soa.json", "9_final_soa.json"]:
+            f = output_dir / fname
+            if f.exists():
+                with open(f) as fp:
+                    enriched_data = json.load(fp)
+                break
+        
+        if enriched_data:
+            timeline = get_timeline(enriched_data)
+            if timeline:
+                activities = timeline.get('activities', [])
+                enriched_activities = [a for a in activities if a.get('definedProcedures')]
+                
+                if enriched_activities:
+                    st.success(f"✅ Enriched {len(enriched_activities)}/{len(activities)} activities with NCI terminology codes")
+                    
+                    with st.expander("View Enriched Activities"):
+                        for act in enriched_activities:
+                            procs = act.get('definedProcedures', [])
+                            if procs and procs[0].get('code'):
+                                code_info = procs[0]['code']
+                                st.markdown(f"- **{act.get('name', 'Unknown')}** → `{code_info.get('code')}` ({code_info.get('decode', '')})")
+                else:
+                    st.info("No activities enriched with terminology codes yet.")
+        else:
+            st.info("Terminology enrichment not run. Use `--enrich` or `--full` flag.")
+        
+        st.markdown("---")
+        
+        # --- Schema Validation ---
+        st.markdown("### 📋 Schema Validation (Step 8)")
+        schema_file = output_dir / "step8_schema_validation.json"
+        if schema_file.exists():
+            with open(schema_file) as f:
+                schema_result = json.load(f)
+            
+            if schema_result.get('valid'):
+                st.success("✅ Schema validation PASSED")
+            else:
+                st.error("❌ Schema validation FAILED")
+                
+            issues = schema_result.get('issues', [])
+            warnings = schema_result.get('warnings', [])
+            
+            if issues:
+                st.markdown("**Issues:**")
+                for issue in issues:
+                    st.markdown(f"- ❌ {issue}")
+            
+            if warnings:
+                with st.expander(f"Warnings ({len(warnings)})"):
+                    for warn in warnings:
+                        st.markdown(f"- ⚠️ {warn}")
+        else:
+            st.info("Schema validation not run. Use `--validate-schema` or `--full` flag.")
+        
+        st.markdown("---")
+        
+        # --- CDISC CORE Conformance ---
+        st.markdown("### 🔬 CDISC CORE Conformance (Step 9)")
+        
+        # Check for conformance report (could be step9_conformance.json or conformance_report.json)
+        conformance_file = None
+        for fname in ["step9_conformance.json", "conformance_report.json"]:
+            f = output_dir / fname
+            if f.exists():
+                conformance_file = f
+                break
+        
+        if conformance_file:
+            with open(conformance_file) as f:
+                conformance_data = json.load(f)
+            
+            # Parse CORE report structure (handle both naming conventions)
+            details = conformance_data.get('Conformance_Details', {})
+            rules_report = conformance_data.get('Rules_Report', conformance_data.get('rules_report', []))
+            issues = conformance_data.get('Issue_Details', conformance_data.get('issues', []))
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("CORE Version", details.get('CORE_Engine_Version', 'N/A'))
+            with col2:
+                st.metric("Standard", f"{details.get('Standard', 'USDM')} {details.get('Version', '')}")
+            with col3:
+                st.metric("Rules Executed", len(rules_report))
+            
+            if not issues:
+                st.success("✅ No conformance issues found!")
+            else:
+                # Group issues by severity
+                by_severity = {}
+                for issue in issues:
+                    sev = issue.get('severity', 'Unknown')
+                    by_severity[sev] = by_severity.get(sev, 0) + 1
+                
+                st.warning(f"⚠️ Found {len(issues)} conformance issues")
+                
+                for sev, count in sorted(by_severity.items()):
+                    if sev.lower() == 'error':
+                        st.markdown(f"- ❌ **{sev}**: {count}")
+                    elif sev.lower() == 'warning':
+                        st.markdown(f"- ⚠️ **{sev}**: {count}")
+                    else:
+                        st.markdown(f"- ℹ️ **{sev}**: {count}")
+                
+                with st.expander("View Issue Details"):
+                    for issue in issues[:20]:  # Limit to first 20
+                        st.markdown(f"**{issue.get('rule_id', 'Unknown')}**: {issue.get('message', '')}")
+                    if len(issues) > 20:
+                        st.info(f"... and {len(issues) - 20} more issues")
+            
+            # Show runtime info
+            with st.expander("Report Details"):
+                st.json(details)
+        else:
+            st.info("CDISC conformance check not run. Use `--conformance` or `--full` flag.")

@@ -2,6 +2,38 @@
 
 All notable changes after the last GitHub check-in (2025-07-13) are documented here.  Dates in ISO-8601.
 
+## [Unreleased] – 2025-11-26
+
+### Added
+* **Gemini 3.0 Support** – Added `gemini-3.0-pro` and `gemini-3.0-flash` to supported models in `llm_providers.py`
+* **Vision Validation with Provenance** – Pipeline now tracks which ticks are:
+  - ✓ Confirmed (both text and vision agree)
+  - ⚠️ Needs Review (possible hallucinations or vision-only detections)
+* **Step-by-Step Pipeline Testing** – `test_pipeline_steps.py` allows running individual pipeline steps for debugging
+* **Improved Activity Group Rendering** – Viewer now displays activity groups with proper visual structure (rowspan grouping)
+
+### Changed
+* **Streamlit Viewer Cleanup** (1231 → 928 lines, -25%)
+  - Removed duplicate functions (`get_timeline`, `get_timepoints`, `style_provenance`, `render_soa_table`)
+  - Simplified tabs: 7 → 5 (removed legacy Post-Processed tab, merged Completeness Report into Quality Metrics)
+  - Removed "hide all-X rows" checkbox
+  - Simplified provenance legend to 3 colors (Text/Confirmed/Needs Review)
+  - Images now display in 2-column grid
+* **Provenance Format** – Cell provenance now correctly uses `plannedTimepointId` (was using empty `timepointId`)
+
+### Archived
+* `pipeline_api.py` – Referenced deleted `main.py`
+* `validate_pipeline.py` – Referenced old output file names
+* `tests/test_reconcile_soa_llm.py` – Tests archived reconciliation code
+* `tests/test_soa_postprocess.py` – Tests archived postprocess code
+* `docs_legacy/` → `archive/docs_legacy/` – 35 outdated documentation files
+
+### Fixed
+* Provenance cell keys now correctly formatted as `act_id|pt_id` (was `act_id|` with empty timepoint)
+* Vision validation results now properly merged into provenance in step 6
+
+---
+
 ## [Unreleased] – 2025-10-04
 ### Added
 * **Multi-Model Provider Abstraction** – New `llm_providers.py` module providing unified interface for GPT and Gemini models

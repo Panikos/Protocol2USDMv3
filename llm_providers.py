@@ -100,14 +100,14 @@ class OpenAIProvider(LLMProvider):
     SUPPORTED_MODELS = [
         'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini',
         'o1', 'o1-mini', 'o3', 'o3-mini', 'o3-mini-high',
-        'gpt-5', 'gpt-5-mini',  # Future-proofing
+        'gpt-5', 'gpt-5-mini', 'gpt-5.1', 'gpt-5.1-mini',  # Future-proofing
     ]
     
     # Models that don't support temperature parameter
-    NO_TEMP_MODELS = ['o1', 'o1-mini', 'o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini']
+    NO_TEMP_MODELS = ['o1', 'o1-mini', 'o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini', 'gpt-5.1', 'gpt-5.1-mini']
     
     # Models that use max_completion_tokens instead of max_tokens
-    COMPLETION_TOKENS_MODELS = ['o1', 'o1-mini', 'o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini']
+    COMPLETION_TOKENS_MODELS = ['o1', 'o1-mini', 'o3', 'o3-mini', 'o3-mini-high', 'gpt-5', 'gpt-5-mini', 'gpt-5.1', 'gpt-5.1-mini']
     
     def __init__(self, model: str, api_key: Optional[str] = None):
         super().__init__(model, api_key)
@@ -195,7 +195,7 @@ class OpenAIProvider(LLMProvider):
 
 class GeminiProvider(LLMProvider):
     """
-    Google Gemini provider supporting Gemini 2.0, 2.5 models.
+    Google Gemini provider supporting Gemini 1.5, 2.x, and 3.x models.
     
     Features:
     - Native JSON mode (response_mime_type)
@@ -204,9 +204,17 @@ class GeminiProvider(LLMProvider):
     """
     
     SUPPORTED_MODELS = [
-        'gemini-2.0-pro', 'gemini-2.0-flash',
+        # Gemini 3.x (preview)
+        'gemini-3-pro-preview',
+        # Gemini 2.5 (stable)
         'gemini-2.5-pro', 'gemini-2.5-flash',
-        'gemini-pro', 'gemini-pro-vision',  # Legacy support
+        # Gemini 2.0
+        'gemini-2.0-pro', 'gemini-2.0-flash',
+        'gemini-2.0-flash-exp',
+        # Gemini 1.5
+        'gemini-1.5-pro', 'gemini-1.5-flash',
+        # Legacy
+        'gemini-pro', 'gemini-pro-vision',
     ]
     
     def __init__(self, model: str, api_key: Optional[str] = None):

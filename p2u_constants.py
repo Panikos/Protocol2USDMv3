@@ -1,8 +1,18 @@
-"""Centralised constants used across the Protocol2USDM pipeline."""
+"""
+Protocol2USDM Constants - Backward Compatibility Wrapper
 
-# Unified USDM schema version: update here when moving to a new standard
-USDM_VERSION: str = "4.0"
+This module provides backward compatibility for existing code.
+New code should import from core.constants directly.
+"""
 
-# System metadata
-SYSTEM_NAME: str = "Protocol2USDM"
-SYSTEM_VERSION: str = "0.1.0"
+# Re-export from core for backward compatibility
+from core.constants import (
+    USDM_VERSION,
+    SYSTEM_NAME,
+    SYSTEM_VERSION,
+    DEFAULT_MODEL,
+    OUTPUT_FILES,
+    REASONING_MODELS,
+    USDM_ENTITY_TYPES,
+    TIMING_CODES,
+)

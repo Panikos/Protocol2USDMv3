@@ -1,0 +1,1 @@
+{"study": {"versions": [{"timeline": {"activities": [{"id": "act1", "instanceType": "Activity"}], "plannedTimepoints": [{"id": "tp1", "encounterId": "enc1", "instanceType": "PlannedTimepoint"}], "encounters": [{"id": "enc1", "instanceType": "Encounter"}], "activityTimepoints": [{"activityId": "act1", "plannedTimepointId": "tp1"}]}}]}}

@@ -1,7 +1,0 @@
-[2025-10-06 03:42:28] [INFO] Processing image: output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_14.png
-[2025-10-06 03:42:28] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
-[2025-10-06 03:42:28] [INFO] Sending request to Gemini API...
-[2025-10-06 03:44:27] [INFO] [SUCCESS] Extracted SoA from output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_14.png.
-[2025-10-06 03:44:27] [INFO] Processing image: output\Alexion_NCT04573309_Wilsons\3_soa_images\soa_page_15.png
-[2025-10-06 03:44:27] [INFO] Processing 1 images with model 'gemini-2.5-pro'.
-[2025-10-06 03:44:27] [INFO] Sending request to Gemini API...

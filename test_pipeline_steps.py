@@ -1,0 +1,942 @@
+#!/usr/bin/env python3
+"""
+Step-by-Step Pipeline Testing Script
+
+Tests each module of the extraction pipeline independently,
+allowing quality inspection at each stage.
+
+Usage:
+    python test_pipeline_steps.py input/EliLilly_NCT03421379_Diabetes.pdf --step 1
+    python test_pipeline_steps.py input/EliLilly_NCT03421379_Diabetes.pdf --step 2 --pages 45,46,47
+    python test_pipeline_steps.py input/EliLilly_NCT03421379_Diabetes.pdf --step all
+"""
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+from datetime import datetime
+
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+import fitz  # PyMuPDF
+
+
+def step1_find_soa_pages(pdf_path: str, output_dir: str) -> dict:
+    """
+    STEP 1: Find Schedule of Activities pages
+    
+    Tests: extraction/soa_finder.py
+    Quality metrics:
+    - Are the correct pages identified?
+    - Are non-SoA pages excluded?
+    """
+    print("\n" + "=" * 60)
+    print("STEP 1: Find SoA Pages")
+    print("=" * 60)
+    
+    from extraction.soa_finder import find_soa_pages_heuristic
+    
+    # Run heuristic detection
+    pages = find_soa_pages_heuristic(pdf_path, top_n=10)
+    
+    result = {
+        "step": 1,
+        "name": "SoA Page Detection",
+        "pdf": pdf_path,
+        "detected_pages": pages,
+        "detected_pages_1indexed": [p + 1 for p in pages],
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    print(f"\nDetected SoA pages (0-indexed): {pages}")
+    print(f"Detected SoA pages (1-indexed): {[p+1 for p in pages]}")
+    
+    # Show page text samples
+    print("\n--- Page Samples ---")
+    doc = fitz.open(pdf_path)
+    for p in pages[:5]:  # Show first 5
+        text = doc[p].get_text()[:300].replace('\n', ' ')
+        print(f"\nPage {p+1}: {text}...")
+    doc.close()
+    
+    # Save result
+    output_path = Path(output_dir) / "step1_soa_pages.json"
+    with open(output_path, 'w') as f:
+        json.dump(result, f, indent=2)
+    print(f"\n✓ Saved to: {output_path}")
+    
+    print("\n--- QUALITY CHECK ---")
+    print("Review the detected pages. Are they the actual SoA tables?")
+    print("If not, manually specify pages with: --pages 45,46,47")
+    
+    return result
+
+
+def step2_extract_text_and_images(pdf_path: str, output_dir: str, pages: list = None) -> dict:
+    """
+    STEP 2: Extract text and images from SoA pages
+    
+    Tests: PDF text extraction quality
+    Quality metrics:
+    - Is the text readable?
+    - Are tables preserved?
+    - Are images clear enough for vision analysis?
+    """
+    print("\n" + "=" * 60)
+    print("STEP 2: Extract Text and Images")
+    print("=" * 60)
+    
+    doc = fitz.open(pdf_path)
+    
+    if pages is None:
+        # Use step 1 result
+        step1_path = Path(output_dir) / "step1_soa_pages.json"
+        if step1_path.exists():
+            with open(step1_path) as f:
+                step1 = json.load(f)
+                pages = step1["detected_pages"]
+        else:
+            print("ERROR: No pages specified and step 1 not run")
+            return {}
+    
+    print(f"\nExtracting from pages: {[p+1 for p in pages]}")
+    
+    # Extract text
+    texts = []
+    for p in pages:
+        if 0 <= p < len(doc):
+            text = doc[p].get_text()
+            texts.append({"page": p + 1, "text": text, "length": len(text)})
+    
+    combined_text = "\n\n--- PAGE BREAK ---\n\n".join(t["text"] for t in texts)
+    
+    # Extract images
+    images_dir = Path(output_dir) / "step2_images"
+    images_dir.mkdir(exist_ok=True)
+    
+    image_paths = []
+    for p in pages:
+        if 0 <= p < len(doc):
+            pix = doc[p].get_pixmap(dpi=150)
+            img_path = images_dir / f"page_{p+1:03d}.png"
+            pix.save(str(img_path))
+            image_paths.append(str(img_path))
+    
+    doc.close()
+    
+    result = {
+        "step": 2,
+        "name": "Text and Image Extraction",
+        "pages_extracted": [p + 1 for p in pages],
+        "total_text_chars": len(combined_text),
+        "per_page_stats": [{"page": t["page"], "chars": t["length"]} for t in texts],
+        "images_extracted": len(image_paths),
+        "image_paths": image_paths,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # Save text
+    text_path = Path(output_dir) / "step2_extracted_text.txt"
+    with open(text_path, 'w', encoding='utf-8') as f:
+        f.write(combined_text)
+    
+    # Save result
+    output_path = Path(output_dir) / "step2_extraction.json"
+    with open(output_path, 'w') as f:
+        json.dump(result, f, indent=2)
+    
+    print(f"\n✓ Extracted {len(combined_text)} characters of text")
+    print(f"✓ Created {len(image_paths)} page images")
+    print(f"✓ Text saved to: {text_path}")
+    print(f"✓ Images saved to: {images_dir}")
+    
+    print("\n--- QUALITY CHECK ---")
+    print("1. Open step2_extracted_text.txt - is the table text readable?")
+    print("2. Open the PNG images - are they clear enough?")
+    print("3. Can you see all columns and rows in the SoA table?")
+    
+    return result
+
+
+def step3_analyze_headers(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP 3: Vision-based header structure analysis
+    
+    Tests: extraction/header_analyzer.py
+    Quality metrics:
+    - Are all epochs identified?
+    - Are all encounters/visits identified?
+    - Are timepoint names correct?
+    """
+    print("\n" + "=" * 60)
+    print("STEP 3: Header Structure Analysis (Vision)")
+    print("=" * 60)
+    
+    from extraction.header_analyzer import analyze_soa_headers
+    
+    # Get images from step 2
+    images_dir = Path(output_dir) / "step2_images"
+    image_paths = sorted(images_dir.glob("*.png"))
+    
+    if not image_paths:
+        print("ERROR: No images found. Run step 2 first.")
+        return {}
+    
+    print(f"\nAnalyzing {len(image_paths)} images with {model}...")
+    print("This may take a minute...")
+    
+    # Run header analysis
+    header_result = analyze_soa_headers(
+        image_paths=[str(p) for p in image_paths],
+        model_name=model
+    )
+    
+    # Access structure from result
+    structure = header_result.structure
+    
+    # Convert to dicts for JSON serialization
+    epochs = [e.to_dict() if hasattr(e, 'to_dict') else e for e in structure.epochs]
+    encounters = [e.to_dict() if hasattr(e, 'to_dict') else e for e in structure.encounters]
+    timepoints = [t.to_dict() if hasattr(t, 'to_dict') else t for t in structure.plannedTimepoints]
+    activity_groups = [g.to_dict() if hasattr(g, 'to_dict') else g for g in structure.activityGroups]
+    
+    result = {
+        "step": 3,
+        "name": "Header Structure Analysis",
+        "model": model,
+        "epochs": epochs,
+        "encounters": encounters,
+        "timepoints": timepoints,
+        "activity_groups": activity_groups,
+        "raw_response": header_result.raw_response,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # Save result
+    output_path = Path(output_dir) / "step3_header_structure.json"
+    with open(output_path, 'w') as f:
+        json.dump(result, f, indent=2, default=str)
+    
+    print(f"\n✓ Epochs found: {len(epochs)}")
+    for e in epochs:
+        print(f"    - {e.get('id')}: {e.get('name')}")
+    
+    print(f"\n✓ Encounters/Visits found: {len(encounters)}")
+    for e in encounters[:10]:
+        print(f"    - {e.get('id')}: {e.get('name')}")
+    if len(encounters) > 10:
+        print(f"    ... and {len(encounters) - 10} more")
+    
+    print(f"\n✓ Activity Groups found: {len(activity_groups)}")
+    for g in activity_groups[:5]:
+        print(f"    - {g.get('id')}: {g.get('name')}")
+    
+    print(f"\n✓ Saved to: {output_path}")
+    
+    print("\n--- QUALITY CHECK ---")
+    print("1. Are all study phases (epochs) identified?")
+    print("2. Are all visits/encounters listed with correct names?")
+    print("3. Compare with the actual PDF - any missing columns?")
+    
+    return result
+
+
+def step4_extract_text_data(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP 4: Text-based data extraction using header structure
+    
+    Tests: extraction/text_extractor.py
+    Quality metrics:
+    - Are all activities extracted?
+    - Are tick marks (X) correctly identified?
+    - Do activity IDs match header IDs?
+    """
+    print("\n" + "=" * 60)
+    print("STEP 4: Text Data Extraction")
+    print("=" * 60)
+    
+    from extraction.text_extractor import extract_soa_from_text
+    from core.usdm_types import HeaderStructure
+    
+    # Load text from step 2
+    text_path = Path(output_dir) / "step2_extracted_text.txt"
+    if not text_path.exists():
+        print("ERROR: Text file not found. Run step 2 first.")
+        return {}
+    
+    with open(text_path, 'r', encoding='utf-8') as f:
+        soa_text = f.read()
+    
+    # Load header structure from step 3
+    header_path = Path(output_dir) / "step3_header_structure.json"
+    if not header_path.exists():
+        print("ERROR: Header structure not found. Run step 3 first.")
+        return {}
+    
+    with open(header_path) as f:
+        header_data = json.load(f)
+    
+    # Build header structure for extractor (convert to HeaderStructure object)
+    header_dict = {
+        "columnHierarchy": {
+            "epochs": header_data.get("epochs", []),
+            "encounters": header_data.get("encounters", []),
+            "plannedTimepoints": header_data.get("timepoints", []),
+        },
+        "rowGroups": header_data.get("activity_groups", [])
+    }
+    header_structure = HeaderStructure.from_dict(header_dict)
+    
+    print(f"\nExtracting data with {model}...")
+    print(f"Text length: {len(soa_text)} chars")
+    print(f"Header has {len(header_structure.encounters)} encounters")
+    print("This may take a minute...")
+    
+    # Run extraction
+    extraction_result = extract_soa_from_text(
+        protocol_text=soa_text,
+        header_structure=header_structure,
+        model_name=model
+    )
+    
+    # Convert to dicts for JSON
+    activities = [a.to_dict() if hasattr(a, 'to_dict') else a for a in extraction_result.activities]
+    ticks = [t.to_dict() if hasattr(t, 'to_dict') else t for t in extraction_result.activity_timepoints]
+    
+    result = {
+        "step": 4,
+        "name": "Text Data Extraction",
+        "model": model,
+        "activities_count": len(activities),
+        "activities": activities,
+        "tick_matrix": ticks,
+        "ticks_count": len(ticks),
+        "raw_response": extraction_result.raw_response,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # Save result
+    output_path = Path(output_dir) / "step4_text_extraction.json"
+    with open(output_path, 'w') as f:
+        json.dump(result, f, indent=2, default=str)
+    
+    print(f"\n✓ Activities extracted: {len(activities)}")
+    for a in activities[:10]:
+        print(f"    - {a.get('id')}: {a.get('name')}")
+    if len(activities) > 10:
+        print(f"    ... and {len(activities) - 10} more")
+    
+    print(f"\n✓ Tick marks found: {len(ticks)}")
+    
+    # Show sample ticks
+    print("\nSample ticks:")
+    for tick in ticks[:5]:
+        print(f"    Activity {tick.get('activityId')} @ Timepoint {tick.get('plannedTimepointId')}")
+    
+    print(f"\n✓ Saved to: {output_path}")
+    
+    print("\n--- QUALITY CHECK ---")
+    print("1. Are all activities from the SoA listed?")
+    print("2. Count the tick marks - does it seem reasonable?")
+    print("3. Open the PDF and verify a few ticks manually")
+    
+    return result
+
+
+def step5_validate_with_vision(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP 5: Vision-based validation of text extraction
+    
+    Tests: extraction/validator.py
+    Quality metrics:
+    - How many ticks confirmed by vision?
+    - How many potential hallucinations flagged?
+    - How many missed ticks found?
+    """
+    print("\n" + "=" * 60)
+    print("STEP 5: Vision Validation")
+    print("=" * 60)
+    
+    from extraction.validator import validate_extraction
+    
+    # Load text extraction from step 4
+    step4_path = Path(output_dir) / "step4_text_extraction.json"
+    if not step4_path.exists():
+        print("ERROR: Text extraction not found. Run step 4 first.")
+        return {}
+    
+    with open(step4_path) as f:
+        step4_data = json.load(f)
+    
+    # Get images from step 2
+    images_dir = Path(output_dir) / "step2_images"
+    image_paths = sorted(images_dir.glob("*.png"))
+    
+    # Load header structure
+    header_path = Path(output_dir) / "step3_header_structure.json"
+    with open(header_path) as f:
+        header_data = json.load(f)
+    
+    print(f"\nValidating {len(step4_data['tick_matrix'])} ticks against {len(image_paths)} images...")
+    print(f"Using model: {model}")
+    print("This may take a minute...")
+    
+    # Build HeaderStructure from header data
+    from core.usdm_types import HeaderStructure, PlannedTimepoint, Encounter, Epoch
+    
+    header_structure = HeaderStructure(
+        epochs=[Epoch.from_dict(e) for e in header_data.get("epochs", [])],
+        encounters=[Encounter.from_dict(e) for e in header_data.get("encounters", [])],
+        plannedTimepoints=[PlannedTimepoint.from_dict(pt) for pt in header_data.get("timepoints", [])]
+    )
+    
+    # Run validation
+    validation_result = validate_extraction(
+        text_activities=step4_data["activities"],
+        text_ticks=step4_data["tick_matrix"],
+        header_structure=header_structure,
+        image_paths=[str(p) for p in image_paths],
+        model_name=model
+    )
+    
+    result = {
+        "step": 5,
+        "name": "Vision Validation",
+        "model": model,
+        "confirmed_ticks": validation_result.confirmed_ticks,
+        "hallucinations_flagged": validation_result.hallucination_count,
+        "missed_ticks_found": validation_result.missed_count,
+        "issues": [i.to_dict() for i in validation_result.issues] if validation_result.issues else [],
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    # Save result
+    output_path = Path(output_dir) / "step5_validation.json"
+    with open(output_path, 'w') as f:
+        json.dump(result, f, indent=2, default=str)
+    
+    print(f"\n✓ Confirmed ticks: {validation_result.confirmed_ticks}")
+    print(f"⚠ Hallucinations flagged: {validation_result.hallucination_count}")
+    print(f"+ Missed ticks found: {validation_result.missed_count}")
+    
+    if validation_result.issues:
+        print("\nIssues found:")
+        for issue in validation_result.issues[:5]:
+            print(f"    - [{issue.issue_type.value}] {issue.activity_name} @ {issue.timepoint_name}")
+    
+    print(f"\n✓ Saved to: {output_path}")
+    
+    print("\n--- QUALITY CHECK ---")
+    print("1. Is the hallucination rate acceptable (<5%)?")
+    print("2. Review flagged items - are they really incorrect?")
+    print("3. Were missed ticks actually in the PDF?")
+    
+    return result
+
+
+def step6_build_final_output(pdf_path: str, output_dir: str) -> dict:
+    """
+    STEP 6: Build final USDM JSON output
+    
+    Tests: Final assembly and normalization
+    Quality metrics:
+    - Is the JSON schema-compliant?
+    - Are all entities properly linked?
+    - Is provenance tracked?
+    """
+    print("\n" + "=" * 60)
+    print("STEP 6: Build Final USDM Output")
+    print("=" * 60)
+    
+    from core import USDM_VERSION, SYSTEM_NAME, SYSTEM_VERSION
+    from processing import ensure_required_fields, normalize_names_vs_timing
+    from core.provenance import ProvenanceTracker, ProvenanceSource
+    
+    # Load previous steps
+    step3_path = Path(output_dir) / "step3_header_structure.json"
+    step4_path = Path(output_dir) / "step4_text_extraction.json"
+    
+    with open(step3_path) as f:
+        header_data = json.load(f)
+    with open(step4_path) as f:
+        text_data = json.load(f)
+    
+    # Build USDM structure
+    timeline = {
+        "activities": text_data["activities"],
+        "plannedTimepoints": header_data.get("timepoints", []),
+        "encounters": header_data.get("encounters", []),
+        "epochs": header_data.get("epochs", []),
+        "activityGroups": header_data.get("activity_groups", []),
+        "activityTimepoints": text_data["tick_matrix"]
+    }
+    
+    usdm_output = {
+        "usdmVersion": USDM_VERSION,
+        "systemName": SYSTEM_NAME,
+        "systemVersion": SYSTEM_VERSION,
+        "study": {
+            "versions": [{
+                "timeline": timeline
+            }]
+        }
+    }
+    
+    # Apply normalizations
+    ensure_required_fields(usdm_output)
+    normalize_names_vs_timing(timeline)
+    
+    # Build provenance - start with text extraction
+    provenance = ProvenanceTracker()
+    for act in text_data["activities"]:
+        provenance.tag_entity("activities", act.get("id", ""), ProvenanceSource.TEXT)
+    for tick in text_data["tick_matrix"]:
+        # Use plannedTimepointId (correct field) with fallback to timepointId
+        tp_id = tick.get("plannedTimepointId") or tick.get("timepointId", "")
+        provenance.tag_cell(tick.get("activityId", ""), tp_id, ProvenanceSource.TEXT)
+    
+    # Also tag header-derived entities
+    for pt in header_data.get("timepoints", []):
+        provenance.tag_entity("plannedTimepoints", pt.get("id", ""), ProvenanceSource.HEADER)
+    for enc in header_data.get("encounters", []):
+        provenance.tag_entity("encounters", enc.get("id", ""), ProvenanceSource.HEADER)
+    for epoch in header_data.get("epochs", []):
+        provenance.tag_entity("epochs", epoch.get("id", ""), ProvenanceSource.HEADER)
+    for grp in header_data.get("activity_groups", []):
+        provenance.tag_entity("activityGroups", grp.get("id", ""), ProvenanceSource.HEADER)
+    
+    # Load vision validation results if available and merge into provenance
+    step5_path = Path(output_dir) / "step5_validation.json"
+    if step5_path.exists():
+        with open(step5_path) as f:
+            validation_data = json.load(f)
+        
+        # Build set of flagged cells (hallucinations or missed ticks that need review)
+        flagged_cells = set()
+        for issue in validation_data.get("issues", []):
+            act_id = issue.get("activity_id", "")
+            tp_id = issue.get("timepoint_id", "")
+            if act_id and tp_id:
+                flagged_cells.add(f"{act_id}|{tp_id}")
+        
+        confirmed_count = validation_data.get("confirmed_ticks", 0)
+        hallucination_count = validation_data.get("hallucinations_flagged", 0)
+        missed_count = validation_data.get("missed_ticks_found", 0)
+        
+        print(f"    Vision validation: {confirmed_count} confirmed, {hallucination_count} flagged, {missed_count} missed")
+        
+        # Mark ticks based on validation status
+        for tick in text_data["tick_matrix"]:
+            act_id = tick.get("activityId", "")
+            tp_id = tick.get("plannedTimepointId") or tick.get("timepointId", "")
+            if not tp_id:
+                continue
+            
+            cell_key = f"{act_id}|{tp_id}"
+            if cell_key in flagged_cells:
+                # Flagged as possible hallucination - needs human review
+                provenance.cells[cell_key] = ProvenanceSource.NEEDS_REVIEW.value
+            else:
+                # Confirmed by vision - mark as both
+                provenance.tag_cell(act_id, tp_id, ProvenanceSource.VISION)
+        
+        # Also mark missed ticks (found by vision but not text) as needing review
+        for issue in validation_data.get("issues", []):
+            if issue.get("issue_type") == "missed_tick":
+                act_id = issue.get("activity_id", "")
+                tp_id = issue.get("timepoint_id", "")
+                if act_id and tp_id:
+                    provenance.cells[f"{act_id}|{tp_id}"] = ProvenanceSource.NEEDS_REVIEW.value
+    
+    # Save outputs
+    final_path = Path(output_dir) / "step6_final_soa.json"
+    with open(final_path, 'w') as f:
+        json.dump(usdm_output, f, indent=2)
+    
+    provenance_path = Path(output_dir) / "step6_provenance.json"
+    provenance.save(str(provenance_path))
+    
+    result = {
+        "step": 6,
+        "name": "Final USDM Output",
+        "usdm_version": USDM_VERSION,
+        "activities_count": len(timeline["activities"]),
+        "timepoints_count": len(timeline["plannedTimepoints"]),
+        "encounters_count": len(timeline["encounters"]),
+        "ticks_count": len(timeline["activityTimepoints"]),
+        "output_path": str(final_path),
+        "provenance_path": str(provenance_path),
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    print(f"\n✓ USDM Version: {USDM_VERSION}")
+    print(f"✓ Activities: {len(timeline['activities'])}")
+    print(f"✓ Timepoints: {len(timeline['plannedTimepoints'])}")
+    print(f"✓ Encounters: {len(timeline['encounters'])}")
+    print(f"✓ Ticks: {len(timeline['activityTimepoints'])}")
+    print(f"\n✓ Final output: {final_path}")
+    print(f"✓ Provenance: {provenance_path}")
+    
+    print("\n--- QUALITY CHECK ---")
+    print("1. Open in Streamlit viewer: streamlit run soa_streamlit_viewer.py -- " + str(final_path))
+    print("2. Compare visually with the PDF")
+    print("3. Check that all activities and visits are present")
+    
+    return result
+
+
+def step7_enrich_terminology(pdf_path: str, output_dir: str) -> dict:
+    """
+    STEP 7: Enrich activities with terminology codes
+    
+    Uses a curated mapping of common clinical terms to NCI codes.
+    """
+    print("\n" + "=" * 60)
+    print("STEP 7: Terminology Enrichment")
+    print("=" * 60)
+    
+    # Common clinical procedure NCI codes
+    KNOWN_CODES = {
+        "informed consent": ("C16735", "Informed Consent"),
+        "physical exam": ("C20989", "Physical Examination"),
+        "vital signs": ("C25714", "Vital Signs"),
+        "ecg": ("C38054", "Electrocardiogram"),
+        "blood pressure": ("C54706", "Blood Pressure Measurement"),
+        "weight": ("C25208", "Weight"),
+        "height": ("C25347", "Height"),
+        "randomization": ("C15417", "Randomization"),
+        "laboratory": ("C49286", "Laboratory Test"),
+        "urinalysis": ("C79430", "Urinalysis"),
+        "hba1c": ("C64849", "Hemoglobin A1c Measurement"),
+        "adverse event": ("C41331", "Adverse Event"),
+        "concomitant medication": ("C53630", "Concomitant Medication"),
+        "medical history": ("C18772", "Medical History"),
+    }
+    
+    # Load final SoA
+    step6_path = Path(output_dir) / "step6_final_soa.json"
+    if not step6_path.exists():
+        print("ERROR: step6_final_soa.json not found. Run step 6 first.")
+        return {"error": "Missing step 6 output"}
+    
+    with open(step6_path) as f:
+        soa_data = json.load(f)
+    
+    timeline = soa_data.get("study", {}).get("versions", [{}])[0].get("timeline", {})
+    activities = timeline.get("activities", [])
+    
+    enriched_count = 0
+    print(f"\nEnriching {len(activities)} activities...")
+    
+    for activity in activities:
+        name = activity.get("name", activity.get("label", ""))
+        if not name:
+            continue
+        
+        # Match against known codes
+        name_lower = name.lower()
+        for term, (code, decode) in KNOWN_CODES.items():
+            if term in name_lower:
+                activity["definedProcedures"] = [{
+                    "id": f"proc_{activity.get('id', '')}",
+                    "code": {"code": code, "codeSystem": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl", "decode": decode},
+                    "instanceType": "Procedure"
+                }]
+                enriched_count += 1
+                print(f"    ✓ {name} -> {code}")
+                break
+    
+    # Save enriched version
+    enriched_path = Path(output_dir) / "step7_enriched_soa.json"
+    with open(enriched_path, 'w') as f:
+        json.dump(soa_data, f, indent=2)
+    
+    print(f"\n✓ Enriched: {enriched_count}/{len(activities)} activities")
+    print(f"✓ Saved to: {enriched_path}")
+    
+    return {"step": 7, "enriched": enriched_count, "total": len(activities), "output_path": str(enriched_path)}
+
+
+def step8_validate_schema(pdf_path: str, output_dir: str) -> dict:
+    """
+    STEP 8: Validate JSON structure against USDM schema
+    
+    Checks that all required fields are present and properly linked.
+    """
+    print("\n" + "=" * 60)
+    print("STEP 8: Schema Validation")
+    print("=" * 60)
+    
+    # Load final SoA (or enriched if available)
+    step7_path = Path(output_dir) / "step7_enriched_soa.json"
+    step6_path = Path(output_dir) / "step6_final_soa.json"
+    
+    if step7_path.exists():
+        soa_path = step7_path
+    elif step6_path.exists():
+        soa_path = step6_path
+    else:
+        print("ERROR: No SoA file found. Run step 6 first.")
+        return {"error": "Missing SoA output"}
+    
+    with open(soa_path) as f:
+        soa_data = json.load(f)
+    
+    issues = []
+    warnings = []
+    
+    # Check wrapper-level fields
+    print("\nChecking USDM Wrapper structure...")
+    required_wrapper = ["usdmVersion", "study"]
+    for field in required_wrapper:
+        if field not in soa_data:
+            issues.append(f"Missing required field: {field}")
+    
+    # Check study structure
+    study = soa_data.get("study", {})
+    versions = study.get("versions", [])
+    
+    if not versions:
+        issues.append("Missing study.versions array")
+    else:
+        timeline = versions[0].get("timeline", {})
+        
+        # Check timeline arrays
+        required_timeline = ["activities", "plannedTimepoints", "activityTimepoints"]
+        for field in required_timeline:
+            if field not in timeline:
+                issues.append(f"Missing timeline.{field}")
+            elif not timeline[field]:
+                warnings.append(f"Empty timeline.{field}")
+        
+        # Check entity linkage
+        print("Checking entity linkage...")
+        activities = {a.get("id"): a for a in timeline.get("activities", [])}
+        timepoints = {t.get("id"): t for t in timeline.get("plannedTimepoints", [])}
+        encounters = {e.get("id"): e for e in timeline.get("encounters", [])}
+        
+        # Check activityTimepoints reference valid IDs
+        for at in timeline.get("activityTimepoints", []):
+            act_id = at.get("activityId")
+            tp_id = at.get("plannedTimepointId")
+            
+            if act_id and act_id not in activities:
+                issues.append(f"activityTimepoint references invalid activityId: {act_id}")
+            if tp_id and tp_id not in timepoints:
+                issues.append(f"activityTimepoint references invalid plannedTimepointId: {tp_id}")
+        
+        # Check timepoints reference valid encounters
+        for tp in timeline.get("plannedTimepoints", []):
+            enc_id = tp.get("encounterId")
+            if enc_id and enc_id not in encounters:
+                warnings.append(f"plannedTimepoint {tp.get('id')} references missing encounterId: {enc_id}")
+    
+    # Save validation report
+    report = {
+        "step": 8,
+        "name": "Schema Validation",
+        "source_file": str(soa_path),
+        "issues": issues,
+        "warnings": warnings,
+        "valid": len(issues) == 0,
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    report_path = Path(output_dir) / "step8_schema_validation.json"
+    with open(report_path, 'w') as f:
+        json.dump(report, f, indent=2)
+    
+    # Print results
+    if issues:
+        print(f"\n❌ VALIDATION FAILED - {len(issues)} issues found:")
+        for issue in issues:
+            print(f"    - {issue}")
+    else:
+        print("\n✓ Schema validation PASSED")
+    
+    if warnings:
+        print(f"\n⚠ {len(warnings)} warnings:")
+        for warn in warnings[:5]:
+            print(f"    - {warn}")
+        if len(warnings) > 5:
+            print(f"    ... and {len(warnings) - 5} more")
+    
+    print(f"\n✓ Report saved to: {report_path}")
+    
+    return report
+
+
+def step9_cdisc_conformance(pdf_path: str, output_dir: str) -> dict:
+    """
+    STEP 9: Run CDISC CORE conformance rules
+    
+    Validates against official USDM 4.0 conformance rules.
+    Requires CDISC CORE engine to be installed in tools/core/
+    """
+    print("\n" + "=" * 60)
+    print("STEP 9: CDISC CORE Conformance")
+    print("=" * 60)
+    
+    import subprocess
+    
+    # Check for CORE engine
+    core_exe = Path("tools/core/core/core.exe")
+    if not core_exe.exists():
+        print("⚠ CDISC CORE engine not found at tools/core/core/core.exe")
+        print("  Download from: https://github.com/cdisc-org/cdisc-rules-engine/releases")
+        return {"error": "CORE engine not installed", "step": 9}
+    
+    # Find SoA file
+    step7_path = Path(output_dir) / "step7_enriched_soa.json"
+    step6_path = Path(output_dir) / "step6_final_soa.json"
+    
+    if step7_path.exists():
+        soa_path = step7_path
+    elif step6_path.exists():
+        soa_path = step6_path
+    else:
+        print("ERROR: No SoA file found. Run step 6 first.")
+        return {"error": "Missing SoA output"}
+    
+    print(f"Validating: {soa_path}")
+    print("Running USDM 4.0 conformance rules...")
+    
+    output_path = Path(output_dir) / "step9_conformance"
+    
+    # Run CORE validation
+    try:
+        result = subprocess.run(
+            [
+                str(core_exe),
+                "validate",
+                "-s", "usdm",
+                "-v", "4-0",
+                "-dp", str(soa_path.absolute()),
+                "-o", str(output_path.absolute()),
+                "-of", "JSON"
+            ],
+            capture_output=True,
+            text=True,
+            cwd=str(core_exe.parent),
+            timeout=300
+        )
+        
+        if result.returncode == 0:
+            print("\n✓ CDISC CORE validation completed")
+            
+            # Load and summarize results
+            result_file = Path(str(output_path) + ".json")
+            if result_file.exists():
+                with open(result_file) as f:
+                    conformance = json.load(f)
+                
+                # Count issues by severity
+                issues = conformance.get("issues", [])
+                by_severity = {}
+                for issue in issues:
+                    sev = issue.get("severity", "unknown")
+                    by_severity[sev] = by_severity.get(sev, 0) + 1
+                
+                print(f"\nConformance Results:")
+                for sev, count in sorted(by_severity.items()):
+                    print(f"    {sev}: {count}")
+                
+                return {
+                    "step": 9,
+                    "name": "CDISC CORE Conformance",
+                    "success": True,
+                    "issues_by_severity": by_severity,
+                    "output_path": str(result_file),
+                    "timestamp": datetime.now().isoformat()
+                }
+        else:
+            print(f"\n⚠ CORE validation returned errors:")
+            print(result.stderr[:500] if result.stderr else result.stdout[:500])
+            
+            return {
+                "step": 9,
+                "name": "CDISC CORE Conformance",
+                "success": False,
+                "error": result.stderr or result.stdout,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+    except subprocess.TimeoutExpired:
+        print("⚠ CORE validation timed out (5 min limit)")
+        return {"step": 9, "error": "Timeout"}
+    except Exception as e:
+        print(f"⚠ CORE validation failed: {e}")
+        return {"step": 9, "error": str(e)}
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Step-by-step pipeline testing")
+    parser.add_argument("pdf", help="Path to protocol PDF")
+    parser.add_argument("--step", default="all", help="Step to run (1-9 or 'all')")
+    parser.add_argument("--pages", help="Comma-separated page numbers (1-indexed)")
+    parser.add_argument("--model", default="gemini-2.5-pro", help="Model to use")
+    parser.add_argument("--output", help="Output directory")
+    
+    args = parser.parse_args()
+    
+    # Setup output directory
+    if args.output:
+        output_dir = args.output
+    else:
+        pdf_name = Path(args.pdf).stem
+        output_dir = f"output/{pdf_name}_test"
+    
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Parse pages if provided
+    pages = None
+    if args.pages:
+        pages = [int(p) - 1 for p in args.pages.split(",")]  # Convert to 0-indexed
+    
+    print(f"\n{'='*60}")
+    print(f"PIPELINE STEP-BY-STEP TESTING")
+    print(f"{'='*60}")
+    print(f"PDF: {args.pdf}")
+    print(f"Output: {output_dir}")
+    print(f"Model: {args.model}")
+    if pages:
+        print(f"Pages: {[p+1 for p in pages]} (1-indexed)")
+    
+    # Run requested steps
+    if args.step == "all":
+        steps = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    else:
+        steps = [args.step]
+    
+    for step in steps:
+        if step == "1":
+            step1_find_soa_pages(args.pdf, output_dir)
+        elif step == "2":
+            step2_extract_text_and_images(args.pdf, output_dir, pages)
+        elif step == "3":
+            step3_analyze_headers(args.pdf, output_dir, args.model)
+        elif step == "4":
+            step4_extract_text_data(args.pdf, output_dir, args.model)
+        elif step == "5":
+            step5_validate_with_vision(args.pdf, output_dir, args.model)
+        elif step == "6":
+            step6_build_final_output(args.pdf, output_dir)
+        elif step == "7":
+            step7_enrich_terminology(args.pdf, output_dir)
+        elif step == "8":
+            step8_validate_schema(args.pdf, output_dir)
+        elif step == "9":
+            step9_cdisc_conformance(args.pdf, output_dir)
+        
+        if args.step != "all":
+            print("\n" + "="*60)
+            print("Step complete. Review output before proceeding to next step.")
+            print("="*60)
+
+
+if __name__ == "__main__":
+    main()

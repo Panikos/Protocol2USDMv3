@@ -86,14 +86,14 @@ Key dependencies:
 Create a `.env` file in the project root:
 
 ```bash
-# For Google Gemini models (recommended, default)
-GOOGLE_API_KEY=AIzaSy...
-
-# For OpenAI models (GPT-4, GPT-5)
+# For OpenAI models (GPT-4, GPT-5, GPT-5.1)
 OPENAI_API_KEY=sk-proj-...
 
-# Optional: Default model override
-# DEFAULT_MODEL=gemini-2.5-pro
+# For Google Gemini models (used as fallback and alternative)
+GOOGLE_API_KEY=AIzaSy...
+
+# Optional: Default model override (otherwise gpt-5.1 is used)
+# DEFAULT_MODEL=gpt-5.1
 ```
 
 **Getting API Keys:**
@@ -118,19 +118,23 @@ The pipeline supports multiple models through a unified interface:
 
 | Model | Provider | Speed | Cost | Quality | Recommended For |
 |-------|----------|-------|------|---------|-----------------|
-| **gemini-2.5-pro** | Google | Fast | Low | Excellent | **Default, best overall** |
+| **gpt-5.1** | OpenAI | Medium | High | TBD (reasoning) | **Default primary model** |
+| **gemini-2.5-pro** | Google | Fast | Low | Excellent | Automatic fallback / alternative |
 | **gemini-2.0-flash** | Google | Very Fast | Very Low | Good | Quick previews |
 | **gpt-4o** | OpenAI | Medium | Medium | Excellent | OpenAI preference |
-| **gpt-5** ⚠️ | OpenAI | Medium | High | TBD | Advanced users (reasoning model) |
 
-**Note:** GPT-5 behaves like the o-series reasoning models (no temperature control, uses different API parameters). The provider layer handles this automatically.
+**Note:** GPT-5.1 behaves like the o-series reasoning models (no temperature control, uses different token parameters). The provider layer handles this automatically, and the pipeline will fall back to Gemini 2.5 Pro for key steps if GPT-5.1 fails.
 
 ### How to Choose a Model
 
-**Use Gemini 2.5 Pro (default) if:**
-- ✅ You want the best quality-to-cost ratio
-- ✅ You have a Google API key
-- ✅ You're processing multiple protocols regularly
+**Use GPT-5.1 (default) if:**
+- ✅ You want the strongest reasoning and extraction quality (with automatic Gemini fallback)
+- ✅ You have an OpenAI API key
+- ✅ You are comfortable with higher per-run cost
+
+**Use Gemini 2.5 Pro directly if:**
+- ✅ You want the best quality-to-cost ratio with Google
+- ✅ You prefer not to rely on OpenAI
 
 **Use GPT-4o if:**
 - ✅ You already have OpenAI credits
@@ -145,16 +149,16 @@ The pipeline supports multiple models through a unified interface:
 ### Specifying Models
 
 ```bash
-# Use default (gemini-2.5-pro)
+# Use default (gpt-5.1 with automatic Gemini fallback)
 python main.py protocol.pdf
 
 # Explicitly specify model
+python main.py protocol.pdf --model gpt-5.1
 python main.py protocol.pdf --model gemini-2.5-pro
 python main.py protocol.pdf --model gpt-4o
-python main.py protocol.pdf --model gpt-5
 
 # Set via environment variable
-export DEFAULT_MODEL=gpt-4o
+export DEFAULT_MODEL=gpt-5.1
 python main.py protocol.pdf
 ```
 
@@ -210,11 +214,11 @@ output/CDISC_Pilot_Study/
 ├── 6_raw_vision_soa.json               # Raw vision extraction
 ├── 7_postprocessed_text_soa.json       # Cleaned text
 ├── 8_postprocessed_vision_soa.json     # Cleaned vision
-├── 10_reconciled_soa.json              # ⭐ FINAL OUTPUT
+├── 9_reconciled_soa.json               # ⭐ FINAL OUTPUT
 └── pipeline.log                        # Detailed logs
 ```
 
-**Primary output:** `10_reconciled_soa.json` - This is the file to review!
+**Primary output:** `9_reconciled_soa.json` - This is the file to review!
 
 ---
 
@@ -236,8 +240,9 @@ The output follows USDM v4.0 Wrapper-Input format:
         "encounters": [...],          // Visits
         "plannedTimepoints": [...],   // Timepoints
         "activities": [...],          // Procedures/assessments
-        "activityTimepoints": [...],  // When activities occur
-        "activityGroups": [...]       // Activity categories
+        "activityTimepoints": [...],  // When activities occur (matrix)
+        "activityGroups": [...],      // Activity categories
+        "scheduleTimelines": [...]    // Extended schedule model (USDM 4.0)
       }
     }]
   }
@@ -299,6 +304,43 @@ The output follows USDM v4.0 Wrapper-Input format:
 }
 ```
 
+**ActivityGroups** - Categories for activities (e.g., Safety, Cognitive/Efficacy)
+```json
+{
+  "id": "ag_1",
+  "name": "Safety",
+  "instanceType": "ActivityGroup"
+}
+```
+
+**ScheduleTimelines** - Extended schedule model (USDM 4.0)
+```json
+{
+  "id": "st_1",
+  "name": "SoA Schedule Timeline",
+  "description": "Derived from reconciled activityTimepoints.",
+  "instances": [
+    {
+      "id": "sai_1",
+      "instanceType": "ScheduledActivityInstance",
+      "encounterId": "encounter_1",
+      "activityIds": ["act_1", "act_2"]
+    }
+  ],
+  "instanceType": "ScheduleTimeline"
+}
+```
+
+**ScheduledActivityInstances** - Specific instances of activities at a visit/encounter
+```json
+{
+  "id": "sai_1",
+  "instanceType": "ScheduledActivityInstance",
+  "encounterId": "encounter_1",
+  "activityIds": ["act_1", "act_2"]
+}
+```
+
 ---
 
 ## Reviewing Results
@@ -339,7 +381,7 @@ streamlit run soa_streamlit_viewer.py
 
 ### Manual Review Checklist
 
-When reviewing `10_reconciled_soa.json`:
+When reviewing `9_reconciled_soa.json`:
 
 - [ ] **All visits present?** Compare to protocol SoA table
 - [ ] **Visit names clean?** No timing text like "Week -2" in names

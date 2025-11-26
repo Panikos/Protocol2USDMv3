@@ -19,12 +19,13 @@ streamlit run soa_streamlit_viewer.py
 
 ### Running the Pipeline
 ```bash
-# Default (Gemini 2.5 Pro)
+# Default (gpt-5.1 with automatic Gemini fallback)
 python main.py protocol.pdf
 
 # Specific models
+python main.py protocol.pdf --model gpt-5.1
+python main.py protocol.pdf --model gemini-2.5-pro
 python main.py protocol.pdf --model gpt-4o
-python main.py protocol.pdf --model gpt-5
 python main.py protocol.pdf --model gemini-2.0-flash
 
 # View results
@@ -64,14 +65,14 @@ OPENAI_API_KEY=sk-proj-...
 
 ## 📊 Model Comparison
 
-| Model | Speed | Cost | Quality |
-|-------|-------|------|---------|
-| **gemini-2.5-pro** ⭐ | Fast | $$ | Excellent |
-| gemini-2.0-flash | Very Fast | $ | Good |
-| gpt-4o | Medium | $$$ | Excellent |
-| gpt-5 | Medium | $$$$ | TBD |
+| Model | Speed | Cost | Quality | Notes |
+|-------|-------|------|---------|-------|
+| **gpt-5.1** ⭐ | Medium | $$$$ | TBD (reasoning) | **Default primary model** |
+| gemini-2.5-pro | Fast | $$ | Excellent | Automatic fallback / alternative |
+| gemini-2.0-flash | Very Fast | $ | Good | Cheap previews |
+| gpt-4o | Medium | $$$ | Excellent | OpenAI chat model |
 
-**Recommendation:** Use `gemini-2.5-pro` (default)
+**Recommendation:** Use `gpt-5.1` by default. The pipeline will automatically fall back to `gemini-2.5-pro` for key steps if GPT-5.1 fails.
 
 ---
 
@@ -79,7 +80,7 @@ OPENAI_API_KEY=sk-proj-...
 
 ```
 output/PROTOCOL_NAME/
-├── 10_reconciled_soa.json  ⭐ Main output
+├── 9_reconciled_soa.json   ⭐ Main output
 ├── 5_raw_text_soa.json     📄 Text extraction
 ├── 6_raw_vision_soa.json   👁️ Vision extraction
 ├── pipeline.log            📋 Detailed logs
