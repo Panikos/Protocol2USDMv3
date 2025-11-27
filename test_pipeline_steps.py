@@ -10,12 +10,13 @@ Usage - SoA Pipeline (Steps 1-9):
     python test_pipeline_steps.py protocol.pdf --step 3        # Header analysis
     python test_pipeline_steps.py protocol.pdf --step all      # All SoA steps
 
-Usage - USDM Expansion (Steps M/E/O/D/I):
+Usage - USDM Expansion (Steps M/E/O/D/I/N):
     python test_pipeline_steps.py protocol.pdf --step M        # Metadata
     python test_pipeline_steps.py protocol.pdf --step E        # Eligibility
     python test_pipeline_steps.py protocol.pdf --step O        # Objectives
     python test_pipeline_steps.py protocol.pdf --step D        # Study Design
     python test_pipeline_steps.py protocol.pdf --step I        # Interventions
+    python test_pipeline_steps.py protocol.pdf --step N        # Narrative/Abbreviations
     python test_pipeline_steps.py protocol.pdf --step expand   # All expansion phases
 """
 
@@ -1057,9 +1058,42 @@ def step_interventions(pdf_path: str, output_dir: str, model: str = "gemini-2.5-
     return {"step": "I", "success": result.success}
 
 
+def step_narrative(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP N: Extract Document Structure & Abbreviations
+    
+    Tests: extraction/narrative/extractor.py
+    Extracts: NarrativeContent, Abbreviation, StudyDefinitionDocument
+    """
+    print("\n" + "=" * 60)
+    print("STEP N: Document Structure Extraction (Phase 7)")
+    print("=" * 60)
+    
+    from extraction.narrative import extract_narrative_structure
+    from extraction.narrative.extractor import save_narrative_result
+    
+    print(f"Extracting narrative structure with {model}...")
+    result = extract_narrative_structure(pdf_path, model_name=model)
+    
+    output_path = Path(output_dir) / "7_narrative_structure.json"
+    save_narrative_result(result, str(output_path))
+    
+    if result.success and result.data:
+        data = result.data
+        print(f"\n✓ Sections: {len(data.sections)}")
+        print(f"✓ Abbreviations: {len(data.abbreviations)}")
+        if data.document:
+            print(f"✓ Document: {data.document.name[:50]}...")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "N", "success": result.success}
+
+
 def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
     """
-    Run all USDM expansion steps (Phases 1-5).
+    Run all USDM expansion steps (Phases 1-5, 7).
     """
     print("\n" + "=" * 60)
     print("RUNNING ALL USDM EXPANSION STEPS")
@@ -1071,10 +1105,11 @@ def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-
     results["objectives"] = step_objectives(pdf_path, output_dir, model)
     results["studydesign"] = step_studydesign(pdf_path, output_dir, model)
     results["interventions"] = step_interventions(pdf_path, output_dir, model)
+    results["narrative"] = step_narrative(pdf_path, output_dir, model)
     
     success_count = sum(1 for r in results.values() if r.get("success"))
     print(f"\n{'='*60}")
-    print(f"EXPANSION COMPLETE: {success_count}/5 steps successful")
+    print(f"EXPANSION COMPLETE: {success_count}/6 steps successful")
     print(f"{'='*60}")
     
     return results
@@ -1086,12 +1121,13 @@ def main():
         epilog="""
 Step Options:
   SoA Pipeline: 1-9 (or 'all' for all SoA steps)
-  USDM Expansion: M (metadata), E (eligibility), O (objectives), D (design), I (interventions)
+  USDM Expansion: M (metadata), E (eligibility), O (objectives), D (design), I (interventions), N (narrative)
   Run all expansion: 'expand'
   
 Examples:
   python test_pipeline_steps.py protocol.pdf --step 3        # Header analysis
   python test_pipeline_steps.py protocol.pdf --step E        # Eligibility
+  python test_pipeline_steps.py protocol.pdf --step N        # Narrative/Abbreviations
   python test_pipeline_steps.py protocol.pdf --step expand   # All expansion phases
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1169,9 +1205,11 @@ Examples:
             step_studydesign(args.pdf, output_dir, args.model)
         elif step == "I":
             step_interventions(args.pdf, output_dir, args.model)
+        elif step == "N":
+            step_narrative(args.pdf, output_dir, args.model)
         else:
             print(f"Unknown step: {step}")
-            print("Valid steps: 1-9 (SoA), M/E/O/D/I (expansion), 'all', 'expand'")
+            print("Valid steps: 1-9 (SoA), M/E/O/D/I/N (expansion), 'all', 'expand'")
             continue
         
         if args.step.upper() not in ["ALL", "EXPAND"]:

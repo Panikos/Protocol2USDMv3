@@ -198,6 +198,8 @@ Each phase module:
 | 2025-11-27 | Phase 3 | ✅ Complete | Objectives & Endpoints (1 primary, 7 secondary, 3 exploratory) |
 | 2025-11-27 | Phase 4 | ✅ Complete | Study Design (Open Label, 2 arms, 2 cohorts) |
 | 2025-11-27 | Phase 5 | ✅ Complete | Interventions (ALXN1840, 3 dosing regimens, bis-choline tetrathiomolybdate) |
+| 2025-11-27 | Phase 6 | ⏸️ Parked | Biomedical Concepts (will integrate from related project) |
+| 2025-11-27 | Phase 7 | ✅ Complete | Narrative Structure (8 sections, 9 abbreviations) |
 
 ## Files Created
 
@@ -254,6 +256,17 @@ extraction/interventions/
 └── extractor.py         # Main extraction logic with auto page detection
 
 extract_interventions.py # CLI entry point
+```
+
+### Phase 7: Narrative Structure
+```
+extraction/narrative/
+├── __init__.py          # Module exports
+├── schema.py            # USDM models (NarrativeContent, Abbreviation, StudyDefinitionDocument)
+├── prompts.py           # LLM extraction prompts
+└── extractor.py         # Main extraction logic with auto page detection
+
+extract_narrative.py     # CLI entry point
 ```
 
 ### Core Utilities

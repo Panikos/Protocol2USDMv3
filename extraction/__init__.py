@@ -12,6 +12,7 @@ This module contains the core extraction logic:
 - objectives: Objectives & endpoints extraction (Phase 3)
 - studydesign: Study design structure extraction (Phase 4)
 - interventions: Interventions & products extraction (Phase 5)
+- narrative: Document structure & abbreviations extraction (Phase 7)
 
 Design Principle:
 - Vision extracts STRUCTURE (column headers, row groups)
@@ -98,6 +99,14 @@ from .interventions import (
     MedicalDevice,
     Substance,
 )
+from .narrative import (
+    extract_narrative_structure,
+    NarrativeExtractionResult,
+    NarrativeData,
+    NarrativeContent,
+    Abbreviation,
+    StudyDefinitionDocument,
+)
 
 __all__ = [
     # SoA Finder
@@ -169,4 +178,11 @@ __all__ = [
     "Administration",
     "MedicalDevice",
     "Substance",
+    # Narrative (Phase 7)
+    "extract_narrative_structure",
+    "NarrativeExtractionResult",
+    "NarrativeData",
+    "NarrativeContent",
+    "Abbreviation",
+    "StudyDefinitionDocument",
 ]
