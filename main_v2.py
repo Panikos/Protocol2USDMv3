@@ -42,6 +42,209 @@ from extraction import run_from_files, PipelineConfig, PipelineResult
 from extraction.pipeline import enrich_terminology, validate_schema, run_cdisc_conformance
 from core.constants import DEFAULT_MODEL
 
+# Import expansion modules
+from extraction.metadata import extract_study_metadata
+from extraction.metadata.extractor import save_metadata_result
+from extraction.eligibility import extract_eligibility_criteria
+from extraction.eligibility.extractor import save_eligibility_result
+from extraction.objectives import extract_objectives_endpoints
+from extraction.objectives.extractor import save_objectives_result
+from extraction.studydesign import extract_study_design
+from extraction.studydesign.extractor import save_study_design_result
+from extraction.interventions import extract_interventions
+from extraction.interventions.extractor import save_interventions_result
+from extraction.narrative import extract_narrative_structure
+from extraction.narrative.extractor import save_narrative_result
+from extraction.advanced import extract_advanced_entities
+from extraction.advanced.extractor import save_advanced_result
+
+
+def run_expansion_phases(
+    pdf_path: str,
+    output_dir: str,
+    model: str,
+    phases: dict,
+) -> dict:
+    """
+    Run requested expansion phases.
+    
+    Args:
+        pdf_path: Path to protocol PDF
+        output_dir: Output directory
+        model: LLM model name
+        phases: Dict of phase_name -> bool indicating which to run
+    
+    Returns:
+        Dict of phase_name -> extraction result
+    """
+    results = {}
+    
+    if phases.get('metadata'):
+        logger.info("\n--- Expansion: Study Metadata (Phase 2) ---")
+        result = extract_study_metadata(pdf_path, model_name=model)
+        save_metadata_result(result, os.path.join(output_dir, "2_study_metadata.json"))
+        results['metadata'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Metadata extraction")
+    
+    if phases.get('eligibility'):
+        logger.info("\n--- Expansion: Eligibility Criteria (Phase 1) ---")
+        result = extract_eligibility_criteria(pdf_path, model_name=model)
+        save_eligibility_result(result, os.path.join(output_dir, "3_eligibility_criteria.json"))
+        results['eligibility'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Eligibility extraction")
+    
+    if phases.get('objectives'):
+        logger.info("\n--- Expansion: Objectives & Endpoints (Phase 3) ---")
+        result = extract_objectives_endpoints(pdf_path, model_name=model)
+        save_objectives_result(result, os.path.join(output_dir, "4_objectives_endpoints.json"))
+        results['objectives'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Objectives extraction")
+    
+    if phases.get('studydesign'):
+        logger.info("\n--- Expansion: Study Design (Phase 4) ---")
+        result = extract_study_design(pdf_path, model_name=model)
+        save_study_design_result(result, os.path.join(output_dir, "5_study_design.json"))
+        results['studydesign'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Study design extraction")
+    
+    if phases.get('interventions'):
+        logger.info("\n--- Expansion: Interventions (Phase 5) ---")
+        result = extract_interventions(pdf_path, model_name=model)
+        save_interventions_result(result, os.path.join(output_dir, "6_interventions.json"))
+        results['interventions'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Interventions extraction")
+    
+    if phases.get('narrative'):
+        logger.info("\n--- Expansion: Narrative Structure (Phase 7) ---")
+        result = extract_narrative_structure(pdf_path, model_name=model)
+        save_narrative_result(result, os.path.join(output_dir, "7_narrative_structure.json"))
+        results['narrative'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Narrative extraction")
+    
+    if phases.get('advanced'):
+        logger.info("\n--- Expansion: Advanced Entities (Phase 8) ---")
+        result = extract_advanced_entities(pdf_path, model_name=model)
+        save_advanced_result(result, os.path.join(output_dir, "8_advanced_entities.json"))
+        results['advanced'] = result
+        logger.info(f"  {'✓' if result.success else '✗'} Advanced extraction")
+    
+    return results
+
+
+def combine_to_full_usdm(
+    output_dir: str,
+    soa_data: dict = None,
+    expansion_results: dict = None,
+) -> dict:
+    """
+    Combine SoA and expansion results into unified USDM JSON.
+    """
+    from datetime import datetime
+    
+    combined = {
+        "usdmVersion": "4.0",
+        "generatedAt": datetime.now().isoformat(),
+        "generator": "Protocol2USDM v6.0",
+        "study": {},
+        "studyDesigns": [],
+    }
+    
+    # Add Study Metadata
+    if expansion_results and expansion_results.get('metadata'):
+        r = expansion_results['metadata']
+        if r.success and r.metadata:
+            md = r.metadata
+            combined["study"] = {
+                "studyTitles": [t.to_dict() for t in md.titles],
+                "studyIdentifiers": [i.to_dict() for i in md.identifiers],
+                "organizations": [o.to_dict() for o in md.organizations],
+            }
+            if md.study_phase:
+                combined["study"]["studyPhase"] = md.study_phase.to_dict()
+            if md.indications:
+                combined["study"]["indications"] = [i.to_dict() for i in md.indications]
+    
+    # Build StudyDesign container
+    study_design = {"id": "sd_1", "instanceType": "InterventionalStudyDesign"}
+    
+    # Add Study Design Structure
+    if expansion_results and expansion_results.get('studydesign'):
+        r = expansion_results['studydesign']
+        if r.success and r.data:
+            sd = r.data
+            if sd.study_design:
+                if sd.study_design.blinding_schema:
+                    study_design["blindingSchema"] = {"code": sd.study_design.blinding_schema.value}
+                if sd.study_design.randomization_type:
+                    study_design["randomizationType"] = {"code": sd.study_design.randomization_type.value}
+            study_design["studyArms"] = [a.to_dict() for a in sd.arms]
+            study_design["studyCohorts"] = [c.to_dict() for c in sd.cohorts]
+            study_design["studyCells"] = [c.to_dict() for c in sd.cells]
+    
+    # Add Eligibility Criteria
+    if expansion_results and expansion_results.get('eligibility'):
+        r = expansion_results['eligibility']
+        if r.success and r.data:
+            study_design["eligibilityCriteria"] = [c.to_dict() for c in r.data.criteria]
+            if r.data.population:
+                study_design["studyDesignPopulation"] = r.data.population.to_dict()
+    
+    # Add Objectives & Endpoints
+    if expansion_results and expansion_results.get('objectives'):
+        r = expansion_results['objectives']
+        if r.success and r.data:
+            study_design["objectives"] = [o.to_dict() for o in r.data.objectives]
+            study_design["endpoints"] = [e.to_dict() for e in r.data.endpoints]
+            if r.data.estimands:
+                study_design["estimands"] = [e.to_dict() for e in r.data.estimands]
+    
+    # Add Interventions
+    if expansion_results and expansion_results.get('interventions'):
+        r = expansion_results['interventions']
+        if r.success and r.data:
+            study_design["studyInterventions"] = [i.to_dict() for i in r.data.interventions]
+            combined["administrableProducts"] = [p.to_dict() for p in r.data.products]
+            combined["administrations"] = [a.to_dict() for a in r.data.administrations]
+            combined["substances"] = [s.to_dict() for s in r.data.substances]
+    
+    # Add SoA data
+    if soa_data:
+        if "studyDesigns" in soa_data and soa_data["studyDesigns"]:
+            soa_design = soa_data["studyDesigns"][0]
+            for key in ["scheduleTimelines", "encounters", "activities"]:
+                if key in soa_design:
+                    study_design[key] = soa_design[key]
+    
+    combined["studyDesigns"] = [study_design]
+    
+    # Add Narrative Content
+    if expansion_results and expansion_results.get('narrative'):
+        r = expansion_results['narrative']
+        if r.success and r.data:
+            combined["narrativeContents"] = [s.to_dict() for s in r.data.sections]
+            combined["abbreviations"] = [a.to_dict() for a in r.data.abbreviations]
+            if r.data.document:
+                combined["studyDefinitionDocument"] = r.data.document.to_dict()
+    
+    # Add Advanced Entities
+    if expansion_results and expansion_results.get('advanced'):
+        r = expansion_results['advanced']
+        if r.success and r.data:
+            if r.data.amendments:
+                combined["studyAmendments"] = [a.to_dict() for a in r.data.amendments]
+            if r.data.geographic_scope:
+                combined["geographicScope"] = r.data.geographic_scope.to_dict()
+            if r.data.countries:
+                combined["countries"] = [c.to_dict() for c in r.data.countries]
+    
+    # Save combined output
+    output_path = os.path.join(output_dir, "full_usdm.json")
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(combined, f, indent=2, ensure_ascii=False)
+    
+    logger.info(f"\n✓ Combined USDM saved to: {output_path}")
+    return combined
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -49,10 +252,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python main_v2.py protocol.pdf
-    python main_v2.py protocol.pdf --model gemini-2.5-pro
-    python main_v2.py protocol.pdf --no-validate
-    python main_v2.py protocol.pdf --pages 52,53,54
+    python main_v2.py protocol.pdf                    # SoA only (default)
+    python main_v2.py protocol.pdf --metadata         # SoA + study metadata
+    python main_v2.py protocol.pdf --full-protocol    # Everything (SoA + all expansions)
+    python main_v2.py protocol.pdf --expansion-only   # All expansions, no SoA
+    python main_v2.py protocol.pdf --eligibility --objectives  # SoA + selected phases
         """
     )
     
@@ -138,6 +342,54 @@ Examples:
         help="Run full pipeline including enrichment, validation, and conformance (Steps 7-9)"
     )
     
+    # USDM Expansion flags (v6.0)
+    expansion_group = parser.add_argument_group('USDM Expansion (v6.0)')
+    expansion_group.add_argument(
+        "--metadata",
+        action="store_true",
+        help="Extract study metadata (Phase 2)"
+    )
+    expansion_group.add_argument(
+        "--eligibility",
+        action="store_true",
+        help="Extract eligibility criteria (Phase 1)"
+    )
+    expansion_group.add_argument(
+        "--objectives",
+        action="store_true",
+        help="Extract objectives & endpoints (Phase 3)"
+    )
+    expansion_group.add_argument(
+        "--studydesign",
+        action="store_true",
+        help="Extract study design structure (Phase 4)"
+    )
+    expansion_group.add_argument(
+        "--interventions",
+        action="store_true",
+        help="Extract interventions & products (Phase 5)"
+    )
+    expansion_group.add_argument(
+        "--narrative",
+        action="store_true",
+        help="Extract narrative structure & abbreviations (Phase 7)"
+    )
+    expansion_group.add_argument(
+        "--advanced",
+        action="store_true",
+        help="Extract amendments & geographic scope (Phase 8)"
+    )
+    expansion_group.add_argument(
+        "--full-protocol",
+        action="store_true",
+        help="Extract EVERYTHING: SoA + all expansion phases"
+    )
+    expansion_group.add_argument(
+        "--expansion-only",
+        action="store_true",
+        help="Run expansion phases only, skip SoA extraction"
+    )
+    
     args = parser.parse_args()
     
     # Validate PDF path
@@ -168,56 +420,126 @@ Examples:
         save_intermediate=True,
     )
     
+    # Determine which expansion phases to run
+    run_any_expansion = (args.full_protocol or args.expansion_only or 
+                         args.metadata or args.eligibility or args.objectives or
+                         args.studydesign or args.interventions or args.narrative or args.advanced)
+    
+    expansion_phases = {
+        'metadata': args.full_protocol or args.metadata,
+        'eligibility': args.full_protocol or args.eligibility,
+        'objectives': args.full_protocol or args.objectives,
+        'studydesign': args.full_protocol or args.studydesign,
+        'interventions': args.full_protocol or args.interventions,
+        'narrative': args.full_protocol or args.narrative,
+        'advanced': args.full_protocol or args.advanced,
+    }
+    
+    run_soa = not args.expansion_only
+    
     # Print configuration
     logger.info("="*60)
-    logger.info("Protocol2USDM v2 - Simplified Pipeline")
+    logger.info("Protocol2USDM v6.0 - Full Protocol Extraction")
     logger.info("="*60)
     logger.info(f"Input PDF: {args.pdf_path}")
     logger.info(f"Output Directory: {output_dir}")
     logger.info(f"Model: {config.model_name}")
-    logger.info(f"Vision Validation: {'Enabled' if config.validate_with_vision else 'Disabled'}")
+    logger.info(f"SoA Extraction: {'Enabled' if run_soa else 'Disabled'}")
+    if run_any_expansion:
+        enabled = [k for k, v in expansion_phases.items() if v]
+        logger.info(f"Expansion Phases: {', '.join(enabled)}")
     logger.info("="*60)
+    
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
     
     # Run pipeline
     try:
-        result = run_from_files(
-            pdf_path=args.pdf_path,
-            output_dir=output_dir,
-            soa_pages=soa_pages,
-            config=config,
-        )
+        result = None
+        soa_data = None
         
-        # Print results
-        print()
-        logger.info("="*60)
-        if result.success:
-            logger.info("PIPELINE COMPLETED SUCCESSFULLY")
+        # Run SoA extraction if not skipped
+        if run_soa:
+            logger.info("\n" + "="*60)
+            logger.info("SCHEDULE OF ACTIVITIES EXTRACTION")
+            logger.info("="*60)
+            result = run_from_files(
+                pdf_path=args.pdf_path,
+                output_dir=output_dir,
+                soa_pages=soa_pages,
+                config=config,
+            )
+            
+            # Load SoA data for combining
+            if result.success and result.output_path:
+                with open(result.output_path, 'r') as f:
+                    soa_data = json.load(f)
         else:
-            logger.error("PIPELINE COMPLETED WITH ERRORS")
-        logger.info("="*60)
+            # Check for existing SoA
+            existing_soa = os.path.join(output_dir, "9_final_soa.json")
+            if os.path.exists(existing_soa):
+                logger.info(f"Loading existing SoA from {existing_soa}")
+                with open(existing_soa, 'r') as f:
+                    soa_data = json.load(f)
         
-        logger.info(f"Activities extracted: {result.activities_count}")
-        logger.info(f"Timepoints: {result.timepoints_count}")
-        logger.info(f"Ticks: {result.ticks_count}")
+        # Print SoA results
+        if result:
+            print()
+            logger.info("="*60)
+            if result.success:
+                logger.info("SOA EXTRACTION COMPLETED SUCCESSFULLY")
+            else:
+                logger.error("SOA EXTRACTION COMPLETED WITH ERRORS")
+            logger.info("="*60)
+            
+            logger.info(f"Activities extracted: {result.activities_count}")
+            logger.info(f"Timepoints: {result.timepoints_count}")
+            logger.info(f"Ticks: {result.ticks_count}")
+            
+            if result.validated:
+                logger.info(f"Hallucinations removed: {result.hallucinations_removed}")
+                logger.info(f"Possibly missed ticks: {result.missed_ticks_found}")
+            
+            if result.output_path:
+                logger.info(f"Output: {result.output_path}")
+            if result.provenance_path:
+                logger.info(f"Provenance: {result.provenance_path}")
+            
+            if result.errors:
+                logger.warning("Errors encountered:")
+                for err in result.errors:
+                    logger.warning(f"  - {err}")
+            
+            logger.info("="*60)
         
-        if result.validated:
-            logger.info(f"Hallucinations removed: {result.hallucinations_removed}")
-            logger.info(f"Possibly missed ticks: {result.missed_ticks_found}")
+        # Run expansion phases if requested
+        expansion_results = {}
+        if run_any_expansion:
+            logger.info("\n" + "="*60)
+            logger.info("USDM EXPANSION PHASES")
+            logger.info("="*60)
+            
+            expansion_results = run_expansion_phases(
+                pdf_path=args.pdf_path,
+                output_dir=output_dir,
+                model=config.model_name,
+                phases=expansion_phases,
+            )
+            
+            # Print expansion summary
+            success_count = sum(1 for r in expansion_results.values() if r.success)
+            total_count = len(expansion_results)
+            logger.info(f"\n✓ Expansion phases: {success_count}/{total_count} successful")
         
-        if result.output_path:
-            logger.info(f"Output: {result.output_path}")
-        if result.provenance_path:
-            logger.info(f"Provenance: {result.provenance_path}")
+        # Combine outputs if full-protocol
+        if args.full_protocol or (run_any_expansion and soa_data):
+            logger.info("\n" + "="*60)
+            logger.info("COMBINING OUTPUTS")
+            logger.info("="*60)
+            combine_to_full_usdm(output_dir, soa_data, expansion_results)
         
-        if result.errors:
-            logger.warning("Errors encountered:")
-            for err in result.errors:
-                logger.warning(f"  - {err}")
-        
-        logger.info("="*60)
-        
-        # Run post-processing steps if requested
-        if result.success and result.output_path:
+        # Run post-processing steps if requested (SoA only)
+        if result and result.success and result.output_path:
             run_enrich = args.enrich or args.full
             run_validate = args.validate_schema or args.full
             run_conform = args.conformance or args.full
@@ -248,11 +570,33 @@ Examples:
                     logger.warning(f"Conformance check skipped: {conform_result.get('error')}")
         
         # Launch Streamlit viewer if requested
-        if args.view and result.success and result.output_path:
-            launch_viewer(result.output_path)
+        if args.view:
+            if result and result.success and result.output_path:
+                launch_viewer(result.output_path)
+            elif run_any_expansion:
+                full_usdm_path = os.path.join(output_dir, "full_usdm.json")
+                if os.path.exists(full_usdm_path):
+                    launch_viewer(full_usdm_path)
         
-        # Exit with appropriate code
-        sys.exit(0 if result.success else 1)
+        # Determine overall success
+        soa_success = result.success if result else True  # If no SoA, consider it OK
+        expansion_success = all(r.success for r in expansion_results.values()) if expansion_results else True
+        overall_success = soa_success and expansion_success
+        
+        # Final summary
+        logger.info("\n" + "="*60)
+        logger.info("EXTRACTION COMPLETE")
+        logger.info("="*60)
+        if run_soa:
+            logger.info(f"SoA: {'✓ Success' if (result and result.success) else '✗ Failed'}")
+        if run_any_expansion:
+            exp_success = sum(1 for r in expansion_results.values() if r.success)
+            logger.info(f"Expansion: {exp_success}/{len(expansion_results)} phases successful")
+        if args.full_protocol:
+            logger.info(f"Combined output: {output_dir}/full_usdm.json")
+        logger.info("="*60)
+        
+        sys.exit(0 if overall_success else 1)
         
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
