@@ -11,6 +11,7 @@ This module contains the core extraction logic:
 - eligibility: Inclusion/exclusion criteria extraction (Phase 1)
 - objectives: Objectives & endpoints extraction (Phase 3)
 - studydesign: Study design structure extraction (Phase 4)
+- interventions: Interventions & products extraction (Phase 5)
 
 Design Principle:
 - Vision extracts STRUCTURE (column headers, row groups)
@@ -87,6 +88,16 @@ from .studydesign import (
     ArmType,
     BlindingSchema,
 )
+from .interventions import (
+    extract_interventions,
+    InterventionsExtractionResult,
+    InterventionsData,
+    StudyIntervention,
+    AdministrableProduct,
+    Administration,
+    MedicalDevice,
+    Substance,
+)
 
 __all__ = [
     # SoA Finder
@@ -149,4 +160,13 @@ __all__ = [
     "StudyCohort",
     "ArmType",
     "BlindingSchema",
+    # Interventions (Phase 5)
+    "extract_interventions",
+    "InterventionsExtractionResult",
+    "InterventionsData",
+    "StudyIntervention",
+    "AdministrableProduct",
+    "Administration",
+    "MedicalDevice",
+    "Substance",
 ]
