@@ -39,6 +39,16 @@ Major expansion to extract full protocol content beyond Schedule of Activities.
   - USDM entities: `StudyIntervention`, `AdministrableProduct`, `Administration`, `Substance`
   - CLI: `python extract_interventions.py protocol.pdf`
 
+* **Phase 7: Narrative Structure** (`extraction/narrative/`)
+  - Extracts document structure, sections, and abbreviations
+  - USDM entities: `NarrativeContent`, `Abbreviation`, `StudyDefinitionDocument`
+  - CLI: `python extract_narrative.py protocol.pdf`
+
+* **Phase 8: Advanced Entities** (`extraction/advanced/`)
+  - Extracts protocol amendments, geographic scope, study sites
+  - USDM entities: `StudyAmendment`, `GeographicScope`, `Country`, `StudySite`
+  - CLI: `python extract_advanced.py protocol.pdf`
+
 #### New Core Utilities
 
 * `core/pdf_utils.py` – PDF text/image extraction utilities
@@ -54,6 +64,8 @@ output/<protocol>/
 ├── 4_objectives_endpoints.json    # Phase 3
 ├── 5_study_design.json            # Phase 4
 ├── 6_interventions.json           # Phase 5
+├── 7_narrative_structure.json     # Phase 7
+├── 8_advanced_entities.json       # Phase 8
 └── 9_final_soa.json              # Existing SoA
 ```
 

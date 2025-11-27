@@ -175,6 +175,20 @@ python extract_interventions.py protocol.pdf
 ```
 **Entities:** `StudyIntervention`, `AdministrableProduct`, `Administration`, `Substance`
 
+### Narrative Structure (Phase 7)
+Extracts document structure, sections, and abbreviations.
+```bash
+python extract_narrative.py protocol.pdf
+```
+**Entities:** `NarrativeContent`, `Abbreviation`, `StudyDefinitionDocument`
+
+### Advanced Entities (Phase 8)
+Extracts amendments, geographic scope, and study sites.
+```bash
+python extract_advanced.py protocol.pdf
+```
+**Entities:** `StudyAmendment`, `GeographicScope`, `Country`, `StudySite`
+
 ### Common Options
 All standalone extractors support:
 ```bash
@@ -196,6 +210,8 @@ output/<protocol_name>/
 ├── 4_objectives_endpoints.json   # Objectives (Phase 3)
 ├── 5_study_design.json           # Design structure (Phase 4)
 ├── 6_interventions.json          # Products (Phase 5)
+├── 7_narrative_structure.json    # Sections/abbreviations (Phase 7)
+├── 8_advanced_entities.json      # Amendments/geography (Phase 8)
 ├── 3_soa_images/                 # SoA page images
 │   ├── soa_page_010.png
 │   └── ...

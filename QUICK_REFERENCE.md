@@ -40,6 +40,12 @@ python extract_studydesign.py protocol.pdf
 
 # Interventions & Products
 python extract_interventions.py protocol.pdf
+
+# Narrative Structure (sections, abbreviations)
+python extract_narrative.py protocol.pdf
+
+# Advanced (amendments, geography)
+python extract_advanced.py protocol.pdf
 ```
 
 ### View Results
@@ -83,8 +89,9 @@ output/<protocol>/
 ├── 4_objectives_endpoints.json    # Objectives (Phase 3)
 ├── 5_study_design.json            # Design structure (Phase 4)
 ├── 6_interventions.json           # Products (Phase 5)
+├── 7_narrative_structure.json     # Sections/abbreviations (Phase 7)
+├── 8_advanced_entities.json       # Amendments/geography (Phase 8)
 ├── 4_header_structure.json        # SoA table structure
-├── 6_validation_result.json       # SoA validation details
 ├── 9_final_soa.json              ⭐ Main SoA output
 ├── 9_final_soa_provenance.json    # Source tracking
 └── conformance_report.json        # CORE results
@@ -121,6 +128,8 @@ python test_pipeline_steps.py protocol.pdf --step E  # Eligibility
 python test_pipeline_steps.py protocol.pdf --step O  # Objectives
 python test_pipeline_steps.py protocol.pdf --step D  # Study Design
 python test_pipeline_steps.py protocol.pdf --step I  # Interventions
+python test_pipeline_steps.py protocol.pdf --step N  # Narrative
+python test_pipeline_steps.py protocol.pdf --step A  # Advanced
 python test_pipeline_steps.py protocol.pdf --step expand  # All phases
 ```
 
@@ -162,6 +171,8 @@ CDISC_API_KEY=...            # For CORE (optional)
 | `extract_objectives.py` | Objectives extraction |
 | `extract_studydesign.py` | Study design extraction |
 | `extract_interventions.py` | Interventions extraction |
+| `extract_narrative.py` | Narrative/abbreviations extraction |
+| `extract_advanced.py` | Amendments/geography extraction |
 | `soa_streamlit_viewer.py` | Interactive viewer |
 | `test_pipeline_steps.py` | Step-by-step testing |
 | `extraction/` | Core extraction modules |

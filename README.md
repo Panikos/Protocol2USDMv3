@@ -26,6 +26,8 @@ Protocol2USDM is an automated pipeline that extracts, validates, and structures 
 | **Objectives** | Objective, Endpoint, Estimand | `extract_objectives.py` |
 | **Study Design** | StudyArm, StudyCell, StudyCohort | `extract_studydesign.py` |
 | **Interventions** | StudyIntervention, AdministrableProduct, Substance | `extract_interventions.py` |
+| **Narrative** | NarrativeContent, Abbreviation, StudyDefinitionDocument | `extract_narrative.py` |
+| **Advanced** | StudyAmendment, GeographicScope, Country | `extract_advanced.py` |
 
 ---
 
