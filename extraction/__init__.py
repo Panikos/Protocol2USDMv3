@@ -9,6 +9,7 @@ This module contains the core extraction logic:
 - pipeline: Orchestrates the complete extraction workflow
 - metadata: Study identity & metadata extraction (Phase 2)
 - eligibility: Inclusion/exclusion criteria extraction (Phase 1)
+- objectives: Objectives & endpoints extraction (Phase 3)
 
 Design Principle:
 - Vision extracts STRUCTURE (column headers, row groups)
@@ -63,6 +64,17 @@ from .eligibility import (
     StudyDesignPopulation,
     CriterionCategory,
 )
+from .objectives import (
+    extract_objectives_endpoints,
+    ObjectivesExtractionResult,
+    Objective,
+    Endpoint,
+    Estimand,
+    IntercurrentEvent,
+    ObjectivesData,
+    ObjectiveLevel,
+    EndpointLevel,
+)
 
 __all__ = [
     # SoA Finder
@@ -105,4 +117,14 @@ __all__ = [
     "EligibilityCriterionItem",
     "StudyDesignPopulation",
     "CriterionCategory",
+    # Objectives (Phase 3)
+    "extract_objectives_endpoints",
+    "ObjectivesExtractionResult",
+    "Objective",
+    "Endpoint",
+    "Estimand",
+    "IntercurrentEvent",
+    "ObjectivesData",
+    "ObjectiveLevel",
+    "EndpointLevel",
 ]

@@ -195,6 +195,7 @@ Each phase module:
 |------|-------|--------|-------|
 | 2025-11-26 | Phase 2 | ✅ Complete | Study Identity & Metadata |
 | 2025-11-27 | Phase 1 | ✅ Complete | Eligibility Criteria (8 inclusion, 11 exclusion extracted) |
+| 2025-11-27 | Phase 3 | ✅ Complete | Objectives & Endpoints (1 primary, 7 secondary, 3 exploratory) |
 
 ## Files Created
 
@@ -218,6 +219,17 @@ extraction/eligibility/
 └── extractor.py         # Main extraction logic with auto page detection
 
 extract_eligibility.py   # CLI entry point
+```
+
+### Phase 3: Objectives & Endpoints
+```
+extraction/objectives/
+├── __init__.py          # Module exports
+├── schema.py            # USDM models (Objective, Endpoint, Estimand, IntercurrentEvent)
+├── prompts.py           # LLM extraction prompts
+└── extractor.py         # Main extraction logic with auto page detection
+
+extract_objectives.py    # CLI entry point
 ```
 
 ### Core Utilities
