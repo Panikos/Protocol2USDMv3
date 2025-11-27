@@ -10,13 +10,14 @@ Usage - SoA Pipeline (Steps 1-9):
     python test_pipeline_steps.py protocol.pdf --step 3        # Header analysis
     python test_pipeline_steps.py protocol.pdf --step all      # All SoA steps
 
-Usage - USDM Expansion (Steps M/E/O/D/I/N):
+Usage - USDM Expansion (Steps M/E/O/D/I/N/A):
     python test_pipeline_steps.py protocol.pdf --step M        # Metadata
     python test_pipeline_steps.py protocol.pdf --step E        # Eligibility
     python test_pipeline_steps.py protocol.pdf --step O        # Objectives
     python test_pipeline_steps.py protocol.pdf --step D        # Study Design
     python test_pipeline_steps.py protocol.pdf --step I        # Interventions
     python test_pipeline_steps.py protocol.pdf --step N        # Narrative/Abbreviations
+    python test_pipeline_steps.py protocol.pdf --step A        # Advanced (amendments, sites)
     python test_pipeline_steps.py protocol.pdf --step expand   # All expansion phases
 """
 
@@ -1091,9 +1092,41 @@ def step_narrative(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro"
     return {"step": "N", "success": result.success}
 
 
+def step_advanced(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP A: Extract Advanced Entities
+    
+    Tests: extraction/advanced/extractor.py
+    Extracts: StudyAmendment, GeographicScope, Country, StudySite
+    """
+    print("\n" + "=" * 60)
+    print("STEP A: Advanced Entities Extraction (Phase 8)")
+    print("=" * 60)
+    
+    from extraction.advanced import extract_advanced_entities
+    from extraction.advanced.extractor import save_advanced_result
+    
+    print(f"Extracting advanced entities with {model}...")
+    result = extract_advanced_entities(pdf_path, model_name=model)
+    
+    output_path = Path(output_dir) / "8_advanced_entities.json"
+    save_advanced_result(result, str(output_path))
+    
+    if result.success and result.data:
+        data = result.data
+        print(f"\n✓ Amendments: {len(data.amendments)}")
+        print(f"✓ Countries: {len(data.countries)}")
+        print(f"✓ Sites: {len(data.sites)}")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "A", "success": result.success}
+
+
 def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
     """
-    Run all USDM expansion steps (Phases 1-5, 7).
+    Run all USDM expansion steps (Phases 1-5, 7-8).
     """
     print("\n" + "=" * 60)
     print("RUNNING ALL USDM EXPANSION STEPS")
@@ -1106,10 +1139,11 @@ def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-
     results["studydesign"] = step_studydesign(pdf_path, output_dir, model)
     results["interventions"] = step_interventions(pdf_path, output_dir, model)
     results["narrative"] = step_narrative(pdf_path, output_dir, model)
+    results["advanced"] = step_advanced(pdf_path, output_dir, model)
     
     success_count = sum(1 for r in results.values() if r.get("success"))
     print(f"\n{'='*60}")
-    print(f"EXPANSION COMPLETE: {success_count}/6 steps successful")
+    print(f"EXPANSION COMPLETE: {success_count}/7 steps successful")
     print(f"{'='*60}")
     
     return results
@@ -1121,13 +1155,14 @@ def main():
         epilog="""
 Step Options:
   SoA Pipeline: 1-9 (or 'all' for all SoA steps)
-  USDM Expansion: M (metadata), E (eligibility), O (objectives), D (design), I (interventions), N (narrative)
+  USDM Expansion: M (metadata), E (eligibility), O (objectives), D (design), I (interventions), N (narrative), A (advanced)
   Run all expansion: 'expand'
   
 Examples:
   python test_pipeline_steps.py protocol.pdf --step 3        # Header analysis
   python test_pipeline_steps.py protocol.pdf --step E        # Eligibility
   python test_pipeline_steps.py protocol.pdf --step N        # Narrative/Abbreviations
+  python test_pipeline_steps.py protocol.pdf --step A        # Advanced (amendments, sites)
   python test_pipeline_steps.py protocol.pdf --step expand   # All expansion phases
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
@@ -1207,9 +1242,11 @@ Examples:
             step_interventions(args.pdf, output_dir, args.model)
         elif step == "N":
             step_narrative(args.pdf, output_dir, args.model)
+        elif step == "A":
+            step_advanced(args.pdf, output_dir, args.model)
         else:
             print(f"Unknown step: {step}")
-            print("Valid steps: 1-9 (SoA), M/E/O/D/I/N (expansion), 'all', 'expand'")
+            print("Valid steps: 1-9 (SoA), M/E/O/D/I/N/A (expansion), 'all', 'expand'")
             continue
         
         if args.step.upper() not in ["ALL", "EXPAND"]:

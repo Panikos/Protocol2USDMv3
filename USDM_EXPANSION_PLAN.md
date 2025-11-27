@@ -200,6 +200,7 @@ Each phase module:
 | 2025-11-27 | Phase 5 | ✅ Complete | Interventions (ALXN1840, 3 dosing regimens, bis-choline tetrathiomolybdate) |
 | 2025-11-27 | Phase 6 | ⏸️ Parked | Biomedical Concepts (will integrate from related project) |
 | 2025-11-27 | Phase 7 | ✅ Complete | Narrative Structure (8 sections, 9 abbreviations) |
+| 2025-11-27 | Phase 8 | ✅ Complete | Advanced Entities (4 amendments, 1 country, geographic scope) |
 
 ## Files Created
 
@@ -267,6 +268,17 @@ extraction/narrative/
 └── extractor.py         # Main extraction logic with auto page detection
 
 extract_narrative.py     # CLI entry point
+```
+
+### Phase 8: Advanced Entities
+```
+extraction/advanced/
+├── __init__.py          # Module exports
+├── schema.py            # USDM models (StudyAmendment, GeographicScope, Country, StudySite)
+├── prompts.py           # LLM extraction prompts
+└── extractor.py         # Main extraction logic with auto page detection
+
+extract_advanced.py      # CLI entry point
 ```
 
 ### Core Utilities

@@ -13,6 +13,7 @@ This module contains the core extraction logic:
 - studydesign: Study design structure extraction (Phase 4)
 - interventions: Interventions & products extraction (Phase 5)
 - narrative: Document structure & abbreviations extraction (Phase 7)
+- advanced: Amendments, geographic scope, sites extraction (Phase 8)
 
 Design Principle:
 - Vision extracts STRUCTURE (column headers, row groups)
@@ -107,6 +108,14 @@ from .narrative import (
     Abbreviation,
     StudyDefinitionDocument,
 )
+from .advanced import (
+    extract_advanced_entities,
+    AdvancedExtractionResult,
+    AdvancedData,
+    StudyAmendment,
+    GeographicScope,
+    Country,
+)
 
 __all__ = [
     # SoA Finder
@@ -185,4 +194,11 @@ __all__ = [
     "NarrativeContent",
     "Abbreviation",
     "StudyDefinitionDocument",
+    # Advanced (Phase 8)
+    "extract_advanced_entities",
+    "AdvancedExtractionResult",
+    "AdvancedData",
+    "StudyAmendment",
+    "GeographicScope",
+    "Country",
 ]
