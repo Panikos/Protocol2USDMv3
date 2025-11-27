@@ -10,6 +10,7 @@ This module contains the core extraction logic:
 - metadata: Study identity & metadata extraction (Phase 2)
 - eligibility: Inclusion/exclusion criteria extraction (Phase 1)
 - objectives: Objectives & endpoints extraction (Phase 3)
+- studydesign: Study design structure extraction (Phase 4)
 
 Design Principle:
 - Vision extracts STRUCTURE (column headers, row groups)
@@ -75,6 +76,17 @@ from .objectives import (
     ObjectiveLevel,
     EndpointLevel,
 )
+from .studydesign import (
+    extract_study_design,
+    StudyDesignExtractionResult,
+    StudyDesignData,
+    InterventionalStudyDesign,
+    StudyArm,
+    StudyCell,
+    StudyCohort,
+    ArmType,
+    BlindingSchema,
+)
 
 __all__ = [
     # SoA Finder
@@ -127,4 +139,14 @@ __all__ = [
     "ObjectivesData",
     "ObjectiveLevel",
     "EndpointLevel",
+    # Study Design (Phase 4)
+    "extract_study_design",
+    "StudyDesignExtractionResult",
+    "StudyDesignData",
+    "InterventionalStudyDesign",
+    "StudyArm",
+    "StudyCell",
+    "StudyCohort",
+    "ArmType",
+    "BlindingSchema",
 ]

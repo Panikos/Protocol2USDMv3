@@ -196,6 +196,7 @@ Each phase module:
 | 2025-11-26 | Phase 2 | ✅ Complete | Study Identity & Metadata |
 | 2025-11-27 | Phase 1 | ✅ Complete | Eligibility Criteria (8 inclusion, 11 exclusion extracted) |
 | 2025-11-27 | Phase 3 | ✅ Complete | Objectives & Endpoints (1 primary, 7 secondary, 3 exploratory) |
+| 2025-11-27 | Phase 4 | ✅ Complete | Study Design (Open Label, 2 arms, 2 cohorts) |
 
 ## Files Created
 
@@ -230,6 +231,17 @@ extraction/objectives/
 └── extractor.py         # Main extraction logic with auto page detection
 
 extract_objectives.py    # CLI entry point
+```
+
+### Phase 4: Study Design Structure
+```
+extraction/studydesign/
+├── __init__.py          # Module exports
+├── schema.py            # USDM models (StudyArm, StudyCell, StudyCohort, InterventionalStudyDesign)
+├── prompts.py           # LLM extraction prompts
+└── extractor.py         # Main extraction logic with auto page detection
+
+extract_studydesign.py   # CLI entry point
 ```
 
 ### Core Utilities
