@@ -200,3 +200,141 @@ def get_gemini_client(model_name: str = "gemini-2.5-pro"):
     except ImportError:
         pass
     return None
+
+
+# Convenience functions for simple LLM calls
+def call_llm(
+    prompt: str,
+    model_name: Optional[str] = None,
+    json_mode: bool = True,
+    temperature: float = 0.0,
+) -> Dict[str, Any]:
+    """
+    Simple LLM call with a single prompt.
+    
+    Args:
+        prompt: The prompt text
+        model_name: Model to use (defaults to environment/gemini-2.5-pro)
+        json_mode: Whether to request JSON output
+        temperature: Generation temperature
+        
+    Returns:
+        Dict with 'response' key containing the generated text
+    """
+    if model_name is None:
+        model_name = get_default_model()
+    
+    messages = [{"role": "user", "content": prompt}]
+    
+    try:
+        content = generate_text(
+            messages=messages,
+            model_name=model_name,
+            json_mode=json_mode,
+            temperature=temperature,
+        )
+        return {"response": content}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def call_llm_with_image(
+    prompt: str,
+    image_path: str,
+    model_name: Optional[str] = None,
+    json_mode: bool = True,
+) -> Dict[str, Any]:
+    """
+    LLM call with an image attachment.
+    
+    Args:
+        prompt: The prompt text
+        image_path: Path to the image file
+        model_name: Model to use (defaults to environment/gemini-2.5-pro)
+        json_mode: Whether to request JSON output
+        
+    Returns:
+        Dict with 'response' key containing the generated text
+    """
+    import base64
+    from pathlib import Path
+    
+    if model_name is None:
+        model_name = get_default_model()
+    
+    _ensure_env_loaded()
+    
+    try:
+        # Read and encode image
+        image_data = Path(image_path).read_bytes()
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+        
+        # Detect image type
+        suffix = Path(image_path).suffix.lower()
+        mime_type = {
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.webp': 'image/webp',
+        }.get(suffix, 'image/png')
+        
+        provider = detect_provider(model_name)
+        
+        if provider == 'google':
+            # Use Gemini API
+            import google.generativeai as genai
+            
+            api_key = os.environ.get("GOOGLE_API_KEY")
+            if not api_key:
+                return {"error": "GOOGLE_API_KEY not set"}
+                
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel(model_name)
+            
+            # Create image part
+            image_part = {
+                "mime_type": mime_type,
+                "data": base64_image,
+            }
+            
+            response = model.generate_content([prompt, image_part])
+            return {"response": response.text}
+            
+        elif provider == 'openai':
+            # Use OpenAI API
+            from openai import OpenAI
+            
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if not api_key:
+                return {"error": "OPENAI_API_KEY not set"}
+                
+            client = OpenAI(api_key=api_key)
+            
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ]
+            
+            response = client.chat.completions.create(
+                model=model_name,
+                messages=messages,
+                response_format={"type": "json_object"} if json_mode else None,
+            )
+            
+            return {"response": response.choices[0].message.content}
+        else:
+            return {"error": f"Unknown provider for model: {model_name}"}
+            
+    except Exception as e:
+        return {"error": str(e)}

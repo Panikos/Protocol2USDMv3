@@ -7,6 +7,7 @@ This module contains the core extraction logic:
 - text_extractor: Text-based data extraction (activities, ticks)
 - validator: Vision-based validation of text extraction
 - pipeline: Orchestrates the complete extraction workflow
+- metadata: Study identity & metadata extraction (Phase 2)
 
 Design Principle:
 - Vision extracts STRUCTURE (column headers, row groups)
@@ -43,6 +44,16 @@ from .pipeline import (
     PipelineConfig,
     PipelineResult,
 )
+from .metadata import (
+    extract_study_metadata,
+    MetadataExtractionResult,
+    StudyMetadata,
+    StudyTitle,
+    StudyIdentifier,
+    Organization,
+    StudyRole,
+    Indication,
+)
 
 __all__ = [
     # SoA Finder
@@ -69,4 +80,13 @@ __all__ = [
     "run_from_files",
     "PipelineConfig",
     "PipelineResult",
+    # Metadata (Phase 2)
+    "extract_study_metadata",
+    "MetadataExtractionResult",
+    "StudyMetadata",
+    "StudyTitle",
+    "StudyIdentifier",
+    "Organization",
+    "StudyRole",
+    "Indication",
 ]

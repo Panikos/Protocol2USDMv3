@@ -8,7 +8,14 @@ This module consolidates shared functionality to eliminate duplication:
 - Constants and configuration
 """
 
-from .llm_client import get_llm_client, LLMConfig, LLMResponse, get_default_model
+from .llm_client import (
+    get_llm_client,
+    LLMConfig,
+    LLMResponse,
+    get_default_model,
+    call_llm,
+    call_llm_with_image,
+)
 from .json_utils import (
     parse_llm_json,
     extract_json_str,
@@ -18,6 +25,12 @@ from .json_utils import (
     make_hashable,
 )
 from .provenance import ProvenanceTracker, ProvenanceSource
+from .pdf_utils import (
+    extract_text_from_pages,
+    get_page_count,
+    render_page_to_image,
+    render_pages_to_images,
+)
 from .constants import (
     USDM_VERSION,
     SYSTEM_NAME,
@@ -30,6 +43,8 @@ __all__ = [
     # LLM Client
     "get_llm_client",
     "get_default_model",
+    "call_llm",
+    "call_llm_with_image",
     "LLMConfig",
     "LLMResponse",
     # JSON Utilities
@@ -42,6 +57,11 @@ __all__ = [
     # Provenance
     "ProvenanceTracker",
     "ProvenanceSource",
+    # PDF Utilities
+    "extract_text_from_pages",
+    "get_page_count",
+    "render_page_to_image",
+    "render_pages_to_images",
     # Constants
     "USDM_VERSION",
     "SYSTEM_NAME",
