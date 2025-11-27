@@ -38,13 +38,13 @@ class EligibilityExtractionResult:
 
 def find_eligibility_pages(
     pdf_path: str,
-    max_pages_to_scan: int = 30,
+    max_pages_to_scan: int = 50,
 ) -> List[int]:
     """
     Find pages containing eligibility criteria using heuristics.
     
-    Looks for keywords like "Inclusion Criteria", "Exclusion Criteria",
-    "Eligibility", "Study Population" in the first N pages.
+    Looks for pages that contain actual criteria content (numbered items
+    after section headers), not just TOC references.
     
     Args:
         pdf_path: Path to the protocol PDF
@@ -55,19 +55,26 @@ def find_eligibility_pages(
     """
     import fitz
     
-    eligibility_keywords = [
-        r'inclusion\s+criteria',
-        r'exclusion\s+criteria',
-        r'eligibility\s+criteria',
-        r'study\s+population',
-        r'subject\s+selection',
-        r'participant\s+selection',
-        r'eligible\s+participants',
-        r'participants\s+must',
-        r'must\s+meet\s+the\s+following',
+    # Patterns for section headers followed by numbered criteria
+    content_patterns = [
+        # Section header followed by numbered items
+        r'inclusion\s+criteria\s*\n.*?(?:1\.|i1|a\))',
+        r'exclusion\s+criteria\s*\n.*?(?:1\.|e1|a\))',
+        # Criteria with typical formatting
+        r'(?:participants?|subjects?)\s+(?:must|aged|with)\s+',
+        r'(?:diagnosis|history)\s+of\s+',
+        r'(?:≥|>=|≤|<=)\s*\d+\s*(?:years?|months?|kg|mg)',
     ]
     
-    pattern = re.compile('|'.join(eligibility_keywords), re.IGNORECASE)
+    # Keywords that indicate TOC or reference pages (exclude these)
+    toc_indicators = [
+        r'table\s+of\s+contents',
+        r'\.{5,}',  # Dotted lines typical in TOC
+        r'page\s+\d+\s+of\s+\d+.*page\s+\d+\s+of\s+\d+',  # Multiple page numbers
+    ]
+    
+    content_pattern = re.compile('|'.join(content_patterns), re.IGNORECASE | re.DOTALL)
+    toc_pattern = re.compile('|'.join(toc_indicators), re.IGNORECASE)
     
     eligibility_pages = []
     
@@ -77,11 +84,22 @@ def find_eligibility_pages(
         
         for page_num in range(total_pages):
             page = doc[page_num]
-            text = page.get_text().lower()
+            text = page.get_text()
+            text_lower = text.lower()
             
-            if pattern.search(text):
+            # Skip TOC pages
+            if toc_pattern.search(text):
+                continue
+            
+            # Look for actual eligibility content
+            has_header = ('inclusion criteria' in text_lower or 
+                         'exclusion criteria' in text_lower or
+                         'eligibility criteria' in text_lower)
+            has_content = content_pattern.search(text_lower)
+            
+            if has_header and has_content:
                 eligibility_pages.append(page_num)
-                logger.debug(f"Found eligibility keywords on page {page_num + 1}")
+                logger.debug(f"Found eligibility content on page {page_num + 1}")
         
         doc.close()
         
