@@ -2,6 +2,12 @@
 google-cloud-key.json
 *-key.json
 
+# Python cache - ignore globally
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
 # Large binary files (GitHub 100MB limit) - download via tools/core/download_core.py
 tools/core/core-windows.zip
 tools/core/core/
@@ -452,3 +458,10 @@ __pycache__/soa_streamlit_viewer.cpython-313.pyc
 __pycache__/test_pipeline_steps.cpython-313.pyc
 __pycache__/soa_streamlit_viewer.cpython-313.pyc
 __pycache__/soa_streamlit_viewer.cpython-313.pyc
+extraction/__pycache__/__init__.cpython-313.pyc
+extraction/__pycache__/confidence.cpython-313.pyc
+extraction/__pycache__/header_analyzer.cpython-313.pyc
+extraction/__pycache__/pipeline.cpython-313.pyc
+extraction/__pycache__/soa_finder.cpython-313.pyc
+extraction/__pycache__/validator.cpython-313.pyc
+core/__pycache__/pdf_utils.cpython-313.pyc
