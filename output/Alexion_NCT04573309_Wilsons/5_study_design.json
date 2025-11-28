@@ -21,30 +21,19 @@
     26,
     27
   ],
-  "modelUsed": "gemini-2.5-pro",
+  "modelUsed": "gemini-3-pro-preview",
   "studyDesignStructure": {
     "studyArms": [
       {
         "id": "arm_1",
-        "name": "ALXN1840 15 mg/day",
+        "name": "ALXN1840",
         "type": {
           "code": "Experimental Arm",
           "codeSystem": "USDM",
           "decode": "Experimental Arm"
         },
         "instanceType": "StudyArm",
-        "description": "Participants will be initiated on 15 mg/day of ALXN1840 for a treatment period of approximately 28 days."
-      },
-      {
-        "id": "arm_2",
-        "name": "ALXN1840 30 mg/day",
-        "type": {
-          "code": "Experimental Arm",
-          "codeSystem": "USDM",
-          "decode": "Experimental Arm"
-        },
-        "instanceType": "StudyArm",
-        "description": "Following the 15 mg/day period, participants are titrated up to 30 mg/day on Day 29."
+        "description": "Participants receive ALXN1840 15 mg/day for approximately 28 days followed by titration up to 30 mg/day on Day 29."
       }
     ],
     "studyCells": [
@@ -68,46 +57,25 @@
         "epochId": "epoch_3",
         "elementIds": [],
         "instanceType": "StudyCell"
-      },
-      {
-        "id": "cell_4",
-        "armId": "arm_2",
-        "epochId": "epoch_1",
-        "elementIds": [],
-        "instanceType": "StudyCell"
-      },
-      {
-        "id": "cell_5",
-        "armId": "arm_2",
-        "epochId": "epoch_2",
-        "elementIds": [],
-        "instanceType": "StudyCell"
-      },
-      {
-        "id": "cell_6",
-        "armId": "arm_2",
-        "epochId": "epoch_3",
-        "elementIds": [],
-        "instanceType": "StudyCell"
       }
     ],
     "studyCohorts": [
       {
         "id": "cohort_1",
-        "name": "Cohort 1 (treatment experienced)",
+        "name": "Cohort 1 (Treatment-experienced)",
         "instanceType": "StudyCohort",
         "characteristic": "Patients who have received WD therapy for > 28 days"
       },
       {
         "id": "cohort_2",
-        "name": "Cohort 2 (treatment naïve)",
+        "name": "Cohort 2 (Treatment-naïve)",
         "instanceType": "StudyCohort",
         "characteristic": "Patients who have received WD therapy for ≤ 28 days"
       }
     ],
     "summary": {
-      "armCount": 2,
-      "cellCount": 6,
+      "armCount": 1,
+      "cellCount": 3,
       "cohortCount": 2
     },
     "studyDesign": {
@@ -119,6 +87,11 @@
           "code": "Treatment",
           "codeSystem": "USDM",
           "decode": "Treatment"
+        },
+        {
+          "code": "Basic Science",
+          "codeSystem": "USDM",
+          "decode": "Basic Science"
         }
       ],
       "trialType": {
@@ -137,8 +110,7 @@
         "decode": "Non-Randomized"
       },
       "armIds": [
-        "arm_1",
-        "arm_2"
+        "arm_1"
       ],
       "cohortIds": [
         "cohort_1",
@@ -153,7 +125,8 @@
     "studyDesign": {
       "type": "Interventional",
       "trialIntentTypes": [
-        "Treatment"
+        "Treatment",
+        "Basic Science"
       ],
       "blinding": {
         "schema": "Open Label",
@@ -171,38 +144,33 @@
     },
     "arms": [
       {
-        "name": "ALXN1840 15 mg/day",
-        "type": "Experimental",
-        "description": "Participants will be initiated on 15 mg/day of ALXN1840 for a treatment period of approximately 28 days."
-      },
-      {
-        "name": "ALXN1840 30 mg/day",
-        "type": "Experimental",
-        "description": "Following the 15 mg/day period, participants are titrated up to 30 mg/day on Day 29."
+        "name": "ALXN1840",
+        "type": "Experimental Arm",
+        "description": "Participants receive ALXN1840 15 mg/day for approximately 28 days followed by titration up to 30 mg/day on Day 29."
       }
     ],
     "cohorts": [
       {
-        "name": "Cohort 1 (treatment experienced)",
+        "name": "Cohort 1 (Treatment-experienced)",
         "characteristic": "Patients who have received WD therapy for > 28 days"
       },
       {
-        "name": "Cohort 2 (treatment naïve)",
+        "name": "Cohort 2 (Treatment-naïve)",
         "characteristic": "Patients who have received WD therapy for ≤ 28 days"
       }
     ],
     "epochs": [
       {
-        "name": "Screening",
-        "description": "Period prior to enrollment to determine eligibility."
-      },
-      {
         "name": "Run-in Period",
-        "description": "Day -8 to Day -1. Includes diet equilibration and measurement of pretreatment copper and molybdenum balance."
+        "description": "Day -8 to Day -1: Diet equilibration and pretreatment copper/molybdenum balance measurement"
       },
       {
-        "name": "Treatment",
-        "description": "Starts on Day 1. Participants receive ALXN1840 at 15 mg/day for approximately 28 days followed by titration up to 30 mg/day on Day 29."
+        "name": "Treatment Period 1 (15 mg)",
+        "description": "Day 1 to Day 28: ALXN1840 15 mg/day (Includes Inpatient Period 1 and Outpatient Period)"
+      },
+      {
+        "name": "Treatment Period 2 (30 mg)",
+        "description": "Day 29 to Day 40: ALXN1840 30 mg/day (Inpatient Period 2)"
       }
     ]
   }

@@ -10,7 +10,7 @@ Usage - SoA Pipeline (Steps 1-9):
     python test_pipeline_steps.py protocol.pdf --step 3        # Header analysis
     python test_pipeline_steps.py protocol.pdf --step all      # All SoA steps
 
-Usage - USDM Expansion (Steps M/E/O/D/I/N/A):
+Usage - USDM Expansion (Steps M/E/O/D/I/N/A/P/S/DS/AD):
     python test_pipeline_steps.py protocol.pdf --step M        # Metadata
     python test_pipeline_steps.py protocol.pdf --step E        # Eligibility
     python test_pipeline_steps.py protocol.pdf --step O        # Objectives
@@ -18,7 +18,15 @@ Usage - USDM Expansion (Steps M/E/O/D/I/N/A):
     python test_pipeline_steps.py protocol.pdf --step I        # Interventions
     python test_pipeline_steps.py protocol.pdf --step N        # Narrative/Abbreviations
     python test_pipeline_steps.py protocol.pdf --step A        # Advanced (amendments, sites)
+    python test_pipeline_steps.py protocol.pdf --step P        # Procedures & Devices (Phase 10)
+    python test_pipeline_steps.py protocol.pdf --step S        # Scheduling Logic (Phase 11)
+    python test_pipeline_steps.py protocol.pdf --step DS       # Document Structure (Phase 12)
+    python test_pipeline_steps.py protocol.pdf --step AD       # Amendment Details (Phase 13)
     python test_pipeline_steps.py protocol.pdf --step expand   # All expansion phases
+
+Usage - Conditional Sources:
+    python test_pipeline_steps.py protocol.pdf --step SAP --sap sap.pdf    # SAP Analysis Populations
+    python test_pipeline_steps.py protocol.pdf --step SITES --sites sites.xlsx  # Study Sites
 """
 
 import argparse
@@ -1159,15 +1167,239 @@ def step_advanced(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro")
     return {"step": "A", "success": result.success}
 
 
-def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+def step_procedures(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
     """
-    Run all USDM expansion steps (Phases 1-5, 7-8).
+    STEP P: Extract Procedures & Medical Devices
+    
+    Tests: extraction/procedures/extractor.py
+    Extracts: Procedure, MedicalDevice, MedicalDeviceIdentifier, Ingredient, Strength
+    """
+    print("\n" + "=" * 60)
+    print("STEP P: Procedures & Devices Extraction (Phase 10)")
+    print("=" * 60)
+    
+    from extraction.procedures import extract_procedures_devices
+    
+    print(f"Extracting procedures with {model}...")
+    result = extract_procedures_devices(pdf_path, model=model, output_dir=output_dir)
+    
+    if result.success and result.data:
+        data = result.data
+        print(f"\n✓ Procedures: {len(data.procedures)}")
+        print(f"✓ Medical Devices: {len(data.devices)}")
+        print(f"✓ Ingredients: {len(data.ingredients)}")
+        
+        # Show sample procedures
+        for proc in data.procedures[:5]:
+            print(f"    - {proc.name}")
+        
+        print(f"📊 Confidence: {result.confidence:.0%}")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    output_path = Path(output_dir) / "9_procedures_devices.json"
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "P", "success": result.success}
+
+
+def step_scheduling(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP S: Extract Scheduling Logic
+    
+    Tests: extraction/scheduling/extractor.py
+    Extracts: Timing, Condition, TransitionRule, ScheduleTimelineExit, ScheduledDecisionInstance
+    """
+    print("\n" + "=" * 60)
+    print("STEP S: Scheduling Logic Extraction (Phase 11)")
+    print("=" * 60)
+    
+    from extraction.scheduling import extract_scheduling
+    
+    print(f"Extracting scheduling logic with {model}...")
+    result = extract_scheduling(pdf_path, model=model, output_dir=output_dir)
+    
+    if result.success and result.data:
+        data = result.data
+        summary = data.to_dict()['summary']
+        print(f"\n✓ Timings: {summary['timingCount']}")
+        print(f"✓ Conditions: {summary['conditionCount']}")
+        print(f"✓ Transition Rules: {summary['transitionRuleCount']}")
+        
+        # Show sample timings
+        for timing in data.timings[:5]:
+            print(f"    - {timing.name}: {timing.value} {timing.unit}")
+        
+        print(f"📊 Confidence: {result.confidence:.0%}")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    output_path = Path(output_dir) / "10_scheduling_logic.json"
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "S", "success": result.success}
+
+
+def step_docstructure(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP DS: Extract Document Structure
+    
+    Tests: extraction/document_structure/extractor.py
+    Extracts: DocumentContentReference, CommentAnnotation, StudyDefinitionDocumentVersion
+    """
+    print("\n" + "=" * 60)
+    print("STEP DS: Document Structure Extraction (Phase 12)")
+    print("=" * 60)
+    
+    from extraction.document_structure import extract_document_structure
+    
+    print(f"Extracting document structure with {model}...")
+    result = extract_document_structure(pdf_path, model=model, output_dir=output_dir)
+    
+    if result.success and result.data:
+        data = result.data
+        summary = data.to_dict()['summary']
+        print(f"\n✓ Content References: {summary['referenceCount']}")
+        print(f"✓ Annotations: {summary['annotationCount']}")
+        print(f"✓ Document Versions: {summary['versionCount']}")
+        
+        # Show document versions
+        for ver in data.document_versions:
+            amend = f" ({ver.amendment_number})" if ver.amendment_number else ""
+            print(f"    - Version {ver.version_number}{amend} - {ver.status}")
+        
+        print(f"📊 Confidence: {result.confidence:.0%}")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    output_path = Path(output_dir) / "13_document_structure.json"
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "DS", "success": result.success}
+
+
+def step_amendmentdetails(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP AD: Extract Amendment Details
+    
+    Tests: extraction/amendments/extractor.py
+    Extracts: StudyAmendmentImpact, StudyAmendmentReason, StudyChange
+    """
+    print("\n" + "=" * 60)
+    print("STEP AD: Amendment Details Extraction (Phase 13)")
+    print("=" * 60)
+    
+    from extraction.amendments import extract_amendment_details
+    
+    print(f"Extracting amendment details with {model}...")
+    result = extract_amendment_details(pdf_path, model=model, output_dir=output_dir)
+    
+    if result.success and result.data:
+        data = result.data
+        summary = data.to_dict()['summary']
+        print(f"\n✓ Amendment Impacts: {summary['impactCount']}")
+        print(f"✓ Amendment Reasons: {summary['reasonCount']}")
+        print(f"✓ Study Changes: {summary['changeCount']}")
+        
+        # Show amendment reasons
+        for reason in data.reasons[:3]:
+            primary = " ⭐" if reason.is_primary else ""
+            print(f"    - [{reason.category.value}]{primary} {reason.reason_text[:60]}...")
+        
+        print(f"📊 Confidence: {result.confidence:.0%}")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    output_path = Path(output_dir) / "14_amendment_details.json"
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "AD", "success": result.success}
+
+
+def step_sap(pdf_path: str, output_dir: str, sap_path: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP SAP: Extract Analysis Populations from SAP
+    
+    Tests: extraction/conditional/sap_extractor.py
+    Extracts: AnalysisPopulation, Characteristic
+    """
+    print("\n" + "=" * 60)
+    print("STEP SAP: SAP Analysis Populations (Phase 14)")
+    print("=" * 60)
+    
+    if not sap_path:
+        print("❌ No SAP file provided. Use --sap <path>")
+        return {"step": "SAP", "success": False, "error": "No SAP file"}
+    
+    from extraction.conditional import extract_from_sap
+    
+    print(f"Extracting from SAP: {sap_path}")
+    print(f"Using model: {model}...")
+    result = extract_from_sap(sap_path, model=model, output_dir=output_dir)
+    
+    if result.success and result.data:
+        data = result.data
+        print(f"\n✓ Analysis Populations: {len(data.analysis_populations)}")
+        print(f"✓ Baseline Characteristics: {len(data.characteristics)}")
+        
+        # Show populations
+        for pop in data.analysis_populations:
+            print(f"    - {pop.label or pop.name} ({pop.population_type})")
+        
+        print("📊 Extraction successful!")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    output_path = Path(output_dir) / "11_sap_populations.json"
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "SAP", "success": result.success}
+
+
+def step_sites(pdf_path: str, output_dir: str, sites_path: str, model: str = "gemini-2.5-pro") -> dict:
+    """
+    STEP SITES: Extract Study Sites from site list
+    
+    Tests: extraction/conditional/sites_extractor.py
+    Extracts: StudySite, StudyRole, AssignedPerson
+    """
+    print("\n" + "=" * 60)
+    print("STEP SITES: Study Sites Extraction (Phase 15)")
+    print("=" * 60)
+    
+    if not sites_path:
+        print("❌ No sites file provided. Use --sites <path>")
+        return {"step": "SITES", "success": False, "error": "No sites file"}
+    
+    from extraction.conditional import extract_from_sites
+    
+    print(f"Extracting from sites file: {sites_path}")
+    result = extract_from_sites(sites_path, output_dir=output_dir)
+    
+    if result.success and result.sites_data:
+        data = result.sites_data
+        print(f"\n✓ Study Sites: {len(data.get('studySites', []))}")
+        print(f"✓ Study Roles: {len(data.get('studyRoles', []))}")
+        print(f"✓ Assigned Persons: {len(data.get('assignedPersons', []))}")
+        
+        # Show sample sites
+        for site in data.get('studySites', [])[:5]:
+            print(f"    - {site.get('siteNumber', 'N/A')}: {site.get('name', 'N/A')} ({site.get('country', 'N/A')})")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    output_path = Path(output_dir) / "12_study_sites.json"
+    print(f"\n✓ Saved to: {output_path}")
+    return {"step": "SITES", "success": result.success}
+
+
+def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-pro", 
+                       sap_path: str = None, sites_path: str = None) -> dict:
+    """
+    Run all USDM expansion steps (Phases 1-5, 7-8, 10-13, and conditional).
     """
     print("\n" + "=" * 60)
     print("RUNNING ALL USDM EXPANSION STEPS")
     print("=" * 60)
     
     results = {}
+    
+    # Core protocol phases
     results["metadata"] = step_metadata(pdf_path, output_dir, model)
     results["eligibility"] = step_eligibility(pdf_path, output_dir, model)
     results["objectives"] = step_objectives(pdf_path, output_dir, model)
@@ -1176,9 +1408,22 @@ def step_all_expansion(pdf_path: str, output_dir: str, model: str = "gemini-2.5-
     results["narrative"] = step_narrative(pdf_path, output_dir, model)
     results["advanced"] = step_advanced(pdf_path, output_dir, model)
     
+    # New phases (10-13)
+    results["procedures"] = step_procedures(pdf_path, output_dir, model)
+    results["scheduling"] = step_scheduling(pdf_path, output_dir, model)
+    results["docstructure"] = step_docstructure(pdf_path, output_dir, model)
+    results["amendmentdetails"] = step_amendmentdetails(pdf_path, output_dir, model)
+    
+    # Conditional phases (if sources provided)
+    if sap_path:
+        results["sap"] = step_sap(pdf_path, output_dir, sap_path, model)
+    if sites_path:
+        results["sites"] = step_sites(pdf_path, output_dir, sites_path, model)
+    
     success_count = sum(1 for r in results.values() if r.get("success"))
+    total_count = len(results)
     print(f"\n{'='*60}")
-    print(f"EXPANSION COMPLETE: {success_count}/7 steps successful")
+    print(f"EXPANSION COMPLETE: {success_count}/{total_count} steps successful")
     print(f"{'='*60}")
     
     return results
@@ -1190,24 +1435,32 @@ def main():
         epilog="""
 Step Options:
   SoA Pipeline: 1-9 (or 'all' for all SoA steps)
-  USDM Expansion: M (metadata), E (eligibility), O (objectives), D (design), I (interventions), N (narrative), A (advanced)
+  USDM Expansion: 
+    M (metadata), E (eligibility), O (objectives), D (design), I (interventions), 
+    N (narrative), A (advanced), P (procedures), S (scheduling), 
+    DS (doc structure), AD (amendment details)
+  Conditional: SAP, SITES
   Run all expansion: 'expand'
   
 Examples:
-  python test_pipeline_steps.py protocol.pdf --step 3        # Header analysis
-  python test_pipeline_steps.py protocol.pdf --step E        # Eligibility
-  python test_pipeline_steps.py protocol.pdf --step N        # Narrative/Abbreviations
-  python test_pipeline_steps.py protocol.pdf --step A        # Advanced (amendments, sites)
-  python test_pipeline_steps.py protocol.pdf --step expand   # All expansion phases
+  python test_pipeline_steps.py protocol.pdf --step 3          # Header analysis
+  python test_pipeline_steps.py protocol.pdf --step E          # Eligibility
+  python test_pipeline_steps.py protocol.pdf --step P          # Procedures & Devices
+  python test_pipeline_steps.py protocol.pdf --step DS         # Document Structure
+  python test_pipeline_steps.py protocol.pdf --step SAP --sap sap.pdf  # SAP populations
+  python test_pipeline_steps.py protocol.pdf --step expand     # All expansion phases
+  python test_pipeline_steps.py protocol.pdf --step expand --sap sap.pdf  # All + SAP
         """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("pdf", help="Path to protocol PDF")
     parser.add_argument("--step", default="all", 
-                        help="Step: 1-9 (SoA), M/E/O/D/I (expansion), 'all', or 'expand'")
+                        help="Step: 1-9 (SoA), M/E/O/D/I/N/A/P/S/DS/AD (expansion), SAP/SITES (conditional), 'all', or 'expand'")
     parser.add_argument("--pages", help="Comma-separated page numbers (1-indexed)")
     parser.add_argument("--model", default="gemini-2.5-pro", help="Model to use")
     parser.add_argument("--output", help="Output directory")
+    parser.add_argument("--sap", help="Path to SAP PDF for analysis population extraction")
+    parser.add_argument("--sites", help="Path to site list (CSV/Excel) for site extraction")
     
     args = parser.parse_args()
     
@@ -1240,7 +1493,7 @@ Examples:
     if step_arg == "ALL":
         steps = ["1", "2", "3", "4", "5", "6", "7", "8", "9"]
     elif step_arg == "EXPAND":
-        step_all_expansion(args.pdf, output_dir, args.model)
+        step_all_expansion(args.pdf, output_dir, args.model, args.sap, args.sites)
         return
     else:
         steps = [step_arg]
@@ -1264,7 +1517,7 @@ Examples:
             step8_validate_schema(args.pdf, output_dir)
         elif step == "9":
             step9_cdisc_conformance(args.pdf, output_dir)
-        # USDM Expansion steps
+        # USDM Expansion steps (Phase 1-8)
         elif step == "M":
             step_metadata(args.pdf, output_dir, args.model)
         elif step == "E":
@@ -1279,9 +1532,23 @@ Examples:
             step_narrative(args.pdf, output_dir, args.model)
         elif step == "A":
             step_advanced(args.pdf, output_dir, args.model)
+        # New expansion steps (Phase 10-13)
+        elif step == "P":
+            step_procedures(args.pdf, output_dir, args.model)
+        elif step == "S":
+            step_scheduling(args.pdf, output_dir, args.model)
+        elif step == "DS":
+            step_docstructure(args.pdf, output_dir, args.model)
+        elif step == "AD":
+            step_amendmentdetails(args.pdf, output_dir, args.model)
+        # Conditional sources
+        elif step == "SAP":
+            step_sap(args.pdf, output_dir, args.sap, args.model)
+        elif step == "SITES":
+            step_sites(args.pdf, output_dir, args.sites, args.model)
         else:
             print(f"Unknown step: {step}")
-            print("Valid steps: 1-9 (SoA), M/E/O/D/I/N/A (expansion), 'all', 'expand'")
+            print("Valid steps: 1-9 (SoA), M/E/O/D/I/N/A/P/S/DS/AD (expansion), SAP/SITES (conditional), 'all', 'expand'")
             continue
         
         if args.step.upper() not in ["ALL", "EXPAND"]:

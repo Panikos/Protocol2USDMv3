@@ -5,7 +5,7 @@
     1,
     2
   ],
-  "modelUsed": "gemini-2.5-pro",
+  "modelUsed": "gemini-3-pro-preview",
   "metadata": {
     "studyName": "A Phase 2, Open-label Study to Assess Copper and Molybdenum Balance in Participants with Wilson Dise",
     "titles": [
@@ -52,7 +52,7 @@
       {
         "id": "id_4",
         "text": "119006",
-        "scopeId": "org_2",
+        "scopeId": "org_unknown",
         "instanceType": "StudyIdentifier"
       }
     ],
@@ -64,16 +64,6 @@
           "code": "Pharmaceutical Company",
           "codeSystem": "USDM",
           "decode": "Pharmaceutical Company"
-        },
-        "instanceType": "Organization"
-      },
-      {
-        "id": "org_2",
-        "name": "US Food and Drug Administration (FDA)",
-        "type": {
-          "code": "Government Institute",
-          "codeSystem": "USDM",
-          "decode": "Government Institute"
         },
         "instanceType": "Organization"
       }
@@ -91,28 +81,14 @@
           "org_1"
         ],
         "instanceType": "StudyRole"
-      },
-      {
-        "id": "role_2",
-        "name": "Regulatory Agency",
-        "code": {
-          "code": "Regulatory Agency",
-          "codeSystem": "USDM",
-          "decode": "Regulatory Agency"
-        },
-        "organizationIds": [
-          "org_2"
-        ],
-        "instanceType": "StudyRole"
       }
     ],
     "indications": [
       {
         "id": "indication_1",
         "name": "Wilson Disease",
-        "isRareDisease": true,
-        "instanceType": "Indication",
-        "description": "A study to assess copper and molybdenum balance in participants with Wilson Disease treated with ALXN1840."
+        "isRareDisease": null,
+        "instanceType": "Indication"
       }
     ],
     "studyPhase": {
@@ -121,9 +97,9 @@
       "decode": "Phase 2"
     },
     "studyType": "Interventional",
-    "protocolVersion": "3.1 (US)",
+    "protocolVersion": "Amendment 3.1 (US)",
     "protocolDate": "2022-03-18",
-    "amendmentNumber": "3.1"
+    "amendmentNumber": "3.1 (US)"
   },
   "rawResponse": {
     "titles": [
@@ -134,14 +110,6 @@
       {
         "type": "Brief Study Title",
         "text": "Copper and Molybdenum Balance in Participants with Wilson Disease Treated with ALXN1840"
-      },
-      {
-        "type": "Study Acronym",
-        "text": null
-      },
-      {
-        "type": "Scientific Study Title",
-        "text": null
       }
     ],
     "identifiers": [
@@ -158,10 +126,10 @@
       {
         "type": "EudraCT Number",
         "value": "2020-001104-41",
-        "registry": "European Union Drug Regulating Authorities Clinical Trials Database"
+        "registry": "EU Clinical Trials Register"
       },
       {
-        "type": "IND/IDE Number",
+        "type": "IND Number",
         "value": "119006",
         "registry": "FDA"
       }
@@ -171,24 +139,19 @@
         "name": "Alexion Pharmaceuticals, Inc.",
         "role": "Sponsor",
         "type": "Pharmaceutical Company"
-      },
-      {
-        "name": "US Food and Drug Administration (FDA)",
-        "role": "Regulatory Agency",
-        "type": "Government"
       }
     ],
     "studyPhase": "Phase 2",
     "indication": {
       "name": "Wilson Disease",
-      "description": "A study to assess copper and molybdenum balance in participants with Wilson Disease treated with ALXN1840.",
-      "isRareDisease": true
+      "description": null,
+      "isRareDisease": null
     },
     "studyType": "Interventional",
     "protocolVersion": {
-      "version": "3.1 (US)",
+      "version": "Amendment 3.1 (US)",
       "date": "2022-03-18",
-      "amendment": "3.1"
+      "amendment": "3.1 (US)"
     }
   }
 }

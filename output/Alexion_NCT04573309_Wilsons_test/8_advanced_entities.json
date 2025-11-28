@@ -37,50 +37,6 @@
     "studyAmendments": [
       {
         "id": "amend_1",
-        "number": "3.1 (US)",
-        "scope": {
-          "code": "Global",
-          "codeSystem": "USDM",
-          "decode": "Global"
-        },
-        "instanceType": "StudyAmendment",
-        "summary": "Clarified study procedures for US sites to facilitate recruitment, including allowing some sites to perform only screening procedures. Aligned the zinc discontinuation period from 30 to 21 days for consistency within the protocol.",
-        "effectiveDate": "2022-03-18",
-        "reasonIds": [
-          "ar_1_1",
-          "ar_1_2"
-        ],
-        "previousVersion": "3",
-        "newVersion": "3.1 (US)"
-      },
-      {
-        "id": "amend_2",
-        "number": "3",
-        "scope": {
-          "code": "Global",
-          "codeSystem": "USDM",
-          "decode": "Global"
-        },
-        "instanceType": "StudyAmendment",
-        "effectiveDate": "2021-08-31",
-        "previousVersion": "2",
-        "newVersion": "3"
-      },
-      {
-        "id": "amend_3",
-        "number": "2",
-        "scope": {
-          "code": "Global",
-          "codeSystem": "USDM",
-          "decode": "Global"
-        },
-        "instanceType": "StudyAmendment",
-        "effectiveDate": "2021-03-19",
-        "previousVersion": "1",
-        "newVersion": "2"
-      },
-      {
-        "id": "amend_4",
         "number": "1",
         "scope": {
           "code": "Global",
@@ -90,18 +46,62 @@
         "instanceType": "StudyAmendment",
         "effectiveDate": "2020-08-18",
         "previousVersion": "Original Protocol",
-        "newVersion": "1"
+        "newVersion": "Amendment 1"
+      },
+      {
+        "id": "amend_2",
+        "number": "2",
+        "scope": {
+          "code": "Global",
+          "codeSystem": "USDM",
+          "decode": "Global"
+        },
+        "instanceType": "StudyAmendment",
+        "effectiveDate": "2021-03-19",
+        "previousVersion": "Amendment 1",
+        "newVersion": "Amendment 2"
+      },
+      {
+        "id": "amend_3",
+        "number": "3",
+        "scope": {
+          "code": "Global",
+          "codeSystem": "USDM",
+          "decode": "Global"
+        },
+        "instanceType": "StudyAmendment",
+        "effectiveDate": "2021-08-31",
+        "previousVersion": "Amendment 2",
+        "newVersion": "Amendment 3"
+      },
+      {
+        "id": "amend_4",
+        "number": "3.1 (US)",
+        "scope": {
+          "code": "Global",
+          "codeSystem": "USDM",
+          "decode": "Global"
+        },
+        "instanceType": "StudyAmendment",
+        "summary": "Clarified study procedures for US sites to facilitate recruitment, including allowing some sites to perform screening only. Aligned the zinc discontinuation period from 30 to 21 days for consistency within the protocol.",
+        "effectiveDate": "2022-03-18",
+        "reasonIds": [
+          "ar_4_1",
+          "ar_4_2"
+        ],
+        "previousVersion": "Amendment 3",
+        "newVersion": "Amendment 3.1 (US)"
       }
     ],
     "amendmentReasons": [
       {
-        "id": "ar_1_1",
+        "id": "ar_4_1",
         "code": "OPERATIONAL",
         "description": "Operational",
         "instanceType": "AmendmentReason"
       },
       {
-        "id": "ar_1_2",
+        "id": "ar_4_2",
         "code": "ADMINISTRATIVE",
         "description": "Administrative",
         "instanceType": "AmendmentReason"
@@ -124,7 +124,7 @@
     "geographicScope": {
       "id": "geo_1",
       "name": "Study Geographic Scope",
-      "scopeType": "Multinational",
+      "scopeType": "Global",
       "instanceType": "GeographicScope",
       "countryIds": [
         "country_1"
@@ -138,43 +138,43 @@
   "rawResponse": {
     "amendments": [
       {
-        "number": "3.1 (US)",
-        "effectiveDate": "2022-03-18",
-        "summary": "Clarified study procedures for US sites to facilitate recruitment, including allowing some sites to perform only screening procedures. Aligned the zinc discontinuation period from 30 to 21 days for consistency within the protocol.",
-        "previousVersion": "3",
-        "newVersion": "3.1 (US)",
-        "reasons": [
-          "Operational",
-          "Administrative"
-        ]
-      },
-      {
-        "number": "3",
-        "effectiveDate": "2021-08-31",
+        "number": "1",
+        "effectiveDate": "2020-08-18",
         "summary": null,
-        "previousVersion": "2",
-        "newVersion": "3",
-        "reasons": null
+        "previousVersion": "Original Protocol",
+        "newVersion": "Amendment 1",
+        "reasons": []
       },
       {
         "number": "2",
         "effectiveDate": "2021-03-19",
         "summary": null,
-        "previousVersion": "1",
-        "newVersion": "2",
-        "reasons": null
+        "previousVersion": "Amendment 1",
+        "newVersion": "Amendment 2",
+        "reasons": []
       },
       {
-        "number": "1",
-        "effectiveDate": "2020-08-18",
+        "number": "3",
+        "effectiveDate": "2021-08-31",
         "summary": null,
-        "previousVersion": "Original Protocol",
-        "newVersion": "1",
-        "reasons": null
+        "previousVersion": "Amendment 2",
+        "newVersion": "Amendment 3",
+        "reasons": []
+      },
+      {
+        "number": "3.1 (US)",
+        "effectiveDate": "2022-03-18",
+        "summary": "Clarified study procedures for US sites to facilitate recruitment, including allowing some sites to perform screening only. Aligned the zinc discontinuation period from 30 to 21 days for consistency within the protocol.",
+        "previousVersion": "Amendment 3",
+        "newVersion": "Amendment 3.1 (US)",
+        "reasons": [
+          "Operational",
+          "Administrative"
+        ]
       }
     ],
     "geographicScope": {
-      "type": "Multinational",
+      "type": "Global",
       "countries": [
         {
           "name": "United States",

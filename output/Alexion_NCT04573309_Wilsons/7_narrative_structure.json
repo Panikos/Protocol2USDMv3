@@ -5,7 +5,7 @@
     6,
     8
   ],
-  "modelUsed": "gemini-2.5-pro",
+  "modelUsed": "gemini-3-pro-preview",
   "narrative": {
     "narrativeContents": [
       {
@@ -110,14 +110,15 @@
       },
       {
         "id": "nc_7",
-        "name": null,
+        "name": "Supporting Documentation and Operational Considerations",
         "order": 6,
         "instanceType": "NarrativeContent",
         "sectionNumber": "10",
+        "sectionTitle": "Supporting Documentation and Operational Considerations",
         "sectionType": {
-          "code": "Other",
+          "code": "Appendix",
           "codeSystem": "USDM",
-          "decode": "Other"
+          "decode": "Appendix"
         },
         "childIds": [
           "nci_7_1",
@@ -126,7 +127,8 @@
           "nci_7_4",
           "nci_7_5",
           "nci_7_6",
-          "nci_7_7"
+          "nci_7_7",
+          "nci_7_8"
         ]
       },
       {
@@ -272,62 +274,72 @@
       },
       {
         "id": "nci_7_1",
-        "name": null,
+        "name": "Study and Site Start and Closure",
         "text": "",
         "order": 0,
         "instanceType": "NarrativeContentItem",
-        "sectionNumber": "10.1"
+        "sectionNumber": "10.1.8",
+        "sectionTitle": "Study and Site Start and Closure"
       },
       {
         "id": "nci_7_2",
-        "name": "Clinical Laboratory Tests",
+        "name": "Publication Policy",
         "text": "",
         "order": 1,
+        "instanceType": "NarrativeContentItem",
+        "sectionNumber": "10.1.9",
+        "sectionTitle": "Publication Policy"
+      },
+      {
+        "id": "nci_7_3",
+        "name": "Clinical Laboratory Tests",
+        "text": "",
+        "order": 2,
         "instanceType": "NarrativeContentItem",
         "sectionNumber": "10.2",
         "sectionTitle": "Clinical Laboratory Tests"
       },
       {
-        "id": "nci_7_3",
+        "id": "nci_7_4",
         "name": "Adverse Events: Definitions and Procedures for Recording, Evaluating, Follow-up, and Reporting",
         "text": "",
-        "order": 2,
+        "order": 3,
         "instanceType": "NarrativeContentItem",
         "sectionNumber": "10.3",
         "sectionTitle": "Adverse Events: Definitions and Procedures for Recording, Evaluating, Follow-up, and Reporting"
       },
       {
-        "id": "nci_7_4",
+        "id": "nci_7_5",
         "name": "Contraceptive Guidance and Collection of Pregnancy Information",
         "text": "",
-        "order": 3,
+        "order": 4,
         "instanceType": "NarrativeContentItem",
         "sectionNumber": "10.4",
         "sectionTitle": "Contraceptive Guidance and Collection of Pregnancy Information"
       },
       {
-        "id": "nci_7_5",
+        "id": "nci_7_6",
         "name": "COVID-19 Vaccine Risk Assessment",
         "text": "",
-        "order": 4,
+        "order": 5,
         "instanceType": "NarrativeContentItem",
         "sectionNumber": "10.5",
         "sectionTitle": "COVID-19 Vaccine Risk Assessment"
       },
       {
-        "id": "nci_7_6",
+        "id": "nci_7_7",
         "name": "Abbreviations",
         "text": "",
-        "order": 5,
+        "order": 6,
         "instanceType": "NarrativeContentItem",
         "sectionNumber": "10.6",
         "sectionTitle": "Abbreviations"
       },
       {
-        "id": "nci_7_7",
+        "id": "nci_7_8",
         "name": "Protocol Amendment History",
         "text": "",
-        "order": 6,
+        "order": 7,
         "instanceType": "NarrativeContentItem",
         "sectionNumber": "10.7",
         "sectionTitle": "Protocol Amendment History"
@@ -342,60 +354,36 @@
       },
       {
         "id": "abbr_2",
-        "abbreviatedText": "SARS-CoV-2",
-        "expandedText": "Coronavirus",
-        "instanceType": "Abbreviation"
-      },
-      {
-        "id": "abbr_3",
         "abbreviatedText": "AE",
         "expandedText": "Adverse Events",
         "instanceType": "Abbreviation"
       },
       {
-        "id": "abbr_4",
-        "abbreviatedText": "SAE",
-        "expandedText": "Serious Adverse Event",
-        "instanceType": "Abbreviation"
-      },
-      {
-        "id": "abbr_5",
-        "abbreviatedText": "COVID-19",
-        "expandedText": "Coronavirus Disease 2019",
-        "instanceType": "Abbreviation"
-      },
-      {
-        "id": "abbr_6",
+        "id": "abbr_3",
         "abbreviatedText": "WD",
         "expandedText": "Wilson disease",
         "instanceType": "Abbreviation"
       },
       {
-        "id": "abbr_7",
+        "id": "abbr_4",
         "abbreviatedText": "ADME",
         "expandedText": "absorption, distribution, metabolism, and excretion",
         "instanceType": "Abbreviation"
       },
       {
-        "id": "abbr_8",
+        "id": "abbr_5",
         "abbreviatedText": "NCC",
         "expandedText": "non-ceruloplasmin-bound copper",
         "instanceType": "Abbreviation"
       },
       {
-        "id": "abbr_9",
-        "abbreviatedText": "NCCcorrected",
-        "expandedText": "non-ceruloplasmin-bound copper (NCC) corrected",
-        "instanceType": "Abbreviation"
-      },
-      {
-        "id": "abbr_10",
+        "id": "abbr_6",
         "abbreviatedText": "TPC",
         "expandedText": "tetrathiomolybdate- copper -albumin tripartite complex",
         "instanceType": "Abbreviation"
       },
       {
-        "id": "abbr_11",
+        "id": "abbr_7",
         "abbreviatedText": "PK",
         "expandedText": "pharmacokinetics",
         "instanceType": "Abbreviation"
@@ -403,8 +391,8 @@
     ],
     "summary": {
       "sectionCount": 8,
-      "itemCount": 21,
-      "abbreviationCount": 11
+      "itemCount": 22,
+      "abbreviationCount": 7
     },
     "studyDefinitionDocument": {
       "id": "sdd_1",
@@ -412,7 +400,7 @@
       "documentType": "Protocol",
       "language": "en",
       "instanceType": "StudyDefinitionDocument",
-      "version": "3.1",
+      "version": "Amendment 3.1 (US)",
       "versionDate": "2022-03-18",
       "contentIds": [
         "nc_1",
@@ -434,20 +422,8 @@
           "expansion": "Schedule of Activities"
         },
         {
-          "abbreviation": "SARS-CoV-2",
-          "expansion": "Coronavirus"
-        },
-        {
           "abbreviation": "AE",
           "expansion": "Adverse Events"
-        },
-        {
-          "abbreviation": "SAE",
-          "expansion": "Serious Adverse Event"
-        },
-        {
-          "abbreviation": "COVID-19",
-          "expansion": "Coronavirus Disease 2019"
         },
         {
           "abbreviation": "WD",
@@ -462,10 +438,6 @@
           "expansion": "non-ceruloplasmin-bound copper"
         },
         {
-          "abbreviation": "NCCcorrected",
-          "expansion": "non-ceruloplasmin-bound copper (NCC) corrected"
-        },
-        {
           "abbreviation": "TPC",
           "expansion": "tetrathiomolybdate- copper -albumin tripartite complex"
         },
@@ -478,7 +450,7 @@
     "structure": {
       "document": {
         "title": "A Phase 2, Open-label Study to Assess Copper and Molybdenum Balance in Participants with Wilson Disease Treated with ALXN1840",
-        "version": "3.1",
+        "version": "Amendment 3.1 (US)",
         "versionDate": "2022-03-18"
       },
       "sections": [
@@ -489,15 +461,18 @@
           "subsections": [
             {
               "number": "1.1",
-              "title": "Synopsis"
+              "title": "Synopsis",
+              "type": "Synopsis"
             },
             {
               "number": "1.2",
-              "title": "Schema"
+              "title": "Schema",
+              "type": "Synopsis"
             },
             {
               "number": "1.3",
-              "title": "Schedule of Activities (SoA)"
+              "title": "Schedule of Activities (SoA)",
+              "type": "Study Procedures"
             }
           ]
         },
@@ -508,15 +483,18 @@
           "subsections": [
             {
               "number": "2.1",
-              "title": "Study Rationale"
+              "title": "Study Rationale",
+              "type": "Introduction"
             },
             {
               "number": "2.2",
-              "title": "Background"
+              "title": "Background",
+              "type": "Introduction"
             },
             {
               "number": "2.3",
               "title": "Benefit-Risk Assessment",
+              "type": "Introduction",
               "subsections": [
                 {
                   "number": "2.3.1",
@@ -552,11 +530,13 @@
           "subsections": [
             {
               "number": "4.1",
-              "title": "Overall Design"
+              "title": "Overall Design",
+              "type": "Study Design"
             },
             {
               "number": "4.2",
               "title": "Scientific Rationale for Study Design",
+              "type": "Study Design",
               "subsections": [
                 {
                   "number": "4.2.1",
@@ -566,11 +546,13 @@
             },
             {
               "number": "4.3",
-              "title": "Justification for Dose"
+              "title": "Justification for Dose",
+              "type": "Study Design"
             },
             {
               "number": "4.4",
-              "title": "End of Study Definition"
+              "title": "End of Study Definition",
+              "type": "Study Design"
             }
           ]
         },
@@ -581,19 +563,23 @@
           "subsections": [
             {
               "number": "5.1",
-              "title": "Inclusion Criteria"
+              "title": "Inclusion Criteria",
+              "type": "Eligibility Criteria"
             },
             {
               "number": "5.2",
-              "title": "Exclusion Criteria"
+              "title": "Exclusion Criteria",
+              "type": "Eligibility Criteria"
             },
             {
               "number": "5.3",
-              "title": "Lifestyle Considerations"
+              "title": "Lifestyle Considerations",
+              "type": "Study Population"
             },
             {
               "number": "5.4",
-              "title": "Screen Failures"
+              "title": "Screen Failures",
+              "type": "Study Population"
             }
           ]
         },
@@ -604,30 +590,26 @@
         },
         {
           "number": "10",
-          "title": null,
-          "type": "Other",
+          "title": "Supporting Documentation and Operational Considerations",
+          "type": "Appendix",
           "subsections": [
             {
-              "number": "10.1",
-              "title": null,
-              "subsections": [
-                {
-                  "number": "10.1.8",
-                  "title": "Study and Site Start and Closure"
-                },
-                {
-                  "number": "10.1.9",
-                  "title": "Publication Policy"
-                }
-              ]
+              "number": "10.1.8",
+              "title": "Study and Site Start and Closure"
+            },
+            {
+              "number": "10.1.9",
+              "title": "Publication Policy"
             },
             {
               "number": "10.2",
-              "title": "Clinical Laboratory Tests"
+              "title": "Clinical Laboratory Tests",
+              "type": "Assessments"
             },
             {
               "number": "10.3",
               "title": "Adverse Events: Definitions and Procedures for Recording, Evaluating, Follow-up, and Reporting",
+              "type": "Safety",
               "subsections": [
                 {
                   "number": "10.3.1",
@@ -650,6 +632,7 @@
             {
               "number": "10.4",
               "title": "Contraceptive Guidance and Collection of Pregnancy Information",
+              "type": "Safety",
               "subsections": [
                 {
                   "number": "10.4.1",
@@ -663,15 +646,18 @@
             },
             {
               "number": "10.5",
-              "title": "COVID-19 Vaccine Risk Assessment"
+              "title": "COVID-19 Vaccine Risk Assessment",
+              "type": "Safety"
             },
             {
               "number": "10.6",
-              "title": "Abbreviations"
+              "title": "Abbreviations",
+              "type": "Appendix"
             },
             {
               "number": "10.7",
-              "title": "Protocol Amendment History"
+              "title": "Protocol Amendment History",
+              "type": "Appendix"
             }
           ]
         },

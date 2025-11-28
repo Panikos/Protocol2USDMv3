@@ -33,7 +33,7 @@
           "decode": "Experimental Arm"
         },
         "instanceType": "StudyArm",
-        "description": "Participants will be initiated on 15 mg/day of ALXN1840 for a treatment period of approximately 28 days."
+        "description": "Participants are initiated on 15 mg/day of ALXN1840 for a treatment period of approximately 28 days."
       },
       {
         "id": "arm_2",
@@ -44,7 +44,7 @@
           "decode": "Experimental Arm"
         },
         "instanceType": "StudyArm",
-        "description": "Following the 15 mg/day period, participants are titrated up to 30 mg/day on Day 29."
+        "description": "Participants are titrated up to 30 mg/day on Day 29."
       }
     ],
     "studyCells": [
@@ -172,13 +172,13 @@
     "arms": [
       {
         "name": "ALXN1840 15 mg/day",
-        "type": "Experimental",
-        "description": "Participants will be initiated on 15 mg/day of ALXN1840 for a treatment period of approximately 28 days."
+        "type": "Experimental Arm",
+        "description": "Participants are initiated on 15 mg/day of ALXN1840 for a treatment period of approximately 28 days."
       },
       {
         "name": "ALXN1840 30 mg/day",
-        "type": "Experimental",
-        "description": "Following the 15 mg/day period, participants are titrated up to 30 mg/day on Day 29."
+        "type": "Experimental Arm",
+        "description": "Participants are titrated up to 30 mg/day on Day 29."
       }
     ],
     "cohorts": [
@@ -197,12 +197,12 @@
         "description": "Period prior to enrollment to determine eligibility."
       },
       {
-        "name": "Run-in Period",
+        "name": "Run-in",
         "description": "Day -8 to Day -1. Includes diet equilibration and measurement of pretreatment copper and molybdenum balance."
       },
       {
         "name": "Treatment",
-        "description": "Starts on Day 1. Participants receive ALXN1840 at 15 mg/day for approximately 28 days followed by titration up to 30 mg/day on Day 29."
+        "description": "Day 1 to Day 40. Participants receive ALXN1840 and undergo intake and output collection periods."
       }
     ]
   }

@@ -1,0 +1,325 @@
+{
+  "success": true,
+  "pagesUsed": [
+    2,
+    4,
+    9,
+    13,
+    14,
+    15,
+    16,
+    18,
+    20,
+    22,
+    30,
+    37,
+    41,
+    43,
+    44
+  ],
+  "modelUsed": "gemini-3-pro-preview",
+  "confidence": 1.0,
+  "proceduresDevices": {
+    "procedures": [
+      {
+        "id": "proc_1",
+        "name": "Blood Sampling for PK/PD",
+        "instanceType": "Procedure",
+        "label": "PK/PD Blood Draw",
+        "description": "Collection of blood samples for pharmacokinetic (Plasma total Mo and PUF-Mo) and pharmacodynamic (Plasma total and PUF-Cu, LBC, ceruloplasmin) analysis",
+        "procedureType": {
+          "code": "Sample Collection",
+          "codeSystem": "USDM",
+          "decode": "Sample Collection"
+        },
+        "code": {
+          "code": "36415",
+          "codeSystem": "CPT",
+          "decode": "Collection of venous blood by venipuncture"
+        }
+      },
+      {
+        "id": "proc_2",
+        "name": "24-hour Urine Collection",
+        "instanceType": "Procedure",
+        "label": "Urine Collection",
+        "description": "Collection of urine over a 24-hour period for measurement of copper and molybdenum content",
+        "procedureType": {
+          "code": "Sample Collection",
+          "codeSystem": "USDM",
+          "decode": "Sample Collection"
+        },
+        "code": {
+          "code": "81050",
+          "codeSystem": "CPT",
+          "decode": "Volume measurement for timed collection, each 24 hours"
+        }
+      },
+      {
+        "id": "proc_3",
+        "name": "Fecal Collection",
+        "instanceType": "Procedure",
+        "label": "Stool Collection",
+        "description": "Individual collection of fecal samples with record of date, time, and weight for measurement of copper and molybdenum content",
+        "procedureType": {
+          "code": "Sample Collection",
+          "codeSystem": "USDM",
+          "decode": "Sample Collection"
+        },
+        "code": {
+          "code": "82270",
+          "codeSystem": "CPT",
+          "decode": "Blood, occult, by peroxidase activity (e.g., guaiac), qualitative; feces, consecutive collected specimens with single determination"
+        }
+      },
+      {
+        "id": "proc_4",
+        "name": "Physical Examination",
+        "instanceType": "Procedure",
+        "label": "Physical Exam",
+        "description": "Complete physical examination including assessments of cardiovascular, respiratory, gastrointestinal, and neurological systems",
+        "procedureType": {
+          "code": "Assessment",
+          "codeSystem": "USDM",
+          "decode": "Assessment"
+        },
+        "code": {
+          "code": "99203",
+          "codeSystem": "CPT",
+          "decode": "Office or other outpatient visit for the evaluation and management of a new patient"
+        }
+      },
+      {
+        "id": "proc_5",
+        "name": "Vital Signs Assessment",
+        "instanceType": "Procedure",
+        "label": "Vitals",
+        "description": "Measurement of body temperature, heart rate, respiratory rate, and systolic and diastolic blood pressure",
+        "procedureType": {
+          "code": "Monitoring",
+          "codeSystem": "USDM",
+          "decode": "Monitoring"
+        },
+        "code": {
+          "code": "8716-3",
+          "codeSystem": "LOINC",
+          "decode": "Vital signs"
+        }
+      },
+      {
+        "id": "proc_6",
+        "name": "12-Lead Electrocardiogram",
+        "instanceType": "Procedure",
+        "label": "ECG",
+        "description": "Triplicate 12-lead ECG to assess heart rate, intervals (PR, QRS, QT and QTc), and clinically significant findings",
+        "procedureType": {
+          "code": "Diagnostic",
+          "codeSystem": "USDM",
+          "decode": "Diagnostic"
+        },
+        "code": {
+          "code": "93000",
+          "codeSystem": "CPT",
+          "decode": "Electrocardiogram, routine ECG with at least 12 leads; with interpretation and report"
+        }
+      },
+      {
+        "id": "proc_7",
+        "name": "Food and Fluid Collection",
+        "instanceType": "Procedure",
+        "label": "Dietary Collection",
+        "description": "Collection of samples of all meal and fluid batches for analysis of copper and molybdenum content",
+        "procedureType": {
+          "code": "Sample Collection",
+          "codeSystem": "USDM",
+          "decode": "Sample Collection"
+        }
+      },
+      {
+        "id": "proc_8",
+        "name": "Pregnancy Test",
+        "instanceType": "Procedure",
+        "label": "Pregnancy Screen",
+        "description": "Serum or urine pregnancy testing for females of childbearing potential",
+        "procedureType": {
+          "code": "Diagnostic",
+          "codeSystem": "USDM",
+          "decode": "Diagnostic"
+        },
+        "code": {
+          "code": "81025",
+          "codeSystem": "CPT",
+          "decode": "Urine pregnancy test, by visual color comparison methods"
+        }
+      },
+      {
+        "id": "proc_9",
+        "name": "Neurological Assessment",
+        "instanceType": "Procedure",
+        "label": "Neuro Exam",
+        "description": "Assessment of neurological systems as part of the physical examination",
+        "procedureType": {
+          "code": "Assessment",
+          "codeSystem": "USDM",
+          "decode": "Assessment"
+        }
+      },
+      {
+        "id": "proc_10",
+        "name": "Bowel and Urine Monitoring",
+        "instanceType": "Procedure",
+        "label": "Output Monitoring",
+        "description": "Monitoring of urination and bowel movements",
+        "procedureType": {
+          "code": "Monitoring",
+          "codeSystem": "USDM",
+          "decode": "Monitoring"
+        }
+      }
+    ],
+    "medicalDevices": [
+      {
+        "id": "dev_1",
+        "name": "Automated Blood Pressure Device",
+        "instanceType": "MedicalDevice",
+        "label": "BP Monitor",
+        "description": "Automated device for assessing blood pressure and heart rate",
+        "deviceType": {
+          "code": "Monitoring Device",
+          "codeSystem": "USDM",
+          "decode": "Monitoring Device"
+        }
+      },
+      {
+        "id": "dev_2",
+        "name": "12-Lead ECG Machine",
+        "instanceType": "MedicalDevice",
+        "label": "ECG Device",
+        "description": "Device used for recording triplicate 12-lead electrocardiograms",
+        "deviceType": {
+          "code": "Diagnostic Device",
+          "codeSystem": "USDM",
+          "decode": "Diagnostic Device"
+        }
+      },
+      {
+        "id": "dev_3",
+        "name": "Cannula",
+        "instanceType": "MedicalDevice",
+        "label": "Cannula",
+        "description": "Placed to minimize needle sticks for repeated blood draws",
+        "deviceType": {
+          "code": "Drug Delivery Device",
+          "codeSystem": "USDM",
+          "decode": "Drug Delivery Device"
+        }
+      },
+      {
+        "id": "dev_4",
+        "name": "Male Condom",
+        "instanceType": "MedicalDevice",
+        "label": "Condom",
+        "description": "Barrier contraception required for male participants",
+        "deviceType": {
+          "code": "Wearable Device",
+          "codeSystem": "USDM",
+          "decode": "Wearable Device"
+        }
+      }
+    ],
+    "medicalDeviceIdentifiers": [],
+    "ingredients": [
+      {
+        "id": "ing_1",
+        "name": "ALXN1840",
+        "role": "Active",
+        "instanceType": "Ingredient",
+        "substanceId": "subst_alxn1840"
+      },
+      {
+        "id": "ing_2",
+        "name": "Paracetamol",
+        "role": "Active",
+        "instanceType": "Ingredient",
+        "substanceId": "subst_paracetamol"
+      },
+      {
+        "id": "ing_3",
+        "name": "Acetaminophen",
+        "role": "Active",
+        "instanceType": "Ingredient",
+        "substanceId": "subst_acetaminophen"
+      },
+      {
+        "id": "ing_4",
+        "name": "Ibuprofen",
+        "role": "Active",
+        "instanceType": "Ingredient",
+        "substanceId": "subst_ibuprofen"
+      }
+    ],
+    "strengths": [
+      {
+        "id": "str_1",
+        "instanceType": "Strength",
+        "value": 15,
+        "unit": "mg",
+        "numerator": {
+          "value": 15,
+          "unit": "mg"
+        },
+        "denominator": {
+          "value": 1,
+          "unit": "tablet"
+        }
+      },
+      {
+        "id": "str_2",
+        "instanceType": "Strength",
+        "value": 30,
+        "unit": "mg",
+        "numerator": {
+          "value": 30,
+          "unit": "mg"
+        },
+        "denominator": {
+          "value": 1,
+          "unit": "tablet"
+        }
+      },
+      {
+        "id": "str_3",
+        "instanceType": "Strength",
+        "value": 1000,
+        "unit": "mg",
+        "numerator": {
+          "value": 1000,
+          "unit": "mg"
+        },
+        "denominator": {
+          "value": 1,
+          "unit": "day"
+        }
+      },
+      {
+        "id": "str_4",
+        "instanceType": "Strength",
+        "value": 1200,
+        "unit": "mg",
+        "numerator": {
+          "value": 1200,
+          "unit": "mg"
+        },
+        "denominator": {
+          "value": 24,
+          "unit": "hour"
+        }
+      }
+    ],
+    "summary": {
+      "procedureCount": 10,
+      "deviceCount": 4,
+      "ingredientCount": 4
+    }
+  }
+}

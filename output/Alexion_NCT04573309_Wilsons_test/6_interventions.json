@@ -56,12 +56,40 @@
           "decode": "Investigational Product"
         },
         "instanceType": "StudyIntervention",
-        "description": "A novel copper binding agent in development for the treatment of Wilson disease (WD).",
+        "description": "ALXN1840 (bis-choline tetrathiomolybdate) is a novel copper binding agent in development for the treatment of Wilson disease (WD).",
         "productIds": [
           "prod_1"
         ],
         "administrationIds": [
           "admin_1"
+        ]
+      },
+      {
+        "id": "int_2",
+        "name": "Paracetamol/acetaminophen",
+        "role": {
+          "code": "Concomitant Medication",
+          "codeSystem": "USDM",
+          "decode": "Concomitant Medication"
+        },
+        "instanceType": "StudyIntervention",
+        "description": "Permitted for use as an exception with the approval of the Investigator.",
+        "administrationIds": [
+          "admin_2"
+        ]
+      },
+      {
+        "id": "int_3",
+        "name": "Ibuprofen",
+        "role": {
+          "code": "Concomitant Medication",
+          "codeSystem": "USDM",
+          "decode": "Concomitant Medication"
+        },
+        "instanceType": "StudyIntervention",
+        "description": "Permitted for use with caution with approval of the Investigator.",
+        "administrationIds": [
+          "admin_3"
         ]
       }
     ],
@@ -85,7 +113,7 @@
     "administrations": [
       {
         "id": "admin_1",
-        "name": "ALXN1840 15 mg daily",
+        "name": "ALXN1840 initial dose",
         "instanceType": "Administration",
         "dose": "15 mg",
         "doseFrequency": "once daily",
@@ -94,11 +122,11 @@
           "codeSystem": "USDM",
           "decode": "Oral"
         },
-        "duration": "Day 1 through Day 28"
+        "duration": "Approximately 28 days (Day 1 through Day 28)"
       },
       {
         "id": "admin_2",
-        "name": "ALXN1840 30 mg daily",
+        "name": "ALXN1840 titrated dose",
         "instanceType": "Administration",
         "dose": "30 mg",
         "doseFrequency": "once daily",
@@ -107,11 +135,11 @@
           "codeSystem": "USDM",
           "decode": "Oral"
         },
-        "duration": "Day 29 through Day 39"
+        "duration": "From Day 29 through Day 39"
       },
       {
         "id": "admin_3",
-        "name": "ALXN1840 15 mg every other day (dose modification)",
+        "name": "ALXN1840 dose reduction",
         "instanceType": "Administration",
         "dose": "15 mg",
         "doseFrequency": "every other day",
@@ -120,7 +148,33 @@
           "codeSystem": "USDM",
           "decode": "Oral"
         },
-        "duration": "Dose reduction for management of adverse events (e.g., elevated ALT, decreased hemoglobin) until resolution of abnormality."
+        "duration": "Dose modification for individual participants based on safety events."
+      },
+      {
+        "id": "admin_4",
+        "name": "Paracetamol/acetaminophen",
+        "instanceType": "Administration",
+        "dose": "maximum 1000 mg",
+        "doseFrequency": "per day",
+        "route": {
+          "code": "Oral",
+          "codeSystem": "USDM",
+          "decode": "Oral"
+        },
+        "duration": "As needed"
+      },
+      {
+        "id": "admin_5",
+        "name": "Ibuprofen",
+        "instanceType": "Administration",
+        "dose": "not to exceed 1200 mg",
+        "doseFrequency": "in any 24-hour period",
+        "route": {
+          "code": "Oral",
+          "codeSystem": "USDM",
+          "decode": "Oral"
+        },
+        "duration": "As needed"
       }
     ],
     "substances": [
@@ -128,12 +182,30 @@
         "id": "sub_1",
         "name": "bis-choline tetrathiomolybdate",
         "instanceType": "Substance",
-        "description": "Active pharmaceutical ingredient, formerly known as WTX101. Each 15 mg tablet contains 7.8 mg of tetrathiomolybdic acid."
+        "description": "Active ingredient of ALXN1840."
+      },
+      {
+        "id": "sub_2",
+        "name": "Paracetamol",
+        "instanceType": "Substance",
+        "description": "Allowed concomitant medication."
+      },
+      {
+        "id": "sub_3",
+        "name": "Acetaminophen",
+        "instanceType": "Substance",
+        "description": "Allowed concomitant medication."
+      },
+      {
+        "id": "sub_4",
+        "name": "Ibuprofen",
+        "instanceType": "Substance",
+        "description": "Allowed concomitant medication."
       }
     ],
     "medicalDevices": [],
     "summary": {
-      "interventionCount": 1,
+      "interventionCount": 3,
       "productCount": 1,
       "deviceCount": 0
     }
@@ -143,7 +215,17 @@
       {
         "name": "ALXN1840",
         "role": "Investigational Product",
-        "description": "A novel copper binding agent in development for the treatment of Wilson disease (WD)."
+        "description": "ALXN1840 (bis-choline tetrathiomolybdate) is a novel copper binding agent in development for the treatment of Wilson disease (WD)."
+      },
+      {
+        "name": "Paracetamol/acetaminophen",
+        "role": "Concomitant Medication",
+        "description": "Permitted for use as an exception with the approval of the Investigator."
+      },
+      {
+        "name": "Ibuprofen",
+        "role": "Concomitant Medication",
+        "description": "Permitted for use with caution with approval of the Investigator."
       }
     ],
     "products": [
@@ -157,30 +239,56 @@
     "substances": [
       {
         "name": "bis-choline tetrathiomolybdate",
-        "description": "Active pharmaceutical ingredient, formerly known as WTX101. Each 15 mg tablet contains 7.8 mg of tetrathiomolybdic acid."
+        "description": "Active ingredient of ALXN1840."
+      },
+      {
+        "name": "Paracetamol",
+        "description": "Allowed concomitant medication."
+      },
+      {
+        "name": "Acetaminophen",
+        "description": "Allowed concomitant medication."
+      },
+      {
+        "name": "Ibuprofen",
+        "description": "Allowed concomitant medication."
       }
     ],
     "administrations": [
       {
-        "name": "ALXN1840 15 mg daily",
+        "name": "ALXN1840 initial dose",
         "dose": "15 mg",
         "frequency": "once daily",
         "route": "Oral",
-        "duration": "Day 1 through Day 28"
+        "duration": "Approximately 28 days (Day 1 through Day 28)"
       },
       {
-        "name": "ALXN1840 30 mg daily",
+        "name": "ALXN1840 titrated dose",
         "dose": "30 mg",
         "frequency": "once daily",
         "route": "Oral",
-        "duration": "Day 29 through Day 39"
+        "duration": "From Day 29 through Day 39"
       },
       {
-        "name": "ALXN1840 15 mg every other day (dose modification)",
+        "name": "ALXN1840 dose reduction",
         "dose": "15 mg",
         "frequency": "every other day",
         "route": "Oral",
-        "duration": "Dose reduction for management of adverse events (e.g., elevated ALT, decreased hemoglobin) until resolution of abnormality."
+        "duration": "Dose modification for individual participants based on safety events."
+      },
+      {
+        "name": "Paracetamol/acetaminophen",
+        "dose": "maximum 1000 mg",
+        "frequency": "per day",
+        "route": "Oral",
+        "duration": "As needed"
+      },
+      {
+        "name": "Ibuprofen",
+        "dose": "not to exceed 1200 mg",
+        "frequency": "in any 24-hour period",
+        "route": "Oral",
+        "duration": "As needed"
       }
     ],
     "devices": []

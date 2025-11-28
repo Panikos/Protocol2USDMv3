@@ -14,13 +14,13 @@
     "eligibilityCriterionItems": [
       {
         "id": "eci_i1",
-        "name": "Age",
+        "name": "Inclusion Criterion 1",
         "text": "Participants aged ≥18 at the time of signing the ICF.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i2",
-        "name": "Disease Characteristics",
+        "name": "Inclusion Criterion 2",
         "text": "Diagnosis of WD by Leipzig Criteria ≥ 4 documented by testing as outlined in the 2012 European Association for the Study of Liver WD Clinical Practice Guidelines (Ferenci, 2003; EASL, 2012) or by historical test results for WD including some or all of the following:\n• Presence of Kayser Fleischer rings,\n• Neurological symptoms,\n• Serum ceruloplasmin below reference range,\n• Coombs-negative hemolytic anemia,\n• Elevated liver or urinary copper,\n• Presence of mutations in the ATP7B gene, or\n• Other, as considered appropriate, may be used instead to confirm the diagnosis of WD.",
         "instanceType": "EligibilityCriterionItem"
       },
@@ -74,19 +74,19 @@
       },
       {
         "id": "eci_i11",
-        "name": "Contraception",
+        "name": "Inclusion Criterion 11",
         "text": "Contraceptive use by men or women should be consistent with local regulations regarding the methods of contraception for those participating in clinical studies.\na. Male participants:\n• Male participants, if heterosexually active and with a female spouse or partner of childbearing potential or a pregnant or breastfeeding spouse or partner, must agree to use barrier contraception (male condom) for the duration of the study and for at least 3 months after the end of systemic exposure of the study intervention. Male participants must not donate sperm for at least 3 months after the end of systemic exposure of the study intervention.\n• Female spouses or partners of male participants who are of childbearing potential must use highly effective contraception as defined below and in Section 10.4, starting at least 1 menstrual cycle before (the male participant’s) first study intervention administration and continuing until at least 3 months after the end of their male partner’s systemic exposure to the study intervention.\n• Barrier contraception (male condom) is required even with documented medical assessment of surgical success of a vasectomy. For male participants who have had a vasectomy (with documented evidence of azoospermia if possible) and agree to use a male condom for the stated time period, no additional contraceptive method is required by their female partner.\nb. Female participants:\n• Female participants or female partners of male participants of childbearing potential (including breastfeeding females), if heterosexually active, must be willing to follow protocol-specified contraception guidance starting at least 1 menstrual cycle before first study intervention administration and continuing for at least 3 months after the end of systemic exposure of the study intervention. Female participants must not donate ova for at least 3 months after the end of systemic exposure of the study intervention.\n• Female participants who are documented as being of non-childbearing potential as defined in Section 10.4 are exempt from contraception requirements.\n• Highly effective contraceptive methods for female participants and female partners of male participants are described in Section 10.4.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i12",
-        "name": "Informed Consent",
+        "name": "Inclusion Criterion 12",
         "text": "Participants capable of giving signed informed consent, which includes compliance with the requirements and restrictions listed in the ICF and in this protocol.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e1",
-        "name": "Medical Conditions",
+        "name": "Exclusion Criterion 1",
         "text": "Decompensated cirrhosis or model for end-stage liver disease (MELD) score > 13.",
         "instanceType": "EligibilityCriterionItem"
       },
@@ -134,7 +134,7 @@
       },
       {
         "id": "eci_e9",
-        "name": "Prior/Concomitant Therapy",
+        "name": "Exclusion Criterion 9",
         "text": "Previous treatment with ALXN1840 or other form of tetrathiomolybdate within 1 year prior to dosing.",
         "instanceType": "EligibilityCriterionItem"
       },
@@ -146,19 +146,19 @@
       },
       {
         "id": "eci_e11",
-        "name": "Prior/Concurrent Clinical Study Experience",
+        "name": "Exclusion Criterion 11",
         "text": "The use of an experimental or unapproved/unlicensed therapy at the same time or within 90 days or 5 half-lives, whichever is longer, prior to the Screening Visit.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e12",
-        "name": "Diagnostic Assessments",
+        "name": "Exclusion Criterion 12",
         "text": "Participants in renal failure, defined as in end-stage renal disease on dialysis (chronic kidney disease [CKD] stage 5) or creatinine clearance < 30 mL/min (Levey, 2006).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e13",
-        "name": "Other Exclusions",
+        "name": "Exclusion Criterion 13",
         "text": "Pregnant (or females who are planning to become pregnant) or breastfeeding females (women of childbearing potential must have a negative serum pregnancy test result at screening).",
         "instanceType": "EligibilityCriterionItem"
       },
@@ -210,7 +210,7 @@
         },
         "criterionItemId": "eci_i1",
         "instanceType": "EligibilityCriterion",
-        "name": "Age",
+        "name": "Inclusion Criterion 1",
         "nextId": "ec_i2"
       },
       {
@@ -223,7 +223,7 @@
         },
         "criterionItemId": "eci_i2",
         "instanceType": "EligibilityCriterion",
-        "name": "Disease Characteristics",
+        "name": "Inclusion Criterion 2",
         "previousId": "ec_i1",
         "nextId": "ec_i3"
       },
@@ -349,7 +349,7 @@
         },
         "criterionItemId": "eci_i11",
         "instanceType": "EligibilityCriterion",
-        "name": "Contraception",
+        "name": "Inclusion Criterion 11",
         "previousId": "ec_i10",
         "nextId": "ec_i12"
       },
@@ -363,7 +363,7 @@
         },
         "criterionItemId": "eci_i12",
         "instanceType": "EligibilityCriterion",
-        "name": "Informed Consent",
+        "name": "Inclusion Criterion 12",
         "previousId": "ec_i11"
       },
       {
@@ -376,7 +376,7 @@
         },
         "criterionItemId": "eci_e1",
         "instanceType": "EligibilityCriterion",
-        "name": "Medical Conditions",
+        "name": "Exclusion Criterion 1",
         "nextId": "ec_e2"
       },
       {
@@ -487,7 +487,7 @@
         },
         "criterionItemId": "eci_e9",
         "instanceType": "EligibilityCriterion",
-        "name": "Prior/Concomitant Therapy",
+        "name": "Exclusion Criterion 9",
         "previousId": "ec_e8",
         "nextId": "ec_e10"
       },
@@ -515,7 +515,7 @@
         },
         "criterionItemId": "eci_e11",
         "instanceType": "EligibilityCriterion",
-        "name": "Prior/Concurrent Clinical Study Experience",
+        "name": "Exclusion Criterion 11",
         "previousId": "ec_e10",
         "nextId": "ec_e12"
       },
@@ -529,7 +529,7 @@
         },
         "criterionItemId": "eci_e12",
         "instanceType": "EligibilityCriterion",
-        "name": "Diagnostic Assessments",
+        "name": "Exclusion Criterion 12",
         "previousId": "ec_e11",
         "nextId": "ec_e13"
       },
@@ -543,7 +543,7 @@
         },
         "criterionItemId": "eci_e13",
         "instanceType": "EligibilityCriterion",
-        "name": "Other Exclusions",
+        "name": "Exclusion Criterion 13",
         "previousId": "ec_e12",
         "nextId": "ec_e14"
       },
@@ -693,13 +693,11 @@
     "inclusionCriteria": [
       {
         "identifier": "I1",
-        "text": "Participants aged ≥18 at the time of signing the ICF.",
-        "name": "Age"
+        "text": "Participants aged ≥18 at the time of signing the ICF."
       },
       {
         "identifier": "I2",
-        "text": "Diagnosis of WD by Leipzig Criteria ≥ 4 documented by testing as outlined in the 2012 European Association for the Study of Liver WD Clinical Practice Guidelines (Ferenci, 2003; EASL, 2012) or by historical test results for WD including some or all of the following:\n• Presence of Kayser Fleischer rings,\n• Neurological symptoms,\n• Serum ceruloplasmin below reference range,\n• Coombs-negative hemolytic anemia,\n• Elevated liver or urinary copper,\n• Presence of mutations in the ATP7B gene, or\n• Other, as considered appropriate, may be used instead to confirm the diagnosis of WD.",
-        "name": "Disease Characteristics"
+        "text": "Diagnosis of WD by Leipzig Criteria ≥ 4 documented by testing as outlined in the 2012 European Association for the Study of Liver WD Clinical Practice Guidelines (Ferenci, 2003; EASL, 2012) or by historical test results for WD including some or all of the following:\n• Presence of Kayser Fleischer rings,\n• Neurological symptoms,\n• Serum ceruloplasmin below reference range,\n• Coombs-negative hemolytic anemia,\n• Elevated liver or urinary copper,\n• Presence of mutations in the ATP7B gene, or\n• Other, as considered appropriate, may be used instead to confirm the diagnosis of WD."
       },
       {
         "identifier": "I3",
@@ -735,20 +733,17 @@
       },
       {
         "identifier": "I11",
-        "text": "Contraceptive use by men or women should be consistent with local regulations regarding the methods of contraception for those participating in clinical studies.\na. Male participants:\n• Male participants, if heterosexually active and with a female spouse or partner of childbearing potential or a pregnant or breastfeeding spouse or partner, must agree to use barrier contraception (male condom) for the duration of the study and for at least 3 months after the end of systemic exposure of the study intervention. Male participants must not donate sperm for at least 3 months after the end of systemic exposure of the study intervention.\n• Female spouses or partners of male participants who are of childbearing potential must use highly effective contraception as defined below and in Section 10.4, starting at least 1 menstrual cycle before (the male participant’s) first study intervention administration and continuing until at least 3 months after the end of their male partner’s systemic exposure to the study intervention.\n• Barrier contraception (male condom) is required even with documented medical assessment of surgical success of a vasectomy. For male participants who have had a vasectomy (with documented evidence of azoospermia if possible) and agree to use a male condom for the stated time period, no additional contraceptive method is required by their female partner.\nb. Female participants:\n• Female participants or female partners of male participants of childbearing potential (including breastfeeding females), if heterosexually active, must be willing to follow protocol-specified contraception guidance starting at least 1 menstrual cycle before first study intervention administration and continuing for at least 3 months after the end of systemic exposure of the study intervention. Female participants must not donate ova for at least 3 months after the end of systemic exposure of the study intervention.\n• Female participants who are documented as being of non-childbearing potential as defined in Section 10.4 are exempt from contraception requirements.\n• Highly effective contraceptive methods for female participants and female partners of male participants are described in Section 10.4.",
-        "name": "Contraception"
+        "text": "Contraceptive use by men or women should be consistent with local regulations regarding the methods of contraception for those participating in clinical studies.\na. Male participants:\n• Male participants, if heterosexually active and with a female spouse or partner of childbearing potential or a pregnant or breastfeeding spouse or partner, must agree to use barrier contraception (male condom) for the duration of the study and for at least 3 months after the end of systemic exposure of the study intervention. Male participants must not donate sperm for at least 3 months after the end of systemic exposure of the study intervention.\n• Female spouses or partners of male participants who are of childbearing potential must use highly effective contraception as defined below and in Section 10.4, starting at least 1 menstrual cycle before (the male participant’s) first study intervention administration and continuing until at least 3 months after the end of their male partner’s systemic exposure to the study intervention.\n• Barrier contraception (male condom) is required even with documented medical assessment of surgical success of a vasectomy. For male participants who have had a vasectomy (with documented evidence of azoospermia if possible) and agree to use a male condom for the stated time period, no additional contraceptive method is required by their female partner.\nb. Female participants:\n• Female participants or female partners of male participants of childbearing potential (including breastfeeding females), if heterosexually active, must be willing to follow protocol-specified contraception guidance starting at least 1 menstrual cycle before first study intervention administration and continuing for at least 3 months after the end of systemic exposure of the study intervention. Female participants must not donate ova for at least 3 months after the end of systemic exposure of the study intervention.\n• Female participants who are documented as being of non-childbearing potential as defined in Section 10.4 are exempt from contraception requirements.\n• Highly effective contraceptive methods for female participants and female partners of male participants are described in Section 10.4."
       },
       {
         "identifier": "I12",
-        "text": "Participants capable of giving signed informed consent, which includes compliance with the requirements and restrictions listed in the ICF and in this protocol.",
-        "name": "Informed Consent"
+        "text": "Participants capable of giving signed informed consent, which includes compliance with the requirements and restrictions listed in the ICF and in this protocol."
       }
     ],
     "exclusionCriteria": [
       {
         "identifier": "E1",
-        "text": "Decompensated cirrhosis or model for end-stage liver disease (MELD) score > 13.",
-        "name": "Medical Conditions"
+        "text": "Decompensated cirrhosis or model for end-stage liver disease (MELD) score > 13."
       },
       {
         "identifier": "E2",
@@ -780,8 +775,7 @@
       },
       {
         "identifier": "E9",
-        "text": "Previous treatment with ALXN1840 or other form of tetrathiomolybdate within 1 year prior to dosing.",
-        "name": "Prior/Concomitant Therapy"
+        "text": "Previous treatment with ALXN1840 or other form of tetrathiomolybdate within 1 year prior to dosing."
       },
       {
         "identifier": "E10",
@@ -789,18 +783,15 @@
       },
       {
         "identifier": "E11",
-        "text": "The use of an experimental or unapproved/unlicensed therapy at the same time or within 90 days or 5 half-lives, whichever is longer, prior to the Screening Visit.",
-        "name": "Prior/Concurrent Clinical Study Experience"
+        "text": "The use of an experimental or unapproved/unlicensed therapy at the same time or within 90 days or 5 half-lives, whichever is longer, prior to the Screening Visit."
       },
       {
         "identifier": "E12",
-        "text": "Participants in renal failure, defined as in end-stage renal disease on dialysis (chronic kidney disease [CKD] stage 5) or creatinine clearance < 30 mL/min (Levey, 2006).",
-        "name": "Diagnostic Assessments"
+        "text": "Participants in renal failure, defined as in end-stage renal disease on dialysis (chronic kidney disease [CKD] stage 5) or creatinine clearance < 30 mL/min (Levey, 2006)."
       },
       {
         "identifier": "E13",
-        "text": "Pregnant (or females who are planning to become pregnant) or breastfeeding females (women of childbearing potential must have a negative serum pregnancy test result at screening).",
-        "name": "Other Exclusions"
+        "text": "Pregnant (or females who are planning to become pregnant) or breastfeeding females (women of childbearing potential must have a negative serum pregnancy test result at screening)."
       },
       {
         "identifier": "E14",

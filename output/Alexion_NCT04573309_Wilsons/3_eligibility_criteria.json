@@ -9,192 +9,192 @@
     34,
     35
   ],
-  "modelUsed": "gemini-2.5-pro",
+  "modelUsed": "gemini-3-pro-preview",
   "eligibility": {
     "eligibilityCriterionItems": [
       {
         "id": "eci_i1",
-        "name": "Inclusion Criterion 1",
+        "name": "Age",
         "text": "Participants aged ≥18 at the time of signing the ICF.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i2",
-        "name": "Inclusion Criterion 2",
+        "name": "Diagnosis of WD",
         "text": "Diagnosis of WD by Leipzig Criteria ≥ 4 documented by testing as outlined in the 2012 European Association for the Study of Liver WD Clinical Practice Guidelines (Ferenci, 2003; EASL, 2012) or by historical test results for WD including some or all of the following:\n• Presence of Kayser Fleischer rings,\n• Neurological symptoms,\n• Serum ceruloplasmin below reference range,\n• Coombs-negative hemolytic anemia,\n• Elevated liver or urinary copper,\n• Presence of mutations in the ATP7B gene, or\n• Other, as considered appropriate, may be used instead to confirm the diagnosis of WD.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i3",
-        "name": "Inclusion Criterion 3",
+        "name": "Benefit from therapy",
         "text": "Participants who in the opinion of the referring Investigator may benefit from decoppering therapy.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i4",
-        "name": "Inclusion Criterion 4",
+        "name": "Compliance",
         "text": "Participants must be able to comply with all study-related procedures.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i5",
-        "name": "Inclusion Criterion 5",
+        "name": "Residency in CRU",
         "text": "Participants must be able to reside in the CRU for intensive metabolic monitoring of copper and molybdenum.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i6",
-        "name": "Inclusion Criterion 6",
+        "name": "Discontinue chelator therapy",
         "text": "Participants willing to discontinue chelator therapy for approximately 4 days prior to initiation of ALXN1840 to allow a baseline assessment of copper balance.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i7",
-        "name": "Inclusion Criterion 7",
+        "name": "Venous access",
         "text": "Participants with adequate venous access to allow collection of required blood samples.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i8",
-        "name": "Inclusion Criterion 8",
+        "name": "Swallow tablets",
         "text": "Participants must be able to swallow intact ALXN1840 tablets.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i9",
-        "name": "Inclusion Criterion 9",
+        "name": "Avoid specific minerals",
         "text": "Participants willing to avoid use of minerals containing copper, zinc, or molybdenum throughout the study duration.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i10",
-        "name": "Inclusion Criterion 10",
+        "name": "Dietary adherence",
         "text": "Participants willing to adhere to copper/molybdenum-controlled diet during inpatient periods and willing to comply with a low copper dietary requirement during the Outpatient Period.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i11",
-        "name": "Inclusion Criterion 11",
+        "name": "Contraception",
         "text": "Contraceptive use by men or women should be consistent with local regulations regarding the methods of contraception for those participating in clinical studies.\na. Male participants:\n• Male participants, if heterosexually active and with a female spouse or partner of childbearing potential or a pregnant or breastfeeding spouse or partner, must agree to use barrier contraception (male condom) for the duration of the study and for at least 3 months after the end of systemic exposure of the study intervention. Male participants must not donate sperm for at least 3 months after the end of systemic exposure of the study intervention.\n• Female spouses or partners of male participants who are of childbearing potential must use highly effective contraception as defined below and in Section 10.4, starting at least 1 menstrual cycle before (the male participant’s) first study intervention administration and continuing until at least 3 months after the end of their male partner’s systemic exposure to the study intervention.\n• Barrier contraception (male condom) is required even with documented medical assessment of surgical success of a vasectomy. For male participants who have had a vasectomy (with documented evidence of azoospermia if possible) and agree to use a male condom for the stated time period, no additional contraceptive method is required by their female partner.\nb. Female participants:\n• Female participants or female partners of male participants of childbearing potential (including breastfeeding females), if heterosexually active, must be willing to follow protocol-specified contraception guidance starting at least 1 menstrual cycle before first study intervention administration and continuing for at least 3 months after the end of systemic exposure of the study intervention. Female participants must not donate ova for at least 3 months after the end of systemic exposure of the study intervention.\n• Female participants who are documented as being of non-childbearing potential as defined in Section 10.4 are exempt from contraception requirements.\n• Highly effective contraceptive methods for female participants and female partners of male participants are described in Section 10.4.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_i12",
-        "name": "Inclusion Criterion 12",
+        "name": "Informed Consent",
         "text": "Participants capable of giving signed informed consent, which includes compliance with the requirements and restrictions listed in the ICF and in this protocol.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e1",
-        "name": "Exclusion Criterion 1",
+        "name": "Liver disease severity",
         "text": "Decompensated cirrhosis or model for end-stage liver disease (MELD) score > 13.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e2",
-        "name": "Exclusion Criterion 2",
+        "name": "Nazer score",
         "text": "Modified Nazer score > 7 (Dhawan, 2005).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e3",
-        "name": "Exclusion Criterion 3",
+        "name": "GI bleed",
         "text": "Clinically significant gastrointestinal bleed within past 3 months.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e4",
-        "name": "Exclusion Criterion 4",
+        "name": "ALT levels",
         "text": "Alanine aminotransferase (ALT) > 2 × upper limit of normal (ULN).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e5",
-        "name": "Exclusion Criterion 5",
+        "name": "Neurological disease",
         "text": "Marked neurological disease requiring assistance with self-care or activities of daily life.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e6",
-        "name": "Exclusion Criterion 6",
+        "name": "Low Hemoglobin",
         "text": "Hemoglobin less than lower limit of the reference range for age and sex.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e7",
-        "name": "Exclusion Criterion 7",
+        "name": "Viral infections",
         "text": "Active infection with hepatitis B virus (positive hepatitis B surface antigen) or C virus (participants with positive hepatitis C antibody result would require confirmation of active disease with a positive hepatitis C polymerase chain reaction test), or seropositivity for human immunodeficiency virus (HIV).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e8",
-        "name": "Exclusion Criterion 8",
+        "name": "Other significant disorders",
         "text": "History or presence of/significant history of or current cardiovascular, respiratory, hepatic, renal, gastrointestinal, endocrinological, hematological, or neurological disorders, or psychiatric disorder that in the opinion of the Investigator may constitute a risk when taking the study intervention; or may interfere with the interpretation of data.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e9",
-        "name": "Exclusion Criterion 9",
+        "name": "Prior ALXN1840/tetrathiomolybdate",
         "text": "Previous treatment with ALXN1840 or other form of tetrathiomolybdate within 1 year prior to dosing.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e10",
-        "name": "Exclusion Criterion 10",
+        "name": "Prior zinc treatment",
         "text": "Previous treatment with zinc within 21 days prior to Day 1.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e11",
-        "name": "Exclusion Criterion 11",
+        "name": "Experimental therapy",
         "text": "The use of an experimental or unapproved/unlicensed therapy at the same time or within 90 days or 5 half-lives, whichever is longer, prior to the Screening Visit.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e12",
-        "name": "Exclusion Criterion 12",
+        "name": "Renal failure",
         "text": "Participants in renal failure, defined as in end-stage renal disease on dialysis (chronic kidney disease [CKD] stage 5) or creatinine clearance < 30 mL/min (Levey, 2006).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e13",
-        "name": "Exclusion Criterion 13",
+        "name": "Pregnancy/Breastfeeding",
         "text": "Pregnant (or females who are planning to become pregnant) or breastfeeding females (women of childbearing potential must have a negative serum pregnancy test result at screening).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e14",
-        "name": "Exclusion Criterion 14",
+        "name": "Hypersensitivity",
         "text": "Known sensitivity to ALXN1840, ALXN1840 excipients (anhydrous dicalcium phosphate, anhydrous sodium carbonate), or any of the ingredients contained in ALXN1840 or related compounds.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e15",
-        "name": "Exclusion Criterion 15",
+        "name": "Non-compliance risk",
         "text": "In the opinion of the Investigator, the participant and/or their legal guardian is likely to be non-compliant or uncooperative during the study.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e16",
-        "name": "Exclusion Criterion 16",
+        "name": "Substance abuse",
         "text": "History of illicit drug abuse, history of significant alcohol abuse within 1 year prior to the Screening Visit, or clinical evidence of substance and/or alcohol abuse within the 2 years before screening. Alcohol abuse is defined as regular weekly intake of more than 14 units (for both males and females), using the following National Health Service (NHS) alcohol tracker http://www.nhs.uk/Tools/Pages/drinks-tracker.aspx.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e17",
-        "name": "Exclusion Criterion 17",
+        "name": "Positive drug screen",
         "text": "Positive urine drug toxicology screen at Screening or on Day -8 (cannabinoids will not be tested).",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e18",
-        "name": "Exclusion Criterion 18",
+        "name": "Recent alcohol use",
         "text": "Alcohol consumption within 48 hours prior to study intervention administration or positive alcohol breath test at screening or on Day -8.",
         "instanceType": "EligibilityCriterionItem"
       },
       {
         "id": "eci_e19",
-        "name": "Exclusion Criterion 19",
+        "name": "Meal compliance",
         "text": "Participants unwilling to consistently complete every meal and tolerate a controlled, limited menu for the duration of the study.",
         "instanceType": "EligibilityCriterionItem"
       }
@@ -210,7 +210,7 @@
         },
         "criterionItemId": "eci_i1",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 1",
+        "name": "Age",
         "nextId": "ec_i2"
       },
       {
@@ -223,7 +223,7 @@
         },
         "criterionItemId": "eci_i2",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 2",
+        "name": "Diagnosis of WD",
         "previousId": "ec_i1",
         "nextId": "ec_i3"
       },
@@ -237,7 +237,7 @@
         },
         "criterionItemId": "eci_i3",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 3",
+        "name": "Benefit from therapy",
         "previousId": "ec_i2",
         "nextId": "ec_i4"
       },
@@ -251,7 +251,7 @@
         },
         "criterionItemId": "eci_i4",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 4",
+        "name": "Compliance",
         "previousId": "ec_i3",
         "nextId": "ec_i5"
       },
@@ -265,7 +265,7 @@
         },
         "criterionItemId": "eci_i5",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 5",
+        "name": "Residency in CRU",
         "previousId": "ec_i4",
         "nextId": "ec_i6"
       },
@@ -279,7 +279,7 @@
         },
         "criterionItemId": "eci_i6",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 6",
+        "name": "Discontinue chelator therapy",
         "previousId": "ec_i5",
         "nextId": "ec_i7"
       },
@@ -293,7 +293,7 @@
         },
         "criterionItemId": "eci_i7",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 7",
+        "name": "Venous access",
         "previousId": "ec_i6",
         "nextId": "ec_i8"
       },
@@ -307,7 +307,7 @@
         },
         "criterionItemId": "eci_i8",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 8",
+        "name": "Swallow tablets",
         "previousId": "ec_i7",
         "nextId": "ec_i9"
       },
@@ -321,7 +321,7 @@
         },
         "criterionItemId": "eci_i9",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 9",
+        "name": "Avoid specific minerals",
         "previousId": "ec_i8",
         "nextId": "ec_i10"
       },
@@ -335,7 +335,7 @@
         },
         "criterionItemId": "eci_i10",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 10",
+        "name": "Dietary adherence",
         "previousId": "ec_i9",
         "nextId": "ec_i11"
       },
@@ -349,7 +349,7 @@
         },
         "criterionItemId": "eci_i11",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 11",
+        "name": "Contraception",
         "previousId": "ec_i10",
         "nextId": "ec_i12"
       },
@@ -363,7 +363,7 @@
         },
         "criterionItemId": "eci_i12",
         "instanceType": "EligibilityCriterion",
-        "name": "Inclusion Criterion 12",
+        "name": "Informed Consent",
         "previousId": "ec_i11"
       },
       {
@@ -376,7 +376,7 @@
         },
         "criterionItemId": "eci_e1",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 1",
+        "name": "Liver disease severity",
         "nextId": "ec_e2"
       },
       {
@@ -389,7 +389,7 @@
         },
         "criterionItemId": "eci_e2",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 2",
+        "name": "Nazer score",
         "previousId": "ec_e1",
         "nextId": "ec_e3"
       },
@@ -403,7 +403,7 @@
         },
         "criterionItemId": "eci_e3",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 3",
+        "name": "GI bleed",
         "previousId": "ec_e2",
         "nextId": "ec_e4"
       },
@@ -417,7 +417,7 @@
         },
         "criterionItemId": "eci_e4",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 4",
+        "name": "ALT levels",
         "previousId": "ec_e3",
         "nextId": "ec_e5"
       },
@@ -431,7 +431,7 @@
         },
         "criterionItemId": "eci_e5",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 5",
+        "name": "Neurological disease",
         "previousId": "ec_e4",
         "nextId": "ec_e6"
       },
@@ -445,7 +445,7 @@
         },
         "criterionItemId": "eci_e6",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 6",
+        "name": "Low Hemoglobin",
         "previousId": "ec_e5",
         "nextId": "ec_e7"
       },
@@ -459,7 +459,7 @@
         },
         "criterionItemId": "eci_e7",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 7",
+        "name": "Viral infections",
         "previousId": "ec_e6",
         "nextId": "ec_e8"
       },
@@ -473,7 +473,7 @@
         },
         "criterionItemId": "eci_e8",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 8",
+        "name": "Other significant disorders",
         "previousId": "ec_e7",
         "nextId": "ec_e9"
       },
@@ -487,7 +487,7 @@
         },
         "criterionItemId": "eci_e9",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 9",
+        "name": "Prior ALXN1840/tetrathiomolybdate",
         "previousId": "ec_e8",
         "nextId": "ec_e10"
       },
@@ -501,7 +501,7 @@
         },
         "criterionItemId": "eci_e10",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 10",
+        "name": "Prior zinc treatment",
         "previousId": "ec_e9",
         "nextId": "ec_e11"
       },
@@ -515,7 +515,7 @@
         },
         "criterionItemId": "eci_e11",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 11",
+        "name": "Experimental therapy",
         "previousId": "ec_e10",
         "nextId": "ec_e12"
       },
@@ -529,7 +529,7 @@
         },
         "criterionItemId": "eci_e12",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 12",
+        "name": "Renal failure",
         "previousId": "ec_e11",
         "nextId": "ec_e13"
       },
@@ -543,7 +543,7 @@
         },
         "criterionItemId": "eci_e13",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 13",
+        "name": "Pregnancy/Breastfeeding",
         "previousId": "ec_e12",
         "nextId": "ec_e14"
       },
@@ -557,7 +557,7 @@
         },
         "criterionItemId": "eci_e14",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 14",
+        "name": "Hypersensitivity",
         "previousId": "ec_e13",
         "nextId": "ec_e15"
       },
@@ -571,7 +571,7 @@
         },
         "criterionItemId": "eci_e15",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 15",
+        "name": "Non-compliance risk",
         "previousId": "ec_e14",
         "nextId": "ec_e16"
       },
@@ -585,7 +585,7 @@
         },
         "criterionItemId": "eci_e16",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 16",
+        "name": "Substance abuse",
         "previousId": "ec_e15",
         "nextId": "ec_e17"
       },
@@ -599,7 +599,7 @@
         },
         "criterionItemId": "eci_e17",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 17",
+        "name": "Positive drug screen",
         "previousId": "ec_e16",
         "nextId": "ec_e18"
       },
@@ -613,7 +613,7 @@
         },
         "criterionItemId": "eci_e18",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 18",
+        "name": "Recent alcohol use",
         "previousId": "ec_e17",
         "nextId": "ec_e19"
       },
@@ -627,7 +627,7 @@
         },
         "criterionItemId": "eci_e19",
         "instanceType": "EligibilityCriterion",
-        "name": "Exclusion Criterion 19",
+        "name": "Meal compliance",
         "previousId": "ec_e18"
       }
     ],
@@ -693,129 +693,160 @@
     "inclusionCriteria": [
       {
         "identifier": "I1",
-        "text": "Participants aged ≥18 at the time of signing the ICF."
+        "text": "Participants aged ≥18 at the time of signing the ICF.",
+        "name": "Age"
       },
       {
         "identifier": "I2",
-        "text": "Diagnosis of WD by Leipzig Criteria ≥ 4 documented by testing as outlined in the 2012 European Association for the Study of Liver WD Clinical Practice Guidelines (Ferenci, 2003; EASL, 2012) or by historical test results for WD including some or all of the following:\n• Presence of Kayser Fleischer rings,\n• Neurological symptoms,\n• Serum ceruloplasmin below reference range,\n• Coombs-negative hemolytic anemia,\n• Elevated liver or urinary copper,\n• Presence of mutations in the ATP7B gene, or\n• Other, as considered appropriate, may be used instead to confirm the diagnosis of WD."
+        "text": "Diagnosis of WD by Leipzig Criteria ≥ 4 documented by testing as outlined in the 2012 European Association for the Study of Liver WD Clinical Practice Guidelines (Ferenci, 2003; EASL, 2012) or by historical test results for WD including some or all of the following:\n• Presence of Kayser Fleischer rings,\n• Neurological symptoms,\n• Serum ceruloplasmin below reference range,\n• Coombs-negative hemolytic anemia,\n• Elevated liver or urinary copper,\n• Presence of mutations in the ATP7B gene, or\n• Other, as considered appropriate, may be used instead to confirm the diagnosis of WD.",
+        "name": "Diagnosis of WD"
       },
       {
         "identifier": "I3",
-        "text": "Participants who in the opinion of the referring Investigator may benefit from decoppering therapy."
+        "text": "Participants who in the opinion of the referring Investigator may benefit from decoppering therapy.",
+        "name": "Benefit from therapy"
       },
       {
         "identifier": "I4",
-        "text": "Participants must be able to comply with all study-related procedures."
+        "text": "Participants must be able to comply with all study-related procedures.",
+        "name": "Compliance"
       },
       {
         "identifier": "I5",
-        "text": "Participants must be able to reside in the CRU for intensive metabolic monitoring of copper and molybdenum."
+        "text": "Participants must be able to reside in the CRU for intensive metabolic monitoring of copper and molybdenum.",
+        "name": "Residency in CRU"
       },
       {
         "identifier": "I6",
-        "text": "Participants willing to discontinue chelator therapy for approximately 4 days prior to initiation of ALXN1840 to allow a baseline assessment of copper balance."
+        "text": "Participants willing to discontinue chelator therapy for approximately 4 days prior to initiation of ALXN1840 to allow a baseline assessment of copper balance.",
+        "name": "Discontinue chelator therapy"
       },
       {
         "identifier": "I7",
-        "text": "Participants with adequate venous access to allow collection of required blood samples."
+        "text": "Participants with adequate venous access to allow collection of required blood samples.",
+        "name": "Venous access"
       },
       {
         "identifier": "I8",
-        "text": "Participants must be able to swallow intact ALXN1840 tablets."
+        "text": "Participants must be able to swallow intact ALXN1840 tablets.",
+        "name": "Swallow tablets"
       },
       {
         "identifier": "I9",
-        "text": "Participants willing to avoid use of minerals containing copper, zinc, or molybdenum throughout the study duration."
+        "text": "Participants willing to avoid use of minerals containing copper, zinc, or molybdenum throughout the study duration.",
+        "name": "Avoid specific minerals"
       },
       {
         "identifier": "I10",
-        "text": "Participants willing to adhere to copper/molybdenum-controlled diet during inpatient periods and willing to comply with a low copper dietary requirement during the Outpatient Period."
+        "text": "Participants willing to adhere to copper/molybdenum-controlled diet during inpatient periods and willing to comply with a low copper dietary requirement during the Outpatient Period.",
+        "name": "Dietary adherence"
       },
       {
         "identifier": "I11",
-        "text": "Contraceptive use by men or women should be consistent with local regulations regarding the methods of contraception for those participating in clinical studies.\na. Male participants:\n• Male participants, if heterosexually active and with a female spouse or partner of childbearing potential or a pregnant or breastfeeding spouse or partner, must agree to use barrier contraception (male condom) for the duration of the study and for at least 3 months after the end of systemic exposure of the study intervention. Male participants must not donate sperm for at least 3 months after the end of systemic exposure of the study intervention.\n• Female spouses or partners of male participants who are of childbearing potential must use highly effective contraception as defined below and in Section 10.4, starting at least 1 menstrual cycle before (the male participant’s) first study intervention administration and continuing until at least 3 months after the end of their male partner’s systemic exposure to the study intervention.\n• Barrier contraception (male condom) is required even with documented medical assessment of surgical success of a vasectomy. For male participants who have had a vasectomy (with documented evidence of azoospermia if possible) and agree to use a male condom for the stated time period, no additional contraceptive method is required by their female partner.\nb. Female participants:\n• Female participants or female partners of male participants of childbearing potential (including breastfeeding females), if heterosexually active, must be willing to follow protocol-specified contraception guidance starting at least 1 menstrual cycle before first study intervention administration and continuing for at least 3 months after the end of systemic exposure of the study intervention. Female participants must not donate ova for at least 3 months after the end of systemic exposure of the study intervention.\n• Female participants who are documented as being of non-childbearing potential as defined in Section 10.4 are exempt from contraception requirements.\n• Highly effective contraceptive methods for female participants and female partners of male participants are described in Section 10.4."
+        "text": "Contraceptive use by men or women should be consistent with local regulations regarding the methods of contraception for those participating in clinical studies.\na. Male participants:\n• Male participants, if heterosexually active and with a female spouse or partner of childbearing potential or a pregnant or breastfeeding spouse or partner, must agree to use barrier contraception (male condom) for the duration of the study and for at least 3 months after the end of systemic exposure of the study intervention. Male participants must not donate sperm for at least 3 months after the end of systemic exposure of the study intervention.\n• Female spouses or partners of male participants who are of childbearing potential must use highly effective contraception as defined below and in Section 10.4, starting at least 1 menstrual cycle before (the male participant’s) first study intervention administration and continuing until at least 3 months after the end of their male partner’s systemic exposure to the study intervention.\n• Barrier contraception (male condom) is required even with documented medical assessment of surgical success of a vasectomy. For male participants who have had a vasectomy (with documented evidence of azoospermia if possible) and agree to use a male condom for the stated time period, no additional contraceptive method is required by their female partner.\nb. Female participants:\n• Female participants or female partners of male participants of childbearing potential (including breastfeeding females), if heterosexually active, must be willing to follow protocol-specified contraception guidance starting at least 1 menstrual cycle before first study intervention administration and continuing for at least 3 months after the end of systemic exposure of the study intervention. Female participants must not donate ova for at least 3 months after the end of systemic exposure of the study intervention.\n• Female participants who are documented as being of non-childbearing potential as defined in Section 10.4 are exempt from contraception requirements.\n• Highly effective contraceptive methods for female participants and female partners of male participants are described in Section 10.4.",
+        "name": "Contraception"
       },
       {
         "identifier": "I12",
-        "text": "Participants capable of giving signed informed consent, which includes compliance with the requirements and restrictions listed in the ICF and in this protocol."
+        "text": "Participants capable of giving signed informed consent, which includes compliance with the requirements and restrictions listed in the ICF and in this protocol.",
+        "name": "Informed Consent"
       }
     ],
     "exclusionCriteria": [
       {
         "identifier": "E1",
-        "text": "Decompensated cirrhosis or model for end-stage liver disease (MELD) score > 13."
+        "text": "Decompensated cirrhosis or model for end-stage liver disease (MELD) score > 13.",
+        "name": "Liver disease severity"
       },
       {
         "identifier": "E2",
-        "text": "Modified Nazer score > 7 (Dhawan, 2005)."
+        "text": "Modified Nazer score > 7 (Dhawan, 2005).",
+        "name": "Nazer score"
       },
       {
         "identifier": "E3",
-        "text": "Clinically significant gastrointestinal bleed within past 3 months."
+        "text": "Clinically significant gastrointestinal bleed within past 3 months.",
+        "name": "GI bleed"
       },
       {
         "identifier": "E4",
-        "text": "Alanine aminotransferase (ALT) > 2 × upper limit of normal (ULN)."
+        "text": "Alanine aminotransferase (ALT) > 2 × upper limit of normal (ULN).",
+        "name": "ALT levels"
       },
       {
         "identifier": "E5",
-        "text": "Marked neurological disease requiring assistance with self-care or activities of daily life."
+        "text": "Marked neurological disease requiring assistance with self-care or activities of daily life.",
+        "name": "Neurological disease"
       },
       {
         "identifier": "E6",
-        "text": "Hemoglobin less than lower limit of the reference range for age and sex."
+        "text": "Hemoglobin less than lower limit of the reference range for age and sex.",
+        "name": "Low Hemoglobin"
       },
       {
         "identifier": "E7",
-        "text": "Active infection with hepatitis B virus (positive hepatitis B surface antigen) or C virus (participants with positive hepatitis C antibody result would require confirmation of active disease with a positive hepatitis C polymerase chain reaction test), or seropositivity for human immunodeficiency virus (HIV)."
+        "text": "Active infection with hepatitis B virus (positive hepatitis B surface antigen) or C virus (participants with positive hepatitis C antibody result would require confirmation of active disease with a positive hepatitis C polymerase chain reaction test), or seropositivity for human immunodeficiency virus (HIV).",
+        "name": "Viral infections"
       },
       {
         "identifier": "E8",
-        "text": "History or presence of/significant history of or current cardiovascular, respiratory, hepatic, renal, gastrointestinal, endocrinological, hematological, or neurological disorders, or psychiatric disorder that in the opinion of the Investigator may constitute a risk when taking the study intervention; or may interfere with the interpretation of data."
+        "text": "History or presence of/significant history of or current cardiovascular, respiratory, hepatic, renal, gastrointestinal, endocrinological, hematological, or neurological disorders, or psychiatric disorder that in the opinion of the Investigator may constitute a risk when taking the study intervention; or may interfere with the interpretation of data.",
+        "name": "Other significant disorders"
       },
       {
         "identifier": "E9",
-        "text": "Previous treatment with ALXN1840 or other form of tetrathiomolybdate within 1 year prior to dosing."
+        "text": "Previous treatment with ALXN1840 or other form of tetrathiomolybdate within 1 year prior to dosing.",
+        "name": "Prior ALXN1840/tetrathiomolybdate"
       },
       {
         "identifier": "E10",
-        "text": "Previous treatment with zinc within 21 days prior to Day 1."
+        "text": "Previous treatment with zinc within 21 days prior to Day 1.",
+        "name": "Prior zinc treatment"
       },
       {
         "identifier": "E11",
-        "text": "The use of an experimental or unapproved/unlicensed therapy at the same time or within 90 days or 5 half-lives, whichever is longer, prior to the Screening Visit."
+        "text": "The use of an experimental or unapproved/unlicensed therapy at the same time or within 90 days or 5 half-lives, whichever is longer, prior to the Screening Visit.",
+        "name": "Experimental therapy"
       },
       {
         "identifier": "E12",
-        "text": "Participants in renal failure, defined as in end-stage renal disease on dialysis (chronic kidney disease [CKD] stage 5) or creatinine clearance < 30 mL/min (Levey, 2006)."
+        "text": "Participants in renal failure, defined as in end-stage renal disease on dialysis (chronic kidney disease [CKD] stage 5) or creatinine clearance < 30 mL/min (Levey, 2006).",
+        "name": "Renal failure"
       },
       {
         "identifier": "E13",
-        "text": "Pregnant (or females who are planning to become pregnant) or breastfeeding females (women of childbearing potential must have a negative serum pregnancy test result at screening)."
+        "text": "Pregnant (or females who are planning to become pregnant) or breastfeeding females (women of childbearing potential must have a negative serum pregnancy test result at screening).",
+        "name": "Pregnancy/Breastfeeding"
       },
       {
         "identifier": "E14",
-        "text": "Known sensitivity to ALXN1840, ALXN1840 excipients (anhydrous dicalcium phosphate, anhydrous sodium carbonate), or any of the ingredients contained in ALXN1840 or related compounds."
+        "text": "Known sensitivity to ALXN1840, ALXN1840 excipients (anhydrous dicalcium phosphate, anhydrous sodium carbonate), or any of the ingredients contained in ALXN1840 or related compounds.",
+        "name": "Hypersensitivity"
       },
       {
         "identifier": "E15",
-        "text": "In the opinion of the Investigator, the participant and/or their legal guardian is likely to be non-compliant or uncooperative during the study."
+        "text": "In the opinion of the Investigator, the participant and/or their legal guardian is likely to be non-compliant or uncooperative during the study.",
+        "name": "Non-compliance risk"
       },
       {
         "identifier": "E16",
-        "text": "History of illicit drug abuse, history of significant alcohol abuse within 1 year prior to the Screening Visit, or clinical evidence of substance and/or alcohol abuse within the 2 years before screening. Alcohol abuse is defined as regular weekly intake of more than 14 units (for both males and females), using the following National Health Service (NHS) alcohol tracker http://www.nhs.uk/Tools/Pages/drinks-tracker.aspx."
+        "text": "History of illicit drug abuse, history of significant alcohol abuse within 1 year prior to the Screening Visit, or clinical evidence of substance and/or alcohol abuse within the 2 years before screening. Alcohol abuse is defined as regular weekly intake of more than 14 units (for both males and females), using the following National Health Service (NHS) alcohol tracker http://www.nhs.uk/Tools/Pages/drinks-tracker.aspx.",
+        "name": "Substance abuse"
       },
       {
         "identifier": "E17",
-        "text": "Positive urine drug toxicology screen at Screening or on Day -8 (cannabinoids will not be tested)."
+        "text": "Positive urine drug toxicology screen at Screening or on Day -8 (cannabinoids will not be tested).",
+        "name": "Positive drug screen"
       },
       {
         "identifier": "E18",
-        "text": "Alcohol consumption within 48 hours prior to study intervention administration or positive alcohol breath test at screening or on Day -8."
+        "text": "Alcohol consumption within 48 hours prior to study intervention administration or positive alcohol breath test at screening or on Day -8.",
+        "name": "Recent alcohol use"
       },
       {
         "identifier": "E19",
-        "text": "Participants unwilling to consistently complete every meal and tolerate a controlled, limited menu for the duration of the study."
+        "text": "Participants unwilling to consistently complete every meal and tolerate a controlled, limited menu for the duration of the study.",
+        "name": "Meal compliance"
       }
     ],
     "population": {

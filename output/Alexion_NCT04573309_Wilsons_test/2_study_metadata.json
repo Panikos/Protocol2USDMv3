@@ -46,7 +46,7 @@
       {
         "id": "id_3",
         "text": "2020-001104-41",
-        "scopeId": "org_eudract",
+        "scopeId": "org_unknown",
         "instanceType": "StudyIdentifier"
       },
       {
@@ -111,7 +111,8 @@
         "id": "indication_1",
         "name": "Wilson Disease",
         "isRareDisease": true,
-        "instanceType": "Indication"
+        "instanceType": "Indication",
+        "description": "A study to assess copper and molybdenum balance in participants with Wilson Disease treated with ALXN1840."
       }
     ],
     "studyPhase": {
@@ -157,7 +158,7 @@
       {
         "type": "EudraCT Number",
         "value": "2020-001104-41",
-        "registry": "EudraCT"
+        "registry": "European Union Drug Regulating Authorities Clinical Trials Database"
       },
       {
         "type": "IND/IDE Number",
@@ -174,13 +175,13 @@
       {
         "name": "US Food and Drug Administration (FDA)",
         "role": "Regulatory Agency",
-        "type": "Government Agency"
+        "type": "Government"
       }
     ],
     "studyPhase": "Phase 2",
     "indication": {
       "name": "Wilson Disease",
-      "description": null,
+      "description": "A study to assess copper and molybdenum balance in participants with Wilson Disease treated with ALXN1840.",
       "isRareDisease": true
     },
     "studyType": "Interventional",

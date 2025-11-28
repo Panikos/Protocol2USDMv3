@@ -349,7 +349,7 @@
       {
         "id": "abbr_3",
         "abbreviatedText": "AE",
-        "expandedText": "Adverse Events",
+        "expandedText": "Adverse Event",
         "instanceType": "Abbreviation"
       },
       {
@@ -385,7 +385,7 @@
       {
         "id": "abbr_9",
         "abbreviatedText": "NCCcorrected",
-        "expandedText": "non-ceruloplasmin-bound copper (NCC) corrected",
+        "expandedText": "non-ceruloplasmin-bound copper corrected",
         "instanceType": "Abbreviation"
       },
       {
@@ -439,7 +439,7 @@
         },
         {
           "abbreviation": "AE",
-          "expansion": "Adverse Events"
+          "expansion": "Adverse Event"
         },
         {
           "abbreviation": "SAE",
@@ -463,7 +463,7 @@
         },
         {
           "abbreviation": "NCCcorrected",
-          "expansion": "non-ceruloplasmin-bound copper (NCC) corrected"
+          "expansion": "non-ceruloplasmin-bound copper corrected"
         },
         {
           "abbreviation": "TPC",
