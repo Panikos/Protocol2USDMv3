@@ -1,0 +1,59 @@
+{
+  "success": true,
+  "pagesUsed": [
+    0,
+    1,
+    2
+  ],
+  "modelUsed": "gemini-3-pro-preview",
+  "confidence": 0.4,
+  "amendmentDetails": {
+    "studyAmendmentImpacts": [
+      {
+        "id": "impact_1",
+        "amendmentId": "amend_a",
+        "affectedSection": "Title Page",
+        "impactLevel": "Administrative",
+        "instanceType": "StudyAmendmentImpact",
+        "description": "Update of protocol version and approval date to reflect Amendment (a)"
+      }
+    ],
+    "studyAmendmentReasons": [
+      {
+        "id": "reason_1",
+        "amendmentId": "amend_a",
+        "reasonText": "Issuance of Amendment (a) to the Clinical Pharmacology Protocol",
+        "category": "Administrative",
+        "isPrimary": true,
+        "instanceType": "StudyAmendmentReason"
+      }
+    ],
+    "studyChanges": [
+      {
+        "id": "change_1",
+        "amendmentId": "amend_a",
+        "changeType": "Modification",
+        "instanceType": "StudyChange",
+        "sectionNumber": "Title Page",
+        "beforeText": "Clinical Pharmacology Protocol Electronically Signed and Approved by Lilly: 26 October 2017",
+        "afterText": "Amendment (a) Electronically Signed and Approved by Lilly... Approval Date: 05-Dec-2017",
+        "summary": "Protocol approval status updated from original version (Oct 2017) to Amendment (a) (Dec 2017)"
+      },
+      {
+        "id": "change_2",
+        "amendmentId": "amend_a",
+        "changeType": "Modification",
+        "instanceType": "StudyChange",
+        "sectionNumber": "Header",
+        "beforeText": "Protocol I8R-JE-IGBJ",
+        "afterText": "I8R-JE-IGBJ(a)",
+        "summary": "Protocol identifier updated to include amendment suffix (a)"
+      }
+    ],
+    "summary": {
+      "impactCount": 1,
+      "reasonCount": 1,
+      "changeCount": 2
+    }
+  }
+}

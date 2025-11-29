@@ -220,13 +220,139 @@ def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _parse_eligibility_response(raw: Dict[str, Any]) -> Optional[EligibilityData]:
-    """Parse raw LLM response into EligibilityData object."""
+def _parse_usdm_eligibility_format(raw: Dict[str, Any]) -> Optional[EligibilityData]:
+    """Parse new USDM-compliant format with flat criteria list."""
     try:
         criterion_items = []
         criteria = []
         
-        # Process inclusion criteria
+        inclusion_count = 0
+        exclusion_count = 0
+        inc_prev_id = None
+        exc_prev_id = None
+        
+        # Build item lookup from eligibilityCriterionItems if present
+        item_lookup = {}
+        for item in raw.get('eligibilityCriterionItems', []):
+            if isinstance(item, dict) and item.get('id'):
+                item_lookup[item['id']] = item
+        
+        for crit_data in raw.get('criteria', []):
+            if not isinstance(crit_data, dict):
+                continue
+            
+            # Get category from code object
+            category_data = crit_data.get('category', {})
+            category_code = category_data.get('code', 'Inclusion') if isinstance(category_data, dict) else str(category_data)
+            
+            is_inclusion = 'Inclusion' in category_code
+            category = CriterionCategory.INCLUSION if is_inclusion else CriterionCategory.EXCLUSION
+            
+            # Use provided ID or generate one
+            crit_id = crit_data.get('id', f"ec_{len(criteria)+1}")
+            identifier = crit_data.get('identifier', f"[{len(criteria)+1}]")
+            name = crit_data.get('name', f"Criterion {len(criteria)+1}")
+            
+            # Get text - either from criterion directly or from linked criterionItem
+            text = crit_data.get('text', '')
+            item_id = crit_data.get('criterionItemId')
+            
+            if not text and item_id and item_id in item_lookup:
+                # Get text from the linked criterion item
+                item_data = item_lookup[item_id]
+                text = item_data.get('text', '')
+                name = item_data.get('name', name)
+            
+            if not text:
+                continue
+            
+            # Create criterion item
+            if not item_id:
+                item_id = f"eci_{crit_id}"
+            
+            criterion_items.append(EligibilityCriterionItem(
+                id=item_id,
+                name=name,
+                text=text,
+            ))
+            
+            # Create criterion with linked list
+            prev_id = inc_prev_id if is_inclusion else exc_prev_id
+            
+            criterion = EligibilityCriterion(
+                id=crit_id,
+                identifier=identifier,
+                category=category,
+                criterion_item_id=item_id,
+                name=name,
+                previous_id=prev_id,
+            )
+            
+            # Link previous criterion to this one
+            if prev_id:
+                for c in criteria:
+                    if c.id == prev_id:
+                        c.next_id = crit_id
+                        break
+            
+            criteria.append(criterion)
+            
+            # Update counters and prev_id
+            if is_inclusion:
+                inclusion_count += 1
+                inc_prev_id = crit_id
+            else:
+                exclusion_count += 1
+                exc_prev_id = crit_id
+        
+        # Parse population if present
+        population = None
+        pop_data = raw.get('population')
+        if isinstance(pop_data, dict) and pop_data.get('description'):
+            population = StudyDesignPopulation(
+                id=pop_data.get('id', 'pop_1'),
+                name=pop_data.get('name', 'Study Population'),
+                description=pop_data['description'],
+            )
+        
+        logger.info(f"Parsed USDM format: {inclusion_count} inclusion, {exclusion_count} exclusion criteria")
+        
+        return EligibilityData(
+            criteria=criteria,
+            criterion_items=criterion_items,
+            population=population,
+            inclusion_count=inclusion_count,
+            exclusion_count=exclusion_count,
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to parse USDM eligibility format: {e}")
+        return None
+
+
+def _parse_eligibility_response(raw: Dict[str, Any]) -> Optional[EligibilityData]:
+    """Parse raw LLM response into EligibilityData object.
+    
+    Handles two formats:
+    1. New USDM format: flat 'criteria' list with 'category' code objects
+    2. Legacy format: separate 'inclusionCriteria' and 'exclusionCriteria' arrays
+    """
+    try:
+        # Check for new USDM-compliant format (flat criteria list with category codes)
+        # Accept both 'criteria' and 'eligibilityCriteria' keys
+        criteria_list = raw.get('criteria') or raw.get('eligibilityCriteria') or []
+        if criteria_list and isinstance(criteria_list, list) and len(criteria_list) > 0:
+            first_crit = criteria_list[0]
+            if isinstance(first_crit, dict) and 'category' in first_crit and isinstance(first_crit.get('category'), dict):
+                # Use a modified raw dict with 'criteria' key for the parser
+                modified_raw = dict(raw)
+                modified_raw['criteria'] = criteria_list
+                return _parse_usdm_eligibility_format(modified_raw)
+        
+        criterion_items = []
+        criteria = []
+        
+        # Legacy format: Process inclusion criteria
         inclusion_list = raw.get('inclusionCriteria', [])
         prev_id = None
         

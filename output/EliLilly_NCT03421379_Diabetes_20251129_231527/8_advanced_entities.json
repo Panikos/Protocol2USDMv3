@@ -1,0 +1,78 @@
+{
+  "success": true,
+  "pagesUsed": [
+    0,
+    1,
+    2,
+    3,
+    7,
+    9
+  ],
+  "modelUsed": "gemini-3-pro-preview",
+  "advanced": {
+    "studyAmendments": [
+      {
+        "id": "amend_1",
+        "number": "(a)",
+        "scope": {
+          "code": "Global",
+          "codeSystem": "USDM",
+          "decode": "Global"
+        },
+        "instanceType": "StudyAmendment",
+        "summary": "The specific rationale text for this amendment is located in Appendix 9 (Page 71) of the protocol, which is not included in the provided document excerpts. The Table of Contents lists this section as 'Protocol Amendment I8R-JE-IGBJ(a) Summary'.",
+        "effectiveDate": "2017-12-05",
+        "previousVersion": "Original Protocol (26 October 2017)",
+        "newVersion": "(a)"
+      }
+    ],
+    "amendmentReasons": [],
+    "countries": [
+      {
+        "id": "country_1",
+        "name": "Japan",
+        "instanceType": "Country",
+        "code": "JP"
+      }
+    ],
+    "studySites": [],
+    "summary": {
+      "amendmentCount": 1,
+      "countryCount": 1,
+      "siteCount": 0
+    },
+    "geographicScope": {
+      "id": "geo_1",
+      "name": "Study Geographic Scope",
+      "scopeType": "National",
+      "instanceType": "GeographicScope",
+      "countryIds": [
+        "country_1"
+      ]
+    }
+  },
+  "rawResponse": {
+    "amendments": [
+      {
+        "number": "(a)",
+        "effectiveDate": "2017-12-05",
+        "summary": "The specific rationale text for this amendment is located in Appendix 9 (Page 71) of the protocol, which is not included in the provided document excerpts. The Table of Contents lists this section as 'Protocol Amendment I8R-JE-IGBJ(a) Summary'.",
+        "previousVersion": "Original Protocol (26 October 2017)",
+        "newVersion": "(a)",
+        "reasons": []
+      }
+    ],
+    "geographicScope": {
+      "type": "National",
+      "countries": [
+        {
+          "name": "Japan",
+          "code": "JP"
+        }
+      ],
+      "regions": [],
+      "plannedSites": null
+    },
+    "sites": []
+  }
+}

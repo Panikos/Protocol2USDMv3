@@ -192,7 +192,10 @@ def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
 
 
 def _build_advanced_data(raw: Dict[str, Any]) -> AdvancedData:
-    """Build AdvancedData from raw extraction results."""
+    """Build AdvancedData from raw extraction results.
+    
+    Handles both legacy format and new USDM-compliant format with ids.
+    """
     
     if raw is None:
         return AdvancedData()
@@ -203,8 +206,8 @@ def _build_advanced_data(raw: Dict[str, Any]) -> AdvancedData:
     sites = []
     geo_scope = None
     
-    # Process amendments
-    amendments_raw = raw.get('amendments') or []
+    # Process amendments - accept both 'amendments' and 'studyAmendments' keys
+    amendments_raw = raw.get('amendments') or raw.get('studyAmendments') or []
     amend_idx = 0
     for amend in amendments_raw:
         if not isinstance(amend, dict):
@@ -220,7 +223,7 @@ def _build_advanced_data(raw: Dict[str, Any]) -> AdvancedData:
         
         # Process reasons
         reason_ids = []
-        reasons_raw = amend.get('reasons') or []
+        reasons_raw = amend.get('reasons') or amend.get('reasonIds') or []
         for j, reason in enumerate(reasons_raw):
             reason_id = f"ar_{amend_idx}_{j+1}"
             reason_ids.append(reason_id)
@@ -231,7 +234,7 @@ def _build_advanced_data(raw: Dict[str, Any]) -> AdvancedData:
             ))
         
         amendments.append(StudyAmendment(
-            id=f"amend_{amend_idx}",
+            id=amend.get('id', f"amend_{amend_idx}"),
             number=amend_number,
             summary=amend.get('summary'),
             effective_date=amend.get('effectiveDate'),
@@ -240,28 +243,36 @@ def _build_advanced_data(raw: Dict[str, Any]) -> AdvancedData:
             reason_ids=reason_ids,
         ))
     
-    # Process geographic scope
+    # Process geographic scope - also check for top-level 'countries' key
     geo_data = raw.get('geographicScope') or {}
+    countries_raw = []
+    
     if isinstance(geo_data, dict) and geo_data:
-        country_ids = []
-        
         countries_raw = geo_data.get('countries') or []
-        for i, country in enumerate(countries_raw):
-            if isinstance(country, dict):
-                country_id = f"country_{i+1}"
-                country_ids.append(country_id)
-                countries.append(Country(
-                    id=country_id,
-                    name=country.get('name', f'Country {i+1}'),
-                    code=country.get('code'),
-                ))
-            elif isinstance(country, str):
-                country_id = f"country_{i+1}"
-                country_ids.append(country_id)
-                countries.append(Country(
-                    id=country_id,
-                    name=country,
-                ))
+    
+    # Also check for top-level countries array (USDM format)
+    if not countries_raw:
+        countries_raw = raw.get('countries') or []
+    
+    country_ids = []
+    for i, country in enumerate(countries_raw):
+        if isinstance(country, dict):
+            country_id = country.get('id', f"country_{i+1}")
+            country_ids.append(country_id)
+            countries.append(Country(
+                id=country_id,
+                name=country.get('name', f'Country {i+1}'),
+                code=country.get('code'),
+            ))
+        elif isinstance(country, str):
+            country_id = f"country_{i+1}"
+            country_ids.append(country_id)
+            countries.append(Country(
+                id=country_id,
+                name=country,
+            ))
+    
+    if isinstance(geo_data, dict) and geo_data:
         
         geo_scope = GeographicScope(
             id="geo_1",

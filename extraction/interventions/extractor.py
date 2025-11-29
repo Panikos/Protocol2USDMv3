@@ -191,7 +191,10 @@ def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
 
 
 def _parse_interventions_response(raw: Dict[str, Any]) -> Optional[InterventionsData]:
-    """Parse raw LLM response into InterventionsData object."""
+    """Parse raw LLM response into InterventionsData object.
+    
+    Handles both legacy format and new USDM-compliant format with ids.
+    """
     try:
         interventions = []
         products = []
@@ -199,29 +202,31 @@ def _parse_interventions_response(raw: Dict[str, Any]) -> Optional[Interventions
         substances = []
         devices = []
         
-        # Process interventions
-        for i, int_data in enumerate(raw.get('interventions', [])):
+        # Process interventions - accept both 'interventions' and 'studyInterventions' keys
+        int_list = raw.get('interventions', []) or raw.get('studyInterventions', [])
+        for i, int_data in enumerate(int_list):
             if not isinstance(int_data, dict):
                 continue
             
             role = _map_intervention_role(int_data.get('role', 'Investigational Product'))
             
             interventions.append(StudyIntervention(
-                id=f"int_{i+1}",
+                id=int_data.get('id', f"int_{i+1}"),
                 name=int_data.get('name', f'Intervention {i+1}'),
                 description=int_data.get('description'),
                 role=role,
             ))
         
-        # Process products
-        for i, prod_data in enumerate(raw.get('products', [])):
+        # Process products - accept both 'products' and 'administrableProducts' keys
+        prod_list = raw.get('products', []) or raw.get('administrableProducts', [])
+        for i, prod_data in enumerate(prod_list):
             if not isinstance(prod_data, dict):
                 continue
             
             dose_form = _map_dose_form(prod_data.get('doseForm', ''))
             
             products.append(AdministrableProduct(
-                id=f"prod_{i+1}",
+                id=prod_data.get('id', f"prod_{i+1}"),
                 name=prod_data.get('name', f'Product {i+1}'),
                 description=prod_data.get('description'),
                 dose_form=dose_form,
@@ -237,10 +242,10 @@ def _parse_interventions_response(raw: Dict[str, Any]) -> Optional[Interventions
             route = _map_route(admin_data.get('route', ''))
             
             administrations.append(Administration(
-                id=f"admin_{i+1}",
+                id=admin_data.get('id', f"admin_{i+1}"),
                 name=admin_data.get('name', f'Administration {i+1}'),
                 dose=admin_data.get('dose'),
-                dose_frequency=admin_data.get('frequency'),
+                dose_frequency=admin_data.get('frequency') or admin_data.get('doseFrequency'),
                 route=route,
                 duration=admin_data.get('duration'),
                 description=admin_data.get('description'),
@@ -252,18 +257,19 @@ def _parse_interventions_response(raw: Dict[str, Any]) -> Optional[Interventions
                 continue
             
             substances.append(Substance(
-                id=f"sub_{i+1}",
+                id=sub_data.get('id', f"sub_{i+1}"),
                 name=sub_data.get('name', f'Substance {i+1}'),
                 description=sub_data.get('description'),
             ))
         
-        # Process devices
-        for i, dev_data in enumerate(raw.get('devices', [])):
+        # Process devices - accept both 'devices' and 'medicalDevices' keys
+        dev_list = raw.get('devices', []) or raw.get('medicalDevices', [])
+        for i, dev_data in enumerate(dev_list):
             if not isinstance(dev_data, dict):
                 continue
             
             devices.append(MedicalDevice(
-                id=f"dev_{i+1}",
+                id=dev_data.get('id', f"dev_{i+1}"),
                 name=dev_data.get('name', f'Device {i+1}'),
                 description=dev_data.get('description'),
                 manufacturer=dev_data.get('manufacturer'),

@@ -207,16 +207,19 @@ def _parse_metadata_response(raw: Dict[str, Any]) -> Optional[StudyMetadata]:
         # Extract identifiers
         identifiers = []
         for i, id_data in enumerate(raw.get('identifiers', [])):
-            if isinstance(id_data, dict) and id_data.get('value'):
-                # Find scope organization
-                registry = id_data.get('registry', 'Unknown')
-                scope_id = _find_scope_org(registry, org_id_map, organizations)
-                
-                identifiers.append(StudyIdentifier(
-                    id=f"id_{i+1}",
-                    text=id_data['value'],
-                    scope_id=scope_id,
-                ))
+            if isinstance(id_data, dict):
+                # Accept both 'text' (USDM format) and 'value' (legacy format)
+                id_text = id_data.get('text') or id_data.get('value')
+                if id_text:
+                    # Find scope organization
+                    registry = id_data.get('registry', 'Unknown')
+                    scope_id = _find_scope_org(registry, org_id_map, organizations)
+                    
+                    identifiers.append(StudyIdentifier(
+                        id=id_data.get('id', f"id_{i+1}"),
+                        text=id_text,
+                        scope_id=scope_id,
+                    ))
         
         # Extract roles from organizations
         roles = []
@@ -231,16 +234,23 @@ def _parse_metadata_response(raw: Dict[str, Any]) -> Optional[StudyMetadata]:
                     organization_ids=[org_id],
                 ))
         
-        # Extract indication
+        # Extract indication - handle both singular 'indication' and plural 'indications'
         indications = []
-        indication_data = raw.get('indication')
-        if isinstance(indication_data, dict) and indication_data.get('name'):
-            indications.append(Indication(
-                id="indication_1",
-                name=indication_data['name'],
-                description=indication_data.get('description'),
-                is_rare_disease=indication_data.get('isRareDisease', False),
-            ))
+        indication_list = raw.get('indications', [])
+        if not indication_list:
+            # Try singular form
+            indication_data = raw.get('indication')
+            if indication_data:
+                indication_list = [indication_data]
+        
+        for i, ind_data in enumerate(indication_list):
+            if isinstance(ind_data, dict) and ind_data.get('name'):
+                indications.append(Indication(
+                    id=ind_data.get('id', f"indication_{i+1}"),
+                    name=ind_data['name'],
+                    description=ind_data.get('description'),
+                    is_rare_disease=ind_data.get('isRareDisease', False),
+                ))
         
         # Extract study phase
         study_phase = None

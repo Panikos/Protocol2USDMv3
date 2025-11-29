@@ -204,9 +204,106 @@ def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def _parse_objectives_response(raw: Dict[str, Any]) -> Optional[ObjectivesData]:
-    """Parse raw LLM response into ObjectivesData object."""
+def _parse_usdm_format(raw: Dict[str, Any]) -> Optional[ObjectivesData]:
+    """Parse new USDM-compliant format with flat objectives/endpoints lists."""
     try:
+        objectives = []
+        endpoints = []
+        estimands = []
+        
+        primary_count = 0
+        secondary_count = 0
+        exploratory_count = 0
+        
+        # Parse objectives with level codes
+        for obj_data in raw.get('objectives', []):
+            level_data = obj_data.get('level', {})
+            level_code = level_data.get('code', 'Primary') if isinstance(level_data, dict) else str(level_data)
+            
+            # Map level code to enum
+            if 'Primary' in level_code:
+                level = ObjectiveLevel.PRIMARY
+                primary_count += 1
+            elif 'Secondary' in level_code:
+                level = ObjectiveLevel.SECONDARY
+                secondary_count += 1
+            else:
+                level = ObjectiveLevel.EXPLORATORY
+                exploratory_count += 1
+            
+            objectives.append(Objective(
+                id=obj_data.get('id', f"obj_{len(objectives)+1}"),
+                name=obj_data.get('name', ''),
+                text=obj_data.get('text', ''),
+                level=level,
+                endpoint_ids=obj_data.get('endpointIds', []),
+            ))
+        
+        # Parse endpoints with level codes
+        for ep_data in raw.get('endpoints', []):
+            level_data = ep_data.get('level', {})
+            level_code = level_data.get('code', 'Primary') if isinstance(level_data, dict) else str(level_data)
+            
+            if 'Primary' in level_code:
+                level = EndpointLevel.PRIMARY
+            elif 'Secondary' in level_code:
+                level = EndpointLevel.SECONDARY
+            else:
+                level = EndpointLevel.EXPLORATORY
+            
+            endpoints.append(Endpoint(
+                id=ep_data.get('id', f"ep_{len(endpoints)+1}"),
+                name=ep_data.get('name', ''),
+                text=ep_data.get('text', ''),
+                level=level,
+                purpose=ep_data.get('purpose'),
+            ))
+        
+        # Parse estimands if present
+        for est_data in raw.get('estimands', []):
+            estimands.append(Estimand(
+                id=est_data.get('id', f"est_{len(estimands)+1}"),
+                name=est_data.get('name', ''),
+                objective_id=est_data.get('objectiveId'),
+                endpoint_id=est_data.get('endpointId'),
+                population=est_data.get('population'),
+                analysis_population=est_data.get('analysisPopulation'),
+                treatment=est_data.get('treatment'),
+                variable_of_interest=est_data.get('variableOfInterest'),
+            ))
+        
+        logger.info(f"Parsed USDM format: {primary_count} primary, {secondary_count} secondary, {exploratory_count} exploratory objectives")
+        
+        return ObjectivesData(
+            objectives=objectives,
+            endpoints=endpoints,
+            estimands=estimands,
+            primary_objectives_count=primary_count,
+            secondary_objectives_count=secondary_count,
+            exploratory_objectives_count=exploratory_count,
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to parse USDM format objectives: {e}")
+        return None
+
+
+def _parse_objectives_response(raw: Dict[str, Any]) -> Optional[ObjectivesData]:
+    """Parse raw LLM response into ObjectivesData object.
+    
+    Handles two formats:
+    1. New USDM-compliant format: flat 'objectives' and 'endpoints' lists with level codes
+    2. Legacy format: grouped by 'primaryObjectives', 'secondaryObjectives', etc.
+    """
+    try:
+        # Check for new USDM-compliant format (flat objectives list with level codes)
+        if raw.get('objectives') and isinstance(raw['objectives'], list) and len(raw['objectives']) > 0:
+            first_obj = raw['objectives'][0]
+            if isinstance(first_obj, dict) and 'level' in first_obj and isinstance(first_obj.get('level'), dict):
+                # New format - objectives already have proper structure
+                return _parse_usdm_format(raw)
+        
+        # Legacy format processing
         objectives = []
         endpoints = []
         estimands = []

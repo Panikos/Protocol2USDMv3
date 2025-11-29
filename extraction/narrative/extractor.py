@@ -205,19 +205,27 @@ def _build_narrative_data(
     sections_raw: List[Dict],
     document_raw: Optional[Dict],
 ) -> NarrativeData:
-    """Build NarrativeData from raw extraction results."""
+    """Build NarrativeData from raw extraction results.
     
-    # Process abbreviations
+    Handles both legacy format and new USDM-compliant format.
+    """
+    
+    # Process abbreviations - accept multiple key names
     abbreviations = []
     for i, abbr in enumerate(abbreviations_raw):
-        if isinstance(abbr, dict) and abbr.get('abbreviation') and abbr.get('expansion'):
-            abbreviations.append(Abbreviation(
-                id=f"abbr_{i+1}",
-                abbreviated_text=abbr['abbreviation'],
-                expanded_text=abbr['expansion'],
-            ))
+        if isinstance(abbr, dict):
+            # Accept multiple key variations
+            abbrev_text = abbr.get('abbreviation') or abbr.get('abbreviatedText') or abbr.get('text')
+            expand_text = abbr.get('expansion') or abbr.get('expandedText') or abbr.get('definition')
+            
+            if abbrev_text and expand_text:
+                abbreviations.append(Abbreviation(
+                    id=abbr.get('id', f"abbr_{i+1}"),
+                    abbreviated_text=abbrev_text,
+                    expanded_text=expand_text,
+                ))
     
-    # Process sections
+    # Process sections - accept multiple key names
     sections = []
     items = []
     section_ids = []
@@ -225,8 +233,9 @@ def _build_narrative_data(
     for i, sec in enumerate(sections_raw):
         if not isinstance(sec, dict):
             continue
-            
-        section_id = f"nc_{i+1}"
+        
+        # Use provided ID or generate one
+        section_id = sec.get('id', f"nc_{i+1}")
         section_ids.append(section_id)
         
         # Process subsections

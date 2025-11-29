@@ -210,37 +210,59 @@ def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
 
 
 def _parse_design_response(raw: Dict[str, Any]) -> Optional[StudyDesignData]:
-    """Parse raw LLM response into StudyDesignData object."""
+    """Parse raw LLM response into StudyDesignData object.
+    
+    Handles both legacy format and new USDM-compliant format with ids.
+    """
     try:
         arms = []
         cohorts = []
         cells = []
+        epochs = []
         
-        # Process arms
-        for i, arm_data in enumerate(raw.get('arms', [])):
+        # Process arms - accept both 'arms' and 'studyArms' keys
+        arm_list = raw.get('arms', []) or raw.get('studyArms', [])
+        for i, arm_data in enumerate(arm_list):
             if not isinstance(arm_data, dict):
                 continue
-                
-            arm_type = _map_arm_type(arm_data.get('type', 'Experimental Arm'))
+            
+            # Handle type as string or code object
+            arm_type_data = arm_data.get('type', 'Experimental Arm')
+            if isinstance(arm_type_data, dict):
+                arm_type_str = arm_type_data.get('code') or arm_type_data.get('decode', 'Experimental Arm')
+            else:
+                arm_type_str = str(arm_type_data)
+            arm_type = _map_arm_type(arm_type_str)
             
             arms.append(StudyArm(
-                id=f"arm_{i+1}",
+                id=arm_data.get('id', f"arm_{i+1}"),
                 name=arm_data.get('name', f'Arm {i+1}'),
                 description=arm_data.get('description'),
                 arm_type=arm_type,
             ))
         
-        # Process cohorts
-        for i, cohort_data in enumerate(raw.get('cohorts', [])):
+        # Process cohorts - accept both 'cohorts' and 'studyCohorts' keys
+        cohort_list = raw.get('cohorts', []) or raw.get('studyCohorts', [])
+        for i, cohort_data in enumerate(cohort_list):
             if not isinstance(cohort_data, dict):
                 continue
                 
             cohorts.append(StudyCohort(
-                id=f"cohort_{i+1}",
+                id=cohort_data.get('id', f"cohort_{i+1}"),
                 name=cohort_data.get('name', f'Cohort {i+1}'),
                 description=cohort_data.get('description'),
                 characteristic=cohort_data.get('characteristic'),
             ))
+        
+        # Process epochs - accept both 'epochs' and 'studyEpochs' keys
+        epoch_list = raw.get('epochs', []) or raw.get('studyEpochs', [])
+        for i, epoch_data in enumerate(epoch_list):
+            if isinstance(epoch_data, dict):
+                epochs.append({
+                    'id': epoch_data.get('id', f"epoch_{i+1}"),
+                    'name': epoch_data.get('name', f'Epoch {i+1}'),
+                    'description': epoch_data.get('description'),
+                })
         
         # Process study design
         study_design = None
@@ -296,17 +318,15 @@ def _parse_design_response(raw: Dict[str, Any]) -> Optional[StudyDesignData]:
             )
         
         # Generate cells from arms × epochs if epochs provided
-        epochs = raw.get('epochs', [])
         cell_counter = 1
         for arm in arms:
-            for i, epoch_data in enumerate(epochs):
-                if isinstance(epoch_data, dict):
-                    cells.append(StudyCell(
-                        id=f"cell_{cell_counter}",
-                        arm_id=arm.id,
-                        epoch_id=f"epoch_{i+1}",
-                    ))
-                    cell_counter += 1
+            for epoch in epochs:
+                cells.append(StudyCell(
+                    id=f"cell_{cell_counter}",
+                    arm_id=arm.id,
+                    epoch_id=epoch.get('id', f"epoch_{cell_counter}"),
+                ))
+                cell_counter += 1
         
         return StudyDesignData(
             study_design=study_design,

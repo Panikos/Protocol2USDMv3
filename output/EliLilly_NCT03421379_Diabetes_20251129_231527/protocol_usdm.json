@@ -1,0 +1,1742 @@
+{
+  "usdmVersion": "4.0",
+  "generatedAt": "2025-11-29T23:32:51.622842",
+  "generator": "Protocol2USDM v6.1",
+  "study": {
+    "id": "7c67c136-abd3-4342-94dd-b6c069a0785f",
+    "instanceType": "Study",
+    "versions": [
+      {
+        "id": "3f02de6e-cbd5-4745-8c11-2b118a63b6a2",
+        "instanceType": "StudyVersion",
+        "versionIdentifier": "1.0",
+        "studyDesigns": [
+          {
+            "id": "22eddba6-cd42-4ec0-bb50-fb70c079a8f8",
+            "name": "Study Design",
+            "rationale": "Protocol-defined study design for investigating efficacy and safety",
+            "instanceType": "InterventionalStudyDesign",
+            "blindingSchema": {
+              "id": "ba8678ef-5c5b-4d99-9ea3-2f43db19d04d",
+              "standardCode": {
+                "id": "8acddd65-d7da-4a5e-af6a-fbedae00f742",
+                "code": "Open Label",
+                "codeSystem": "http://www.cdisc.org",
+                "codeSystemVersion": "2024-09-27",
+                "decode": "Open Label",
+                "instanceType": "Code"
+              },
+              "instanceType": "AliasCode"
+            },
+            "randomizationType": {
+              "code": "Randomized"
+            },
+            "arms": [
+              {
+                "id": "194a046a-16bd-4ca6-9add-3a2073b3bed2",
+                "name": "Nasal Glucagon (LY900018) 3 mg",
+                "instanceType": "StudyArm",
+                "dataOriginDescription": "Collected",
+                "description": "Single 3-mg dose of LY900018 powder administered via nasal dosing device by study site personnel.",
+                "type": {
+                  "id": "C174266",
+                  "code": "C174266",
+                  "codeSystem": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+                  "codeSystemVersion": "25.11d",
+                  "decode": "Investigational Arm",
+                  "instanceType": "Code"
+                },
+                "dataOriginType": {
+                  "id": "1e77cdc5-294c-4eec-9dfe-f88db281b9d4",
+                  "code": "C70793",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2024-09-27",
+                  "decode": "Collected",
+                  "instanceType": "Code"
+                }
+              },
+              {
+                "id": "a7fa1db9-5e1f-499a-ac60-563e6905d534",
+                "name": "Intramuscular Glucagon (IMG) 1 mg",
+                "instanceType": "StudyArm",
+                "dataOriginDescription": "Collected",
+                "description": "Single 1-mg dose of GlucaGen administered via intramuscular injection by study site personnel.",
+                "type": {
+                  "id": "C49649",
+                  "code": "C49649",
+                  "codeSystem": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl",
+                  "codeSystemVersion": "25.11d",
+                  "decode": "Active Control",
+                  "instanceType": "Code"
+                },
+                "dataOriginType": {
+                  "id": "8599d042-132e-4344-a096-95fdca4c88e9",
+                  "code": "C70793",
+                  "codeSystem": "http://www.cdisc.org",
+                  "codeSystemVersion": "2024-09-27",
+                  "decode": "Collected",
+                  "instanceType": "Code"
+                }
+              }
+            ],
+            "studyCohorts": [
+              {
+                "id": "16462f60-7f8a-4074-aceb-f8bc52c37e09",
+                "name": "Patients with T1DM",
+                "instanceType": "StudyCohort",
+                "characteristic": "Japanese patients with Type 1 Diabetes Mellitus based on WHO diagnostic criteria."
+              },
+              {
+                "id": "33e0c157-7c8d-4b88-bbe4-47caaf290e3e",
+                "name": "Patients with T2DM",
+                "instanceType": "StudyCohort",
+                "characteristic": "Japanese patients with Type 2 Diabetes Mellitus based on WHO diagnostic criteria."
+              }
+            ],
+            "studyCells": [
+              {
+                "id": "1e375d26-642b-449a-a870-16dfcfd7ce3b",
+                "armId": "194a046a-16bd-4ca6-9add-3a2073b3bed2",
+                "epochId": "b51c156d-93a4-48cd-9dda-6a4f2ea9fc28",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "9f37506a-b8a7-4c4a-875f-7bbd7246459d",
+                "armId": "194a046a-16bd-4ca6-9add-3a2073b3bed2",
+                "epochId": "27a05ad4-f054-4675-92da-47f60a50a3f7",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "f7cbee3d-3df6-449e-bfda-54ac99650a7a",
+                "armId": "194a046a-16bd-4ca6-9add-3a2073b3bed2",
+                "epochId": "f9827b0e-bec9-4dbf-a183-f4ab5e28b9b9",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "c4bae506-072c-4235-a0b3-3065e0031de5",
+                "armId": "194a046a-16bd-4ca6-9add-3a2073b3bed2",
+                "epochId": "57d0bf49-49da-4f22-9622-3afdad32589f",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "5b267b34-5f91-40d1-bdfe-be39416f09dd",
+                "armId": "194a046a-16bd-4ca6-9add-3a2073b3bed2",
+                "epochId": "91c5885d-62cd-49fe-a836-26013f068fb1",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "fdad3948-755c-447f-ab76-99b3295f0463",
+                "armId": "a7fa1db9-5e1f-499a-ac60-563e6905d534",
+                "epochId": "b51c156d-93a4-48cd-9dda-6a4f2ea9fc28",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "ef96647e-42aa-4b02-9821-64bfc58d7b0e",
+                "armId": "a7fa1db9-5e1f-499a-ac60-563e6905d534",
+                "epochId": "27a05ad4-f054-4675-92da-47f60a50a3f7",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "976a6ff0-8b8a-4764-b630-2336e27f18e2",
+                "armId": "a7fa1db9-5e1f-499a-ac60-563e6905d534",
+                "epochId": "f9827b0e-bec9-4dbf-a183-f4ab5e28b9b9",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "64561e3b-7be2-42b4-83e7-ea85a1c4c878",
+                "armId": "a7fa1db9-5e1f-499a-ac60-563e6905d534",
+                "epochId": "57d0bf49-49da-4f22-9622-3afdad32589f",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              },
+              {
+                "id": "f73fde4b-f55b-49f7-8540-8f008ef9eea1",
+                "armId": "a7fa1db9-5e1f-499a-ac60-563e6905d534",
+                "epochId": "91c5885d-62cd-49fe-a836-26013f068fb1",
+                "elementIds": [],
+                "instanceType": "StudyCell"
+              }
+            ],
+            "eligibilityCriteria": [],
+            "population": {
+              "id": "ea89d51b-c261-485c-afd6-36691dddfcb2",
+              "name": "Study Population",
+              "includesHealthySubjects": false,
+              "criterionIds": [],
+              "instanceType": "StudyDesignPopulation"
+            },
+            "objectives": [],
+            "endpoints": [],
+            "studyInterventions": [
+              {
+                "id": "ca8a133f-acf3-469c-a551-2f0ea85c08c0",
+                "name": "LY900018",
+                "role": {
+                  "id": "cd8f1330-4e79-45c9-a4ba-bf0ea6ff9013",
+                  "code": "Investigational Product",
+                  "codeSystem": "USDM",
+                  "codeSystemVersion": "2024-09-27",
+                  "decode": "Investigational Product",
+                  "instanceType": "Code"
+                },
+                "instanceType": "StudyIntervention",
+                "description": "Nasal glucagon powder formulation",
+                "productIds": [
+                  "e71cf424-38d0-43d2-938f-94ddf353844e"
+                ],
+                "administrationIds": [
+                  "fe006d4e-478f-4b04-9e51-e6048d78c315"
+                ]
+              },
+              {
+                "id": "875e54af-8bdf-4149-bccb-52a03e25bacd",
+                "name": "GlucaGen",
+                "role": {
+                  "id": "564be2ec-8814-41e0-91c2-8aabc003d40e",
+                  "code": "Comparator",
+                  "codeSystem": "USDM",
+                  "codeSystemVersion": "2024-09-27",
+                  "decode": "Comparator",
+                  "instanceType": "Code"
+                },
+                "instanceType": "StudyIntervention",
+                "description": "Intramuscular glucagon",
+                "productIds": [
+                  "778fd834-0925-4241-b572-b5d535696cc4"
+                ],
+                "administrationIds": [
+                  "c07182bc-38d2-49bf-a871-96482389d91b"
+                ]
+              },
+              {
+                "id": "8d24de8f-9074-40f7-b7b8-4d1d3479223e",
+                "name": "Human regular insulin",
+                "role": {
+                  "id": "47884d3b-bbd7-4c8b-9c4a-52c0c1013dc6",
+                  "code": "Background Therapy",
+                  "codeSystem": "USDM",
+                  "codeSystemVersion": "2024-09-27",
+                  "decode": "Background Therapy",
+                  "instanceType": "Code"
+                },
+                "instanceType": "StudyIntervention",
+                "description": "Used to induce hypoglycemia",
+                "productIds": [
+                  "41ba5e13-2c0e-4cd7-afaa-98b0c4e07797"
+                ],
+                "administrationIds": [
+                  "04abec4a-4d9a-4fa9-9551-b9950696ec31"
+                ]
+              },
+              {
+                "id": "f84249cf-819f-4b9f-9c04-0fc5c79af038",
+                "name": "IV Glucose",
+                "role": {
+                  "id": "adc0b353-cf5e-4a84-95c5-782d2c310dca",
+                  "code": "Rescue Medication",
+                  "codeSystem": "USDM",
+                  "codeSystemVersion": "2024-09-27",
+                  "decode": "Rescue Medication",
+                  "instanceType": "Code"
+                },
+                "instanceType": "StudyIntervention",
+                "description": "Administered for insufficient response to glucagon or severe hypoglycemia"
+              }
+            ],
+            "model": {
+              "id": "507045f6-a5b3-4902-b0f9-0ff83e6d6b94",
+              "code": "C82639",
+              "codeSystem": "http://www.cdisc.org",
+              "codeSystemVersion": "2024-09-27",
+              "decode": "Parallel Study",
+              "instanceType": "Code"
+            }
+          }
+        ],
+        "titles": [
+          {
+            "id": "9d230c89-1df1-42bd-aeed-691f3b3748d5",
+            "text": "A Phase 3 Study of Nasal Glucagon (LY900018) Compared to Intramuscular Glucagon for Treatment of Insulin-induced Hypoglycemia in Japanese Patients with Diabetes Mellitus",
+            "type": {
+              "id": "7495b363-e10c-4cf2-8c5f-ee42d0832be7",
+              "code": "Official Study Title",
+              "codeSystem": "USDM",
+              "codeSystemVersion": "2024-09-27",
+              "decode": "Official Study Title",
+              "instanceType": "Code"
+            },
+            "instanceType": "StudyTitle"
+          }
+        ],
+        "studyIdentifiers": [],
+        "studyPhase": {
+          "id": "ca02cca7-6a77-4992-96f9-b90664fb50da",
+          "code": "Phase3",
+          "codeSystem": "USDM",
+          "codeSystemVersion": "2024-09-27",
+          "decode": "Phase3",
+          "instanceType": "Code"
+        },
+        "rationale": "Protocol version"
+      }
+    ],
+    "organizations": [
+      {
+        "id": "71c1e517-3a11-4b4f-8326-eff0888cd5e1",
+        "name": "Eli Lilly and Company",
+        "type": {
+          "id": "c6fb7aaa-dab3-4bed-b62a-602ef47b04f1",
+          "code": "Pharmaceutical Company",
+          "codeSystem": "USDM",
+          "codeSystemVersion": "2024-09-27",
+          "decode": "Pharmaceutical Company",
+          "instanceType": "Code"
+        },
+        "instanceType": "Organization"
+      }
+    ],
+    "indications": [
+      {
+        "id": "3495744a-ad09-4bb5-81d5-9be103c24838",
+        "name": "Insulin-induced Hypoglycemia in Japanese Patients with Diabetes Mellitus",
+        "isRareDisease": false,
+        "instanceType": "Indication",
+        "description": "Treatment of Insulin-induced Hypoglycemia in Japanese Patients with Diabetes Mellitus"
+      }
+    ],
+    "name": "A Phase 3 Study of Nasal Glucagon (LY900018) Compared to Intramuscular Glucagon for Treatment of Insulin-induced Hypoglycemia in Japanese Patients with Diabetes Mellitus"
+  },
+  "administrableProducts": [
+    {
+      "id": "e71cf424-38d0-43d2-938f-94ddf353844e",
+      "name": "LY900018",
+      "instanceType": "AdministrableProduct",
+      "doseForm": {
+        "id": "55503aac-d438-4661-9409-b352f33a1bb6",
+        "code": "Powder",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Powder",
+        "instanceType": "Code"
+      },
+      "strength": "3 mg",
+      "substanceIds": [
+        "b33a69fa-35e2-485e-b578-dc0a11c644ad"
+      ],
+      "manufacturer": "Eli Lilly and Company"
+    },
+    {
+      "id": "778fd834-0925-4241-b572-b5d535696cc4",
+      "name": "GlucaGen",
+      "instanceType": "AdministrableProduct",
+      "doseForm": {
+        "id": "9f141203-9373-4e6b-b3d6-8e1eeb05616e",
+        "code": "Injection",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Injection",
+        "instanceType": "Code"
+      },
+      "strength": "1 mg",
+      "substanceIds": [
+        "4e4df143-dae9-4b06-87a3-f855d278816d"
+      ],
+      "manufacturer": "Novo Nordisk A/S"
+    },
+    {
+      "id": "41ba5e13-2c0e-4cd7-afaa-98b0c4e07797",
+      "name": "Human regular insulin",
+      "instanceType": "AdministrableProduct",
+      "doseForm": {
+        "id": "4f023a4c-fdaa-4d53-848c-570206a489d0",
+        "code": "Solution",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Solution",
+        "instanceType": "Code"
+      },
+      "strength": "100 U/mL"
+    }
+  ],
+  "administrations": [
+    {
+      "id": "fe006d4e-478f-4b04-9e51-e6048d78c315",
+      "name": "LY900018 3 mg Nasal",
+      "instanceType": "Administration",
+      "dose": "3 mg",
+      "doseFrequency": "Single dose",
+      "route": {
+        "id": "c42043cd-ec35-4634-9104-d90b3e5f5332",
+        "code": "Intranasal",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Intranasal",
+        "instanceType": "Code"
+      },
+      "duration": "Once per treatment period"
+    },
+    {
+      "id": "c07182bc-38d2-49bf-a871-96482389d91b",
+      "name": "GlucaGen 1 mg IM",
+      "instanceType": "Administration",
+      "dose": "1 mg",
+      "doseFrequency": "Single dose",
+      "route": {
+        "id": "f7b18500-a05c-4ced-9fc6-78e2071a526d",
+        "code": "Intramuscular",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Intramuscular",
+        "instanceType": "Code"
+      },
+      "duration": "Once per treatment period"
+    },
+    {
+      "id": "04abec4a-4d9a-4fa9-9551-b9950696ec31",
+      "name": "Insulin Induction",
+      "instanceType": "Administration",
+      "dose": "2 mU/kg/min to 4 mU/kg/min",
+      "doseFrequency": "Continuous infusion",
+      "route": {
+        "id": "3f1efe1a-cb8b-4f24-b648-c8ed03837ee4",
+        "code": "Intravenous",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Intravenous",
+        "instanceType": "Code"
+      },
+      "duration": "Until plasma glucose <60 mg/dL"
+    }
+  ],
+  "substances": [
+    {
+      "id": "b33a69fa-35e2-485e-b578-dc0a11c644ad",
+      "name": "Glucagon",
+      "instanceType": "Substance",
+      "description": "Synthetic single-chain, 29-amino-acid polypeptide identical to human glucagon"
+    },
+    {
+      "id": "4e4df143-dae9-4b06-87a3-f855d278816d",
+      "name": "Human regular insulin",
+      "instanceType": "Substance",
+      "description": "Insulin used for hypoglycemia induction"
+    }
+  ],
+  "narrativeContents": [
+    {
+      "id": "770aa86a-5408-4a6f-aa3a-540b4c9c4b8a",
+      "name": "Protocol Synopsis",
+      "order": 0,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "1",
+      "sectionTitle": "Protocol Synopsis",
+      "sectionType": {
+        "id": "ab0ae105-9ef0-4ab5-b146-8b32d28570aa",
+        "code": "Synopsis",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Synopsis",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "b61a3ea2-222c-4a37-a559-0a37584181d3",
+      "name": "Schedule of Activities",
+      "order": 1,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "2",
+      "sectionTitle": "Schedule of Activities",
+      "sectionType": {
+        "id": "eb1d0274-8752-4b5b-87f4-2374aff13626",
+        "code": "Study Procedures",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Study Procedures",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "39e77718-5557-4109-aa01-47d8f4892f33",
+      "name": "Introduction",
+      "order": 2,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "3",
+      "sectionTitle": "Introduction",
+      "sectionType": {
+        "id": "06f90982-b82e-4fd7-8af8-a5c015008162",
+        "code": "Introduction",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Introduction",
+        "instanceType": "Code"
+      },
+      "childIds": [
+        "0bd5fc27-6634-4802-b450-5713117b8495",
+        "c76be2d1-0ca8-4295-9ac5-f9f34db994ca",
+        "3fe326be-de79-4416-b3da-cc588e9e56a0"
+      ]
+    },
+    {
+      "id": "7de0fe98-f4d0-4f6a-86c2-ce6b45640b74",
+      "name": "Objectives and Endpoints",
+      "order": 3,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "4",
+      "sectionTitle": "Objectives and Endpoints",
+      "sectionType": {
+        "id": "98b54984-c04c-468c-9c3a-e4c556e106cc",
+        "code": "Objectives",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Objectives",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "820a4c15-ad97-49ad-8dbe-65faefb94c2c",
+      "name": "Study Design",
+      "order": 4,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "5",
+      "sectionTitle": "Study Design",
+      "sectionType": {
+        "id": "93840a67-df1f-4bc8-bde9-c4efcbde459e",
+        "code": "Study Design",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Study Design",
+        "instanceType": "Code"
+      },
+      "childIds": [
+        "31d21f73-1c9d-431b-a767-9d1c9de27efa",
+        "cf4a917b-0c7d-4868-ae24-898d96851eb2",
+        "dad8061e-ecf2-4b07-a8b6-a122c712dd5c",
+        "b30f244f-b440-4c13-8eae-f4978f532595",
+        "b4fc8368-110b-4725-a5b6-e3ba5288ac81"
+      ]
+    },
+    {
+      "id": "9d650957-2dee-4901-9c33-c640c91096cd",
+      "name": "Study Population",
+      "order": 5,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "6",
+      "sectionTitle": "Study Population",
+      "sectionType": {
+        "id": "6de822f1-1b8b-47af-91d9-e27befd3ef9b",
+        "code": "Study Population",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Study Population",
+        "instanceType": "Code"
+      },
+      "childIds": [
+        "ff1789f7-e315-44cb-b4dd-51d2a21ff870",
+        "0055fbd8-57e9-4e60-af52-a07d68fa77ae",
+        "f8be4412-9ef0-48aa-b6c3-a3bf4c2ab6c4",
+        "3a37c824-acd5-43ce-b5d2-9b7e1f43f29f"
+      ]
+    },
+    {
+      "id": "f52d5655-c825-4c8e-a77e-c1774b11e772",
+      "name": "Treatment",
+      "order": 6,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "7",
+      "sectionTitle": "Treatment",
+      "sectionType": {
+        "id": "4cf8b858-fd44-4436-9124-ac745f70006e",
+        "code": "Treatment",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Treatment",
+        "instanceType": "Code"
+      },
+      "childIds": [
+        "002420ac-3887-483b-a29a-4c7fa0e1cc6a",
+        "37c40d1f-4691-4661-aa5f-c7648941f6f3"
+      ]
+    },
+    {
+      "id": "2cac7746-2e57-40f3-8347-991a208de7ae",
+      "name": "Abbreviations and Definitions",
+      "order": 7,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 1",
+      "sectionTitle": "Abbreviations and Definitions",
+      "sectionType": {
+        "id": "4b65e675-b527-4c42-a9d0-3179adacb540",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "b1f53171-e673-4b80-bee4-70d72df136e1",
+      "name": "Clinical Laboratory Tests",
+      "order": 8,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 2",
+      "sectionTitle": "Clinical Laboratory Tests",
+      "sectionType": {
+        "id": "91a1ac2c-9af9-4a14-bbae-ec091ade91aa",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "ad91c846-2b4b-4a10-9405-d66cd0461744",
+      "name": "Study Governance, Regulatory and Ethical Considerations",
+      "order": 9,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 3",
+      "sectionTitle": "Study Governance, Regulatory and Ethical Considerations",
+      "sectionType": {
+        "id": "aae11d30-7d3b-49bf-a878-b322c01484c3",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "31967869-90a4-4e61-bfdb-b29b7a51e8bf",
+      "name": "Hepatic Monitoring Tests for Treatment-emergent Abnormality",
+      "order": 10,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 4",
+      "sectionTitle": "Hepatic Monitoring Tests for Treatment-emergent Abnormality",
+      "sectionType": {
+        "id": "ffe26078-aa73-4f25-abe4-50df27d85225",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "21c54af5-b3ac-470c-b906-ae520089e267",
+      "name": "Blood Sampling Summary",
+      "order": 11,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 5",
+      "sectionTitle": "Blood Sampling Summary",
+      "sectionType": {
+        "id": "7aa7a2e3-2874-4bfe-bed6-ce548083f5cc",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "49fbba7e-8d65-4f23-b4b8-ccf22edd3a29",
+      "name": "Nasal and Non-nasal Score Questionnaire",
+      "order": 12,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 6",
+      "sectionTitle": "Nasal and Non-nasal Score Questionnaire",
+      "sectionType": {
+        "id": "df6d63c0-fef4-4eb8-aaef-e16b25e84184",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "6ada3179-8eb0-4a60-8b6c-c3361b1a2676",
+      "name": "Edinburgh Hypoglycemia Scale",
+      "order": 13,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 7",
+      "sectionTitle": "Edinburgh Hypoglycemia Scale",
+      "sectionType": {
+        "id": "cb3a762b-4bb8-42a5-b6c4-ecca08a94c9c",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "57dff650-a598-4079-86ba-2ce11977b1b0",
+      "name": "Clarke Hypoglycemia Awareness Survey",
+      "order": 14,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 8",
+      "sectionTitle": "Clarke Hypoglycemia Awareness Survey",
+      "sectionType": {
+        "id": "e11cc258-d7c2-41c0-bc18-04dc2f778e97",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "c0b4678d-0371-414d-9a87-c2979a3d99e1",
+      "name": "Protocol Amendment I8R-JE-IGBJ(a) Summary",
+      "order": 15,
+      "instanceType": "NarrativeContent",
+      "sectionNumber": "Appendix 9",
+      "sectionTitle": "Protocol Amendment I8R-JE-IGBJ(a) Summary",
+      "sectionType": {
+        "id": "e093658b-1e96-4f47-8817-162cbf440de4",
+        "code": "Appendix",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Appendix",
+        "instanceType": "Code"
+      }
+    }
+  ],
+  "abbreviations": [
+    {
+      "id": "a6e06e9a-1c40-4e8b-8211-9c5397ba154c",
+      "abbreviatedText": "IM",
+      "expandedText": "intramuscular",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "2a6120dc-ea6f-4e66-b3c2-3d38310818cc",
+      "abbreviatedText": "IMG",
+      "expandedText": "intramuscular glucagon",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "94afccf6-3d62-45e7-aa7b-9970baed7ec9",
+      "abbreviatedText": "T1DM",
+      "expandedText": "type 1 diabetes mellitus",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "21322015-fc8a-4ff7-a4fd-969312b940da",
+      "abbreviatedText": "T2DM",
+      "expandedText": "type 2 diabetes mellitus",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "1a34aa01-d1dc-49d8-b49c-cf7a1857f530",
+      "abbreviatedText": "PG",
+      "expandedText": "plasma glucose",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "abb9fcad-8e76-43f0-a408-c7b8ec2c84e6",
+      "abbreviatedText": "AE",
+      "expandedText": "adverse event",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "5187d244-912a-4946-9b77-54081ea1fb76",
+      "abbreviatedText": "AUC",
+      "expandedText": "area under the concentration versus time curve",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "d839d091-f421-49a3-b533-60962d7a733c",
+      "abbreviatedText": "BGmax",
+      "expandedText": "maximal plasma glucose concentration",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "ebc61527-8583-4197-ac5f-bea81e161ac1",
+      "abbreviatedText": "Cmax",
+      "expandedText": "maximal concentration",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "305e06ca-523a-4ec0-ac05-5679f0bc94ab",
+      "abbreviatedText": "PD",
+      "expandedText": "pharmacodynamics",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "b946a9d8-2368-47cf-b14c-5cf7c72d92f7",
+      "abbreviatedText": "PK",
+      "expandedText": "pharmacokinetics",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "d373eaf8-5f07-4bb2-9732-8da96ad56989",
+      "abbreviatedText": "SAE",
+      "expandedText": "serious adverse event",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "c31849c3-3e98-487e-bb31-9f42eac343f6",
+      "abbreviatedText": "TEAE",
+      "expandedText": "treatment-emergent adverse event",
+      "instanceType": "Abbreviation"
+    },
+    {
+      "id": "6ada9a5f-5568-491a-94a8-1e984fa50054",
+      "abbreviatedText": "Tmax",
+      "expandedText": "time to maximal concentration",
+      "instanceType": "Abbreviation"
+    }
+  ],
+  "studyDefinitionDocument": {
+    "id": "e13b14a7-118e-4fb3-a557-bdfdac07d7a6",
+    "name": "A Phase 3 Study of Nasal Glucagon (LY900018) Compared to Intramuscular Glucagon for Treatment of Insulin-induced Hypoglycemia in Japanese Patients with Diabetes Mellitus",
+    "documentType": "Protocol",
+    "language": "en",
+    "instanceType": "StudyDefinitionDocument",
+    "version": "I8R-JE-IGBJ(a)",
+    "contentIds": [
+      "770aa86a-5408-4a6f-aa3a-540b4c9c4b8a",
+      "b61a3ea2-222c-4a37-a559-0a37584181d3",
+      "39e77718-5557-4109-aa01-47d8f4892f33",
+      "7de0fe98-f4d0-4f6a-86c2-ce6b45640b74",
+      "820a4c15-ad97-49ad-8dbe-65faefb94c2c",
+      "9d650957-2dee-4901-9c33-c640c91096cd",
+      "f52d5655-c825-4c8e-a77e-c1774b11e772",
+      "2cac7746-2e57-40f3-8347-991a208de7ae",
+      "b1f53171-e673-4b80-bee4-70d72df136e1",
+      "ad91c846-2b4b-4a10-9405-d66cd0461744",
+      "31967869-90a4-4e61-bfdb-b29b7a51e8bf",
+      "21c54af5-b3ac-470c-b906-ae520089e267",
+      "49fbba7e-8d65-4f23-b4b8-ccf22edd3a29",
+      "6ada3179-8eb0-4a60-8b6c-c3361b1a2676",
+      "57dff650-a598-4079-86ba-2ce11977b1b0",
+      "c0b4678d-0371-414d-9a87-c2979a3d99e1"
+    ]
+  },
+  "studyAmendments": [
+    {
+      "id": "22b4963b-273d-449f-ac5d-53ecae9fb2a7",
+      "number": "(a)",
+      "scope": {
+        "id": "278cbe55-f07c-4a9e-9d20-ba0ab687344d",
+        "code": "Global",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Global",
+        "instanceType": "Code"
+      },
+      "instanceType": "StudyAmendment",
+      "summary": "The specific rationale text for this amendment is located in Appendix 9 (Page 71) of the protocol, which is not included in the provided document excerpts. The Table of Contents lists this section as 'Protocol Amendment I8R-JE-IGBJ(a) Summary'.",
+      "effectiveDate": "2017-12-05",
+      "previousVersion": "Original Protocol (26 October 2017)",
+      "newVersion": "(a)"
+    }
+  ],
+  "geographicScope": {
+    "id": "c95fbc7c-d271-49f7-8694-47fe56e2d25e",
+    "name": "Study Geographic Scope",
+    "scopeType": "National",
+    "instanceType": "GeographicScope",
+    "countryIds": [
+      "af4ab7d0-8a7a-4719-80b0-c76db1be351a"
+    ]
+  },
+  "countries": [
+    {
+      "id": "af4ab7d0-8a7a-4719-80b0-c76db1be351a",
+      "name": "Japan",
+      "instanceType": "Country",
+      "code": "JP"
+    }
+  ],
+  "procedures": [
+    {
+      "id": "3ae59966-592f-403a-9f39-29b25c10ac59",
+      "name": "Insulin-induced Hypoglycemia",
+      "instanceType": "Procedure",
+      "label": "Hypoglycemia Induction",
+      "description": "Procedure to induce hypoglycemia using IV insulin infusion targeting nadir glucose around 50 mg/dL",
+      "procedureType": {
+        "id": "fe90613a-977a-4155-a92d-5a7739e19b6c",
+        "code": "Therapeutic",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Therapeutic",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "71a4477f-006d-4fbe-954e-c17aaa85cef6",
+      "name": "Nasal Administration",
+      "instanceType": "Procedure",
+      "label": "Nasal Dosing",
+      "description": "Administration of LY900018 via nasal dosing device",
+      "procedureType": {
+        "id": "55a8d28a-35fb-4df7-ad2e-6d9acf0de5b2",
+        "code": "Therapeutic",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Therapeutic",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "16581d8e-3b42-4b6d-8c88-63c496f15926",
+      "name": "Intramuscular Injection",
+      "instanceType": "Procedure",
+      "label": "IM Injection",
+      "description": "Administration of intramuscular glucagon (IMG) requiring reconstitution",
+      "procedureType": {
+        "id": "b6543cf2-b60c-4234-93ce-90e12c5ac8c8",
+        "code": "Therapeutic",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Therapeutic",
+        "instanceType": "Code"
+      },
+      "code": {
+        "id": "37154a54-5139-41d7-b820-f2ea9d5f1d32",
+        "code": "96372",
+        "codeSystem": "CPT",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Therapeutic, prophylactic, or diagnostic injection (specify substance or drug); subcutaneous or intramuscular",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "660b6694-785f-49a6-a250-3970b363633d",
+      "name": "Venipuncture",
+      "instanceType": "Procedure",
+      "label": "Blood Sampling",
+      "description": "Collection of blood samples for PK, PD, and safety laboratory tests",
+      "procedureType": {
+        "id": "c12ed726-29c8-4aa1-a93c-4db356e6ef7b",
+        "code": "Sample Collection",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Sample Collection",
+        "instanceType": "Code"
+      },
+      "code": {
+        "id": "29a2ab86-9112-4347-ba80-cadfe7c4ac42",
+        "code": "36415",
+        "codeSystem": "CPT",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Collection of venous blood by venipuncture",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "aa31fad0-a1be-457b-8dfd-a18e09838d13",
+      "name": "Bedside PG Monitoring",
+      "instanceType": "Procedure",
+      "label": "Glucose Monitoring",
+      "description": "Serial blood sampling to monitor bedside plasma glucose levels",
+      "procedureType": {
+        "id": "d2f76fea-307a-446a-a5c5-c3087576c472",
+        "code": "Monitoring",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Monitoring",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "dc0bd7f4-6ea3-4519-a953-7e5fae5f705d",
+      "name": "Vital Signs Assessment",
+      "instanceType": "Procedure",
+      "label": "Vital Signs",
+      "description": "Measurement of supine blood pressure, pulse rate, and body temperature",
+      "procedureType": {
+        "id": "3da25450-ae39-49bf-bb37-6c7761f6694a",
+        "code": "Monitoring",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Monitoring",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "c5884c52-57d2-4f8d-9f50-b1d7fcf5027b",
+      "name": "Electrocardiogram",
+      "instanceType": "Procedure",
+      "label": "12-lead ECG",
+      "description": "Single (Local) and Triplicate (Central) 12-lead ECG recordings",
+      "procedureType": {
+        "id": "8329e3e5-a55a-4654-b1d9-3fc4137468ba",
+        "code": "Diagnostic",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Diagnostic",
+        "instanceType": "Code"
+      },
+      "code": {
+        "id": "f28e80de-6075-4065-8197-65ee2f37c4ea",
+        "code": "93000",
+        "codeSystem": "CPT",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Electrocardiogram, routine ECG with at least 12 leads; with interpretation and report",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "2b73a432-4a55-4fe3-a267-a450d7ba123a",
+      "name": "Nasal Inspection",
+      "instanceType": "Procedure",
+      "label": "Nasal Exam",
+      "description": "Inspection of the nasal cavity for both IMG and LY900018 groups",
+      "procedureType": {
+        "id": "0d8bd275-e520-4b54-b42b-534723f1cbc7",
+        "code": "Assessment",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Assessment",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "f9f78aa3-15ed-4c89-be89-abe29512dc10",
+      "name": "Injection-Site Assessment",
+      "instanceType": "Procedure",
+      "label": "Injection Site Exam",
+      "description": "Assessment of the injection site for IMG group only",
+      "procedureType": {
+        "id": "320e9d9b-436a-4811-be4b-530808d8dc44",
+        "code": "Assessment",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Assessment",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "ececefaf-6f83-4eac-b69a-c9db1fef4167",
+      "name": "Edinburgh Hypoglycemia Scale",
+      "instanceType": "Procedure",
+      "label": "Hypoglycemia Questionnaire",
+      "description": "Assessment of hypoglycemia symptoms",
+      "procedureType": {
+        "id": "f1bdfe51-1429-4ce4-91a0-a7f8b350fe0c",
+        "code": "Assessment",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Assessment",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "c9613615-63b7-43cf-965c-4194aed039bc",
+      "name": "Urine Pregnancy Test",
+      "instanceType": "Procedure",
+      "label": "Pregnancy Test",
+      "description": "Urine pregnancy test for female patients of childbearing potential",
+      "procedureType": {
+        "id": "3b50a5bf-a885-427d-930d-21d59d556960",
+        "code": "Diagnostic",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Diagnostic",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "b31c3b0b-2e25-4737-8a0e-c95e3cbc0928",
+      "name": "Urine Drug Screen",
+      "instanceType": "Procedure",
+      "label": "Drug Screen",
+      "description": "Screening for drugs of abuse in urine",
+      "procedureType": {
+        "id": "d8e40a0a-f6c4-4e1d-a470-ba5d9720f6e4",
+        "code": "Diagnostic",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Diagnostic",
+        "instanceType": "Code"
+      }
+    }
+  ],
+  "medicalDevices": [
+    {
+      "id": "f88df2b7-a011-48da-aff8-32f46999a93c",
+      "name": "Nasal Dosing Device",
+      "instanceType": "MedicalDevice",
+      "label": "Nasal Device",
+      "description": "User-friendly, single-use, nasal dosing device for powder formulation",
+      "deviceType": {
+        "id": "4a1ef9b8-fb44-45bf-b4cf-e6efca2bc445",
+        "code": "Drug Delivery Device",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Drug Delivery Device",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "d4558c95-2143-48f0-9715-1e1c27484262",
+      "name": "Continuous Subcutaneous Insulin Infusion Pump",
+      "instanceType": "MedicalDevice",
+      "label": "CSII",
+      "description": "Insulin pump used by patients for daily therapy",
+      "deviceType": {
+        "id": "1239b568-5e7d-4f5c-9857-d03481e18ca0",
+        "code": "Drug Delivery Device",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Drug Delivery Device",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "90d3297b-e09d-48ae-b340-b81c9f99e6e5",
+      "name": "Glucose Monitor",
+      "instanceType": "MedicalDevice",
+      "label": "PG Monitor",
+      "description": "Device used for bedside plasma glucose monitoring",
+      "deviceType": {
+        "id": "fbd9fc86-130f-437f-ae1c-99a32c44d802",
+        "code": "Monitoring Device",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Monitoring Device",
+        "instanceType": "Code"
+      }
+    },
+    {
+      "id": "51df8b62-184d-4d26-886c-ddc542f66bd7",
+      "name": "Electrocardiograph",
+      "instanceType": "MedicalDevice",
+      "label": "ECG Machine",
+      "description": "Device for recording 12-lead ECGs",
+      "deviceType": {
+        "id": "38d5b4e2-3749-4ea9-8b2c-ffd95d2b6023",
+        "code": "Diagnostic Device",
+        "codeSystem": "USDM",
+        "codeSystemVersion": "2024-09-27",
+        "decode": "Diagnostic Device",
+        "instanceType": "Code"
+      }
+    }
+  ],
+  "ingredients": [
+    {
+      "id": "0747fd69-c3dd-4558-a5dd-ecc8109faded",
+      "name": "Glucagon",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "1589e41c-18d7-4596-ba14-736aa3086854"
+    },
+    {
+      "id": "b9af27ba-ac72-49a8-9ba7-9bf84a5627b5",
+      "name": "Insulin",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "da40ede2-0564-44d7-9a4b-7b097c9b4c60"
+    },
+    {
+      "id": "0311f211-c71f-4338-baf2-8305380c78b0",
+      "name": "Insulin Glargine",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "123b33ce-fa0c-4dd9-9428-2eb97a63374e"
+    },
+    {
+      "id": "8c00f9a2-be18-47e3-b765-b986ea2346dd",
+      "name": "Insulin Degludec",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "435cf93e-cbd5-4443-b4cb-afec196c07dc"
+    },
+    {
+      "id": "0d164bd3-dc1e-459e-a105-13d8e21792f4",
+      "name": "Insulin Lispro",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "a5d562f8-7956-4018-8bd6-bc6d084812dc"
+    },
+    {
+      "id": "9405ef33-8a7c-47b7-97b6-d00ea7e4e539",
+      "name": "Insulin Aspart",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "98c31f8b-9024-4cd1-b434-2a08cdd89916"
+    },
+    {
+      "id": "c3d9cdea-238e-4256-b739-57f4d6eebf58",
+      "name": "Insulin Glulisine",
+      "role": "Active",
+      "instanceType": "Ingredient",
+      "substanceId": "34a1c006-e590-43b4-9aff-66e96b1ac054"
+    }
+  ],
+  "strengths": [
+    {
+      "id": "90105318-40d8-4a8d-b19c-0e78370daa48",
+      "instanceType": "Strength",
+      "value": 3,
+      "unit": "mg",
+      "numerator": {
+        "value": 3,
+        "unit": "mg"
+      },
+      "denominator": {
+        "value": 1,
+        "unit": "dose"
+      }
+    },
+    {
+      "id": "d57b957e-20bf-4370-aec2-622363e01f5e",
+      "instanceType": "Strength",
+      "value": 1,
+      "unit": "mg",
+      "numerator": {
+        "value": 1,
+        "unit": "mg"
+      },
+      "denominator": {
+        "value": 1,
+        "unit": "dose"
+      }
+    }
+  ],
+  "timings": [
+    {
+      "id": "aa12500e-4856-468c-944f-5d3b5487664c",
+      "name": "Screening Window",
+      "type": "Within",
+      "unit": "days",
+      "instanceType": "Timing",
+      "value": 28,
+      "relativeTo": "Randomization",
+      "windowLower": -28,
+      "windowUpper": -2
+    },
+    {
+      "id": "8ffa8d77-f98e-4253-a533-bc36a4d0c2e1",
+      "name": "Washout Period",
+      "type": "Between",
+      "unit": "days",
+      "instanceType": "Timing",
+      "value": 3,
+      "relativeTo": "Previous Visit",
+      "windowLower": 3,
+      "windowUpper": 14
+    },
+    {
+      "id": "197900dc-3ae0-4d27-8852-9aeadb2b6897",
+      "name": "Follow-up Visit",
+      "type": "At",
+      "unit": "days",
+      "instanceType": "Timing",
+      "value": 28,
+      "relativeTo": "Last Dose",
+      "windowLower": -2,
+      "windowUpper": 2
+    },
+    {
+      "id": "6ebac135-3d67-46ad-80c3-e11f434f1205",
+      "name": "Immunogenicity Follow-up Interval",
+      "type": "At",
+      "unit": "days",
+      "instanceType": "Timing",
+      "value": 84,
+      "relativeTo": "Previous Visit",
+      "windowLower": -7,
+      "windowUpper": 7
+    },
+    {
+      "id": "2f2fad4d-9f48-41a6-9064-c64879a37ae7",
+      "name": "Discharge from CRU",
+      "type": "After",
+      "unit": "hours",
+      "instanceType": "Timing",
+      "value": 6,
+      "relativeTo": "Last Dose"
+    },
+    {
+      "id": "e18a9d52-81b4-4ced-9fa6-003a46f87ca3",
+      "name": "Study Treatment Administration",
+      "type": "After",
+      "unit": "minutes",
+      "instanceType": "Timing",
+      "value": 5,
+      "relativeTo": "Previous Visit"
+    },
+    {
+      "id": "fec0f701-4a9b-42bf-99b2-1cc050f701e6",
+      "name": "Pre-procedure Fasting",
+      "type": "Before",
+      "unit": "hours",
+      "instanceType": "Timing",
+      "value": 8,
+      "relativeTo": "Study Start"
+    },
+    {
+      "id": "72a23e2a-bfde-48a5-aac0-0a87c1451c86",
+      "name": "PG Monitoring Interval (High)",
+      "type": "Within",
+      "unit": "minutes",
+      "instanceType": "Timing",
+      "value": 10,
+      "relativeTo": "Study Start"
+    },
+    {
+      "id": "412c4f1b-717d-430b-afa4-055e576b398b",
+      "name": "PG Monitoring Interval (Low)",
+      "type": "Within",
+      "unit": "minutes",
+      "instanceType": "Timing",
+      "value": 5,
+      "relativeTo": "Study Start"
+    }
+  ],
+  "conditions": [
+    {
+      "id": "4fdc8a6e-64a9-47d1-a8fa-6379100648d3",
+      "name": "Hypoglycemia Induction Target",
+      "instanceType": "Condition",
+      "description": "Target PG level to stop insulin infusion",
+      "text": "Bedside PG < 60 mg/dL"
+    },
+    {
+      "id": "f1957374-186b-4a34-a882-eaad4d1f4546",
+      "name": "Admission PG Requirement",
+      "instanceType": "Condition",
+      "description": "PG level required to proceed with admission procedures",
+      "text": "PG level is 90 to 250 mg/dL on Day 1"
+    },
+    {
+      "id": "f17b3494-8127-42ae-ba88-6c835e300593",
+      "name": "Interim Safety Review Criteria",
+      "instanceType": "Condition",
+      "description": "Trigger for safety review before dosing remaining patients",
+      "text": "First 6 patients complete Period 2 Day 1"
+    },
+    {
+      "id": "5d01442e-7034-49fc-b3b4-2b62b52762c9",
+      "name": "ADA Follow-up Cessation",
+      "instanceType": "Condition",
+      "description": "Criteria to stop immunogenicity follow-up",
+      "text": "Titer returns to baseline (within 2-fold dilution) OR 1 year after last dose"
+    },
+    {
+      "id": "c966cfb1-c56e-4f10-a97c-3aa3a84ca6e3",
+      "name": "PG Monitoring Frequency Trigger",
+      "instanceType": "Condition",
+      "description": "Threshold for increasing monitoring frequency",
+      "text": "Bedside PG < 90 mg/dL"
+    },
+    {
+      "id": "aa9f9a55-6e45-429e-8958-04089ddbd58b",
+      "name": "Hypoglycemia Questionnaire Trigger",
+      "instanceType": "Condition",
+      "description": "PG threshold for 'During hypoglycemia induction' questionnaire",
+      "text": "PG <= 75 mg/dL"
+    }
+  ],
+  "transitionRules": [
+    {
+      "id": "2d2830f5-980d-41f3-8be8-c7313a7b68b5",
+      "name": "Induction to Treatment",
+      "instanceType": "TransitionRule",
+      "transitionType": "Epoch Transition",
+      "fromElementId": "babead95-9fb0-4a1d-b661-f4e1ec5d3572",
+      "toElementId": "8da43d44-ba59-43c2-be37-158f438ee4cf",
+      "text": "Once bedside PG reaches <60 mg/dL, insulin infusion is stopped and approximately 5 minutes later study drug is administered"
+    },
+    {
+      "id": "ac0365e0-899a-439f-9e92-eba1fd95171a",
+      "name": "Safety Pause",
+      "instanceType": "TransitionRule",
+      "transitionType": "Epoch Transition",
+      "text": "Safety data reviewed after first 6 patients complete Period 2; remaining patients dosed after confirmation of safety"
+    },
+    {
+      "id": "384a97e2-78da-42a7-bc9f-f18fb55790dd",
+      "name": "Admission Rescheduling",
+      "instanceType": "TransitionRule",
+      "transitionType": "Epoch Transition",
+      "text": "Admission can be rescheduled if PG level is not 90 to 250 mg/dL on Day 1"
+    },
+    {
+      "id": "bb45ab02-91f6-4d52-bd22-1c097a1b02cc",
+      "name": "Safety Discontinuation",
+      "instanceType": "TransitionRule",
+      "transitionType": "Discontinuation",
+      "text": "Investigator decides patient should be discontinued due to AE, SAE, or severe hypoglycemia event"
+    }
+  ],
+  "scheduleTimelineExits": [
+    {
+      "id": "51c94ce5-7ad7-4c50-9429-656c86172f00",
+      "name": "Early Termination",
+      "exitType": "Early Termination",
+      "instanceType": "ScheduleTimelineExit",
+      "description": "Patient request, investigator decision, or enrollment in another study"
+    },
+    {
+      "id": "bfe95051-d645-4655-bc56-8fa5a65f9b68",
+      "name": "Study Completion",
+      "exitType": "Completion",
+      "instanceType": "ScheduleTimelineExit",
+      "description": "Completion of both periods with evaluable primary outcome"
+    },
+    {
+      "id": "d920e653-37a4-4329-861e-a088101ce484",
+      "name": "Study Stoppage",
+      "exitType": "Early Termination",
+      "instanceType": "ScheduleTimelineExit",
+      "description": "Study stopped if deemed necessary for patient safety after review of first 6 patients"
+    },
+    {
+      "id": "5061d4eb-4b25-4db9-a93a-27d7331da96d",
+      "name": "Lost to Follow-up",
+      "exitType": "Early Termination",
+      "instanceType": "ScheduleTimelineExit",
+      "description": "Repeatedly fails to return for scheduled visits and unable to be contacted"
+    }
+  ],
+  "analysisPopulations": [
+    {
+      "id": "ea89d51b-c261-485c-afd6-36691dddfcb2",
+      "name": "All Entered Set Population",
+      "populationType": "Other",
+      "instanceType": "AnalysisPopulation",
+      "label": "AES",
+      "description": "All patients who sign inform consent and enter in this study",
+      "criteria": "Signed informed consent and entered study"
+    },
+    {
+      "id": "c283892c-fb37-4f74-85bb-d2c23a69f8b7",
+      "name": "All Randomized Set Population",
+      "populationType": "Intent-to-Treat",
+      "instanceType": "AnalysisPopulation",
+      "label": "ARS",
+      "description": "All patients who are randomized to study treatments",
+      "criteria": "Randomized to study treatments"
+    },
+    {
+      "id": "91311be6-efd9-417a-9b1b-c6d737976503",
+      "name": "Full Analysis Set Population",
+      "populationType": "Safety",
+      "instanceType": "AnalysisPopulation",
+      "label": "FAS",
+      "description": "All randomized patients who receive at least 1 dose of study drug. Used for safety analyses and other efficacy analyses.",
+      "criteria": "Randomized and received at least 1 dose"
+    },
+    {
+      "id": "742cbf39-6c5c-4dcd-83f9-69a242256fa4",
+      "name": "Efficacy Analysis Set Population",
+      "populationType": "Efficacy",
+      "instanceType": "AnalysisPopulation",
+      "label": "EAS",
+      "description": "Patients in the FAS and have evaluable primary efficacy outcome. Used for primary efficacy analysis.",
+      "criteria": "In FAS and have evaluable primary efficacy outcome"
+    },
+    {
+      "id": "4523248c-54ee-4deb-9f7c-341b6878021f",
+      "name": "PK/PD Population",
+      "populationType": "PK/PD",
+      "instanceType": "AnalysisPopulation",
+      "label": "PK/PD",
+      "description": "Patients in the FAS and have evaluable PK/PD",
+      "criteria": "In FAS and have evaluable PK/PD"
+    }
+  ],
+  "characteristics": [
+    {
+      "id": "5704a10e-09d7-45fa-8c93-fecd00a7d7bf",
+      "name": "Age",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "Demographic variable"
+    },
+    {
+      "id": "295284f8-7125-40f0-a258-483cc71b7541",
+      "name": "Sex",
+      "dataType": "Categorical",
+      "instanceType": "Characteristic",
+      "description": "Demographic variable"
+    },
+    {
+      "id": "c3313030-cef4-4f2a-baca-9e401ad99b04",
+      "name": "Race",
+      "dataType": "Categorical",
+      "instanceType": "Characteristic",
+      "description": "Demographic variable"
+    },
+    {
+      "id": "6f11b6af-b5ee-4de7-9918-1859106a5207",
+      "name": "Ethnicity",
+      "dataType": "Categorical",
+      "instanceType": "Characteristic",
+      "description": "Demographic variable"
+    },
+    {
+      "id": "67d78d30-655b-45e0-bfa4-8148b38612cd",
+      "name": "Country of enrolment",
+      "dataType": "Categorical",
+      "instanceType": "Characteristic",
+      "description": "Demographic variable"
+    },
+    {
+      "id": "f6403c85-cc26-4821-88b4-00de1bc531f1",
+      "name": "Body weight",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "Baseline anthropometric measurement"
+    },
+    {
+      "id": "120a2030-5f2c-4682-896e-764a2a678d9d",
+      "name": "Height",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "Baseline anthropometric measurement"
+    },
+    {
+      "id": "c5b36bc4-e983-4ef3-8a9a-a22797ee1639",
+      "name": "Body mass index",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "BMI"
+    },
+    {
+      "id": "974a9902-06d3-4e7b-88cd-ede45eda29f9",
+      "name": "Duration of diabetes",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "Disease characteristic in years"
+    },
+    {
+      "id": "a42e8648-bfe7-41c1-8831-ee45852a52f8",
+      "name": "Baseline HbA1c value",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "Disease characteristic (%)"
+    },
+    {
+      "id": "b18bd07b-b705-4b86-af21-2d68f50f9efb",
+      "name": "Baseline Clarke Hypoglycemia Awareness status",
+      "dataType": "Numeric",
+      "instanceType": "Characteristic",
+      "description": "Disease characteristic (%)"
+    },
+    {
+      "id": "bbc57416-d05e-4e66-b6a0-0f85d4eaec69",
+      "name": "Baseline substance use (alcohol)",
+      "dataType": "Categorical",
+      "instanceType": "Characteristic",
+      "description": "Lifestyle characteristic"
+    },
+    {
+      "id": "6e4563ec-73b5-4b22-b5ac-f405a9dd8298",
+      "name": "Previous diabetic therapy",
+      "dataType": "Categorical",
+      "instanceType": "Characteristic",
+      "description": "Prior therapy frequency"
+    }
+  ],
+  "documentContentReferences": [
+    {
+      "id": "89f63c50-33e2-46d8-a1b8-9d9e41f5c72f",
+      "name": "Schedule of Activities Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9",
+      "sectionTitle": "Study Assessments and Procedures",
+      "description": "Reference to Section 2 lists the Schedule of Activities"
+    },
+    {
+      "id": "346c4a26-90a8-4358-809b-e68b6e2da801",
+      "name": "Lab Tests Appendix Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9",
+      "sectionTitle": "Study Assessments and Procedures",
+      "description": "Reference to Appendix 2 lists the laboratory tests"
+    },
+    {
+      "id": "5bb93013-c3cd-462e-96b8-63338c0813a0",
+      "name": "Blood Sampling Appendix Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9",
+      "sectionTitle": "Study Assessments and Procedures",
+      "description": "Reference to Appendix 5 provides a summary of the maximum number and volume of invasive samples"
+    },
+    {
+      "id": "166c7603-dfe2-4f9a-9161-d98689bb3fe2",
+      "name": "Plasma Glucose Method Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.1",
+      "sectionTitle": "Efficacy Assessments",
+      "description": "Reference to Section 9.2.3 for plasma glucose measurement description"
+    },
+    {
+      "id": "3594879f-9819-4182-8ae3-41948b39647f",
+      "name": "Edinburgh Hypoglycemia Scale Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.1.3",
+      "sectionTitle": "Exploratory Efficacy Assessments",
+      "description": "Reference to Appendix 7 for Edinburgh Hypoglycemia Scale"
+    },
+    {
+      "id": "8d5da4ee-1dd1-46a4-9f6b-1f76040d8261",
+      "name": "Clarke Survey Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.1.3",
+      "sectionTitle": "Exploratory Efficacy Assessments",
+      "description": "Reference to Appendix 8 for Clarke Hypoglycemia Awareness Survey"
+    },
+    {
+      "id": "f92c01a5-72c6-49b4-bb11-443caeb132d0",
+      "name": "Treatment Details Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.2.2",
+      "sectionTitle": "Glucagon Administration",
+      "description": "Refer to Section 7 for details regarding treatments"
+    },
+    {
+      "id": "49277276-e6ea-4472-8543-107d9c8002a3",
+      "name": "Nasal Questionnaire Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.2.2.1",
+      "sectionTitle": "Nasal LY900018 Administration",
+      "description": "Reference to Appendix 6 for Nasal and Non-nasal Score Questionnaire"
+    },
+    {
+      "id": "5d6e6c0a-8735-46ef-84d1-fbbcde381255",
+      "name": "External Document Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.4",
+      "sectionTitle": "Treatment of Overdose",
+      "description": "Refer to the LY900018 IB and GlucaGen Summary of Product Characteristics"
+    },
+    {
+      "id": "e85867b3-2373-45c2-a1a4-bb09058adddf",
+      "name": "Hepatic Monitoring Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "9.5.5.2",
+      "sectionTitle": "Hepatic Safety",
+      "description": "Reference to Appendix 4 for liver tests"
+    },
+    {
+      "id": "3fb568fe-55ed-4df4-ae65-0b621ebe3203",
+      "name": "Lab Test Details Reference",
+      "instanceType": "DocumentContentReference",
+      "sectionNumber": "Schedule of Activities",
+      "sectionTitle": "Clinical Lab Tests",
+      "description": "See Appendix 2, Clinical Laboratory Tests, for details"
+    }
+  ],
+  "commentAnnotations": [
+    {
+      "id": "a12a326a-a6b5-47b6-ae0d-0f539923e3c0",
+      "text": "Note to Regulatory Authorities: This document may contain protected personal data and/or commercially confidential information exempt from public disclosure.",
+      "annotationType": "Note",
+      "instanceType": "CommentAnnotation",
+      "sourceSection": "Confidential Information",
+      "pageNumber": 2
+    },
+    {
+      "id": "dd07df64-8c50-46bd-b163-634905ad4ae3",
+      "text": "Patients do not need to fast for samples at screening or follow-up. At Periods 1 and 2, samples should be collected from patients who have fasted at least 8 hours before any study procedures.",
+      "annotationType": "Note",
+      "instanceType": "CommentAnnotation",
+      "sourceSection": "Schedule of Activities",
+      "pageNumber": 16
+    },
+    {
+      "id": "b7524c87-b2e5-4484-89b2-cf64c4fa426e",
+      "text": "Serum pregnancy test will be performed at screening. Urine pregnancy test will be performed at every admission period and follow-up visit if applicable.",
+      "annotationType": "Note",
+      "instanceType": "CommentAnnotation",
+      "sourceSection": "Schedule of Activities",
+      "pageNumber": 16
+    },
+    {
+      "id": "6794c87d-1978-434e-9e09-543c953b5725",
+      "text": "Additional tests can be done at the discretion of the investigator.",
+      "annotationType": "Note",
+      "instanceType": "CommentAnnotation",
+      "sourceSection": "Schedule of Activities",
+      "pageNumber": 16
+    },
+    {
+      "id": "92a7d416-6981-46a0-8ecb-33107ef7d150",
+      "text": "TE ADAa",
+      "annotationType": "Footnote",
+      "instanceType": "CommentAnnotation",
+      "sourceSection": "Schedule of Activities",
+      "pageNumber": 16
+    }
+  ],
+  "studyDefinitionDocumentVersions": [
+    {
+      "id": "a69b1991-1361-4cf2-9422-64d1100a08bf",
+      "versionNumber": "I8R-JE-IGBJ(a)",
+      "status": "Approved",
+      "instanceType": "StudyDefinitionDocumentVersion",
+      "versionDate": "2017-12-05",
+      "description": "Clinical Pharmacology Protocol Electronically Signed and Approved by Lilly. Original signature date 26 October 2017.",
+      "amendmentNumber": "(a)"
+    }
+  ],
+  "studyAmendmentImpacts": [
+    {
+      "id": "45dfa786-ab66-47e0-9bd4-519f52a3ee1e",
+      "amendmentId": "8cdbffd7-9c89-4b56-9a3e-a54e2b1afd36",
+      "affectedSection": "Title Page",
+      "impactLevel": "Administrative",
+      "instanceType": "StudyAmendmentImpact",
+      "description": "Update of protocol version and approval date to reflect Amendment (a)"
+    }
+  ],
+  "studyAmendmentReasons": [
+    {
+      "id": "fee867dc-4121-44d9-8e83-5088eb4f5ef0",
+      "amendmentId": "8cdbffd7-9c89-4b56-9a3e-a54e2b1afd36",
+      "reasonText": "Issuance of Amendment (a) to the Clinical Pharmacology Protocol",
+      "category": "Administrative",
+      "isPrimary": true,
+      "instanceType": "StudyAmendmentReason"
+    }
+  ],
+  "studyChanges": [
+    {
+      "id": "3d618fc1-8cfc-4958-9a6c-e86b8b8a2113",
+      "amendmentId": "8cdbffd7-9c89-4b56-9a3e-a54e2b1afd36",
+      "changeType": "Modification",
+      "instanceType": "StudyChange",
+      "sectionNumber": "Title Page",
+      "beforeText": "Clinical Pharmacology Protocol Electronically Signed and Approved by Lilly: 26 October 2017",
+      "afterText": "Amendment (a) Electronically Signed and Approved by Lilly... Approval Date: 05-Dec-2017",
+      "summary": "Protocol approval status updated from original version (Oct 2017) to Amendment (a) (Dec 2017)"
+    },
+    {
+      "id": "a31efdf7-9159-43d2-99cd-c05734c8e9de",
+      "amendmentId": "8cdbffd7-9c89-4b56-9a3e-a54e2b1afd36",
+      "changeType": "Modification",
+      "instanceType": "StudyChange",
+      "sectionNumber": "Header",
+      "beforeText": "Protocol I8R-JE-IGBJ",
+      "afterText": "I8R-JE-IGBJ(a)",
+      "summary": "Protocol identifier updated to include amendment suffix (a)"
+    }
+  ],
+  "computationalExecution": {
+    "ready": true,
+    "supportedSystems": [
+      "EDC",
+      "ePRO",
+      "CTMS",
+      "RTSM"
+    ],
+    "validationStatus": "issues_found"
+  }
+}
