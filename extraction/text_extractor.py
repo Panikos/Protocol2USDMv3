@@ -156,6 +156,16 @@ Every activity MUST have `activityGroupId` linking it to its parent group.
 8. **Include ALL activities** from the SoA table with their descriptions
 9. **Every activity MUST have `activityGroupId`** - MANDATORY, see rules below
 
+## MULTI-PAGE SoA HANDLING
+
+The protocol text contains `--- PAGE BREAK ---` markers between pages. The SoA table often spans multiple pages.
+
+**IMPORTANT:**
+- Activities continue ACROSS page breaks - do not skip any rows
+- The FIRST row after a page break is often a CONTINUATION of the table (not a header)
+- Look carefully at text immediately after `--- PAGE BREAK ---` - these are often activities that must be extracted
+- Ensure you capture ALL activity rows from EVERY page of the SoA table
+
 ## HOW TO ASSIGN activityGroupId (MANDATORY)
 
 Look at the header structure's rowGroups. Each activity belongs to the group whose header row appears ABOVE it in the table.
