@@ -143,7 +143,13 @@ def compute_usdm_metrics(soa, gold_standard=None):
     
     # Entity counts - handle both legacy and USDM v4.0 structures
     metrics['visits'] = len(timeline.get('plannedTimepoints', timeline.get('encounters', [])))
-    metrics['activities'] = len(timeline.get('activities', []))
+    
+    # Separate activities from activity groups (activities with childIds are groups)
+    all_activities = timeline.get('activities', [])
+    activity_groups = [a for a in all_activities if a.get('childIds')]
+    real_activities = [a for a in all_activities if not a.get('childIds')]
+    metrics['activities'] = len(real_activities)
+    metrics['activity_groups'] = len(activity_groups)
     
     # Count activityTimepoints from multiple sources
     at_count = len(timeline.get('activityTimepoints', []))
@@ -1263,6 +1269,7 @@ if inventory.get('full_usdm'):
         st.sidebar.markdown("**Entity Counts:**")
         st.sidebar.metric("Visits (PlannedTimepoints)", metrics['visits'])
         st.sidebar.metric("Activities", metrics['activities'])
+        st.sidebar.metric("Activity Groups", metrics.get('activity_groups', 0))
         st.sidebar.metric("Activity-Visit Mappings", metrics['activityTimepoints'])
 
         # Quality metrics
@@ -1792,9 +1799,10 @@ with tab4:
             with col1:
                 st.metric("Visits", metrics['visits'])
                 st.metric("Activities", metrics['activities'])
-                st.metric("Encounters", metrics['encounters'])
+                st.metric("Activity Groups", metrics.get('activity_groups', 0))
             
             with col2:
+                st.metric("Encounters", metrics['encounters'])
                 st.metric("Epochs", metrics['epochs'])
                 st.metric("Tick Marks", metrics['activityTimepoints'])
             
