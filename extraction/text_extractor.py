@@ -156,15 +156,32 @@ Every activity MUST have `activityGroupId` linking it to its parent group.
 8. **Include ALL activities** from the SoA table with their descriptions
 9. **Every activity MUST have `activityGroupId`** - MANDATORY, see rules below
 
-## MULTI-PAGE SoA HANDLING
+## MULTI-PAGE SoA HANDLING (CRITICAL)
 
 The protocol text contains `--- PAGE BREAK ---` markers between pages. The SoA table often spans multiple pages.
 
-**IMPORTANT:**
-- Activities continue ACROSS page breaks - do not skip any rows
-- The FIRST row after a page break is often a CONTINUATION of the table (not a header)
-- Look carefully at text immediately after `--- PAGE BREAK ---` - these are often activities that must be extracted
-- Ensure you capture ALL activity rows from EVERY page of the SoA table
+**YOU MUST START READING FROM THE VERY TOP OF EACH PAGE:**
+- After every `--- PAGE BREAK ---`, the VERY FIRST LINE of text is usually an activity row
+- Do NOT assume page 2+ starts with headers - it typically continues the data rows
+- The first activity on page 2 is commonly missed - CHECK IT EXPLICITLY
+- Activities continue ACROSS page breaks without interruption
+
+**EXTRACTION CHECKLIST:**
+1. Read from the TOP of page 1 - extract all activities
+2. After `--- PAGE BREAK ---` - immediately look at the FIRST LINE of text
+3. That first line after page break is almost always an activity - EXTRACT IT
+4. Continue extracting all remaining activities on that page
+5. Repeat for every page break
+
+**COMMON MISTAKE TO AVOID:**
+Skipping the first row after a page break. Example:
+```
+... activity on page 1
+--- PAGE BREAK ---
+PD: Plasma total and PUF-Cu    ← THIS ROW IS OFTEN MISSED - DO NOT SKIP IT
+Ceruloplasmin-bound Cu
+... more activities
+```
 
 ## HOW TO ASSIGN activityGroupId (MANDATORY)
 
