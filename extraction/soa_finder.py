@@ -251,11 +251,9 @@ def find_soa_pages(
     llm_pages = find_soa_pages_llm(pdf_path, model_name, expanded_candidates)
     
     if llm_pages:
-        # Conservative expansion with vision validation for ±1 pages
-        final_pages = _expand_conservative(llm_pages, pdf_path, model_name)
-        if set(final_pages) != set(llm_pages):
-            logger.info(f"Expanded pages from {sorted(llm_pages)} to {sorted(final_pages)} (vision-validated)")
-        return sorted(final_pages)
+        # LLM already saw pre-expanded candidates (±2 pages), so trust its selection
+        # No additional expansion needed - LLM has already identified all SoA pages
+        return sorted(llm_pages)
     
     # Fallback to heuristics if LLM fails
     final_pages = _expand_adjacent_pages(all_candidates, pdf_path)
