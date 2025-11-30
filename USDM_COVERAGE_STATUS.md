@@ -1,7 +1,7 @@
 # USDM v4.0 Entity Coverage Status
 
-**Last Updated:** 2025-11-29  
-**Version:** 6.3.0  
+**Last Updated:** 2025-11-30  
+**Version:** 6.4.0  
 **Coverage:** 62/87 entities (71.3%)
 
 ---
@@ -114,7 +114,16 @@ These are structural containers used implicitly:
 1. **Phase 9: Biomedical Concepts** - Pending special integration with CDISC BC library
 2. **Phase 16: eCOA/CDASH** - Implement when eCOA spec integration required
 
-## Recent Additions (v6.3.0)
+## Recent Additions (v6.4.0)
+
+- **Parser Fixes**: All 7 extraction parsers now handle USDM-compliant LLM responses
+- **Extraction Gap Audit**: New `testing/audit_extraction_gaps.py` tool to detect parsing mismatches
+- **Objectives/Endpoints**: Now properly parsed from flat USDM format with level codes
+- **Eligibility Criteria**: Handles `eligibilityCriterionItems` lookup for text
+- **Study Identifiers**: Properly extracted (NCT ID, Protocol Number, EudraCT, IND)
+- **Study Design**: Arms, cohorts, epochs now use provided IDs
+
+## Additions (v6.3.0)
 
 - **NCI EVS Enrichment**: Entities enriched with official NCI codes via EVS API (`--enrich`)
 - **CDISC CORE Integration**: Local conformance engine with cache management (`--conformance`)

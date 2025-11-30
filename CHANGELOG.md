@@ -4,6 +4,30 @@ All notable changes documented here. Dates in ISO-8601.
 
 ---
 
+## [6.4.0] – 2025-11-30
+
+### Parser Fixes for USDM-Compliant LLM Responses
+
+The LLM now produces USDM-compliant output directly (with `id`, `instanceType`, proper Code objects).
+All 7 extraction parsers were updated to handle both the new format and legacy format.
+
+#### Fixed Parsers
+* **`extraction/objectives/extractor.py`**: Added `_parse_usdm_format()` for flat objectives/endpoints with level codes
+* **`extraction/eligibility/extractor.py`**: Added `_parse_usdm_eligibility_format()` for criteria with `eligibilityCriterionItems` lookup
+* **`extraction/metadata/extractor.py`**: Fixed identifier parsing (accept `text` and `value`), indication handling
+* **`extraction/studydesign/extractor.py`**: Accept USDM key names (`studyArms`, `studyCohorts`, `studyEpochs`)
+* **`extraction/interventions/extractor.py`**: Accept USDM key names, use provided IDs
+* **`extraction/narrative/extractor.py`**: Accept key variations for abbreviations
+* **`extraction/advanced/extractor.py`**: Handle top-level `countries` array, use provided IDs
+
+#### New Tools
+* **`testing/audit_extraction_gaps.py`**: Audit tool to detect raw vs parsed mismatches using USDM schema
+
+#### Viewer Improvements
+* Removed obsolete "Config Files" tab from Streamlit viewer
+
+---
+
 ## [6.3.0] – 2025-11-29
 
 ### NCI EVS Terminology Enrichment
