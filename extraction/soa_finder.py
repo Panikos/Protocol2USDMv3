@@ -246,10 +246,10 @@ def find_soa_pages(
     llm_pages = find_soa_pages_llm(pdf_path, model_name, all_candidates)
     
     if llm_pages:
-        # Conservative expansion: only ±1 page and fill gaps (LLM is high-confidence)
-        final_pages = _expand_conservative(llm_pages, pdf_path)
+        # Conservative expansion with vision validation for ±1 pages
+        final_pages = _expand_conservative(llm_pages, pdf_path, model_name)
         if set(final_pages) != set(llm_pages):
-            logger.info(f"Expanded pages from {sorted(llm_pages)} to {sorted(final_pages)} (conservative ±1 expansion)")
+            logger.info(f"Expanded pages from {sorted(llm_pages)} to {sorted(final_pages)} (vision-validated)")
         return sorted(final_pages)
     
     # Fallback to heuristics if LLM fails
@@ -308,43 +308,121 @@ def _find_soa_title_pages(pdf_path: str) -> List[int]:
     return title_pages
 
 
-def _expand_conservative(pages: List[int], pdf_path: str) -> List[int]:
+def _expand_conservative(pages: List[int], pdf_path: str, model_name: str = None) -> List[int]:
     """
-    Conservative page expansion for high-confidence LLM results.
+    Conservative page expansion with vision validation.
     
-    Only adds:
-    1. Gap pages between detected pages (e.g., 13 and 15 → add 14)
-    2. Exactly ±1 page on each end (not iterative)
+    For each candidate expansion page (±1 from detected range), uses vision
+    to verify it actually contains SoA table content before including it.
     
-    This prevents runaway expansion when LLM correctly identifies the SoA pages.
+    Args:
+        pages: LLM-identified SoA pages
+        pdf_path: Path to PDF
+        model_name: LLM model for vision validation (optional)
     """
     if not pages:
         return pages
     
     doc = fitz.open(pdf_path)
     total_pages = len(doc)
-    doc.close()
     
     expanded = set(pages)
     sorted_pages = sorted(pages)
     
-    # Fill gaps between detected pages
+    # Fill gaps between detected pages (these are definitely part of SoA)
     if len(sorted_pages) >= 2:
         for i in range(len(sorted_pages) - 1):
             start, end = sorted_pages[i], sorted_pages[i + 1]
             for gap_page in range(start + 1, end):
                 expanded.add(gap_page)
     
-    # Add exactly 1 page before and 1 page after (not iterative)
+    # Candidate pages to validate: ±1 from detected range
     min_page = min(sorted_pages)
     max_page = max(sorted_pages)
     
+    candidates = []
     if min_page - 1 >= 0:
-        expanded.add(min_page - 1)
+        candidates.append(min_page - 1)
     if max_page + 1 < total_pages:
-        expanded.add(max_page + 1)
+        candidates.append(max_page + 1)
     
+    # If no model provided, just add candidates without validation
+    if not model_name or not candidates:
+        for c in candidates:
+            expanded.add(c)
+        doc.close()
+        return list(expanded)
+    
+    # Validate each candidate with vision
+    import tempfile
+    import os
+    
+    for page_num in candidates:
+        # Render page to image
+        page = doc[page_num]
+        pix = page.get_pixmap(dpi=100)  # Lower DPI for quick check
+        
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
+            pix.save(tmp.name)
+            tmp_path = tmp.name
+        
+        try:
+            is_soa = _validate_page_is_soa(tmp_path, model_name)
+            if is_soa:
+                expanded.add(page_num)
+                logger.info(f"Vision confirmed page {page_num + 1} is part of SoA")
+            else:
+                logger.info(f"Vision rejected page {page_num + 1} - not SoA table")
+        finally:
+            os.unlink(tmp_path)
+    
+    doc.close()
     return list(expanded)
+
+
+def _validate_page_is_soa(image_path: str, model_name: str) -> bool:
+    """
+    Use vision to check if a page contains SoA table content.
+    
+    Returns True if the page appears to be part of a Schedule of Activities table.
+    """
+    from core.llm_client import get_llm_client, LLMConfig
+    from core.json_utils import parse_llm_json
+    import base64
+    
+    # Encode image
+    with open(image_path, 'rb') as f:
+        img_data = base64.standard_b64encode(f.read()).decode('utf-8')
+    
+    prompt = """Look at this page image. Is it part of a Schedule of Activities (SoA) table?
+
+A SoA table typically has:
+- Column headers with visit names (Day 1, Week 2, Visit 3, etc.)
+- Row labels with activity/procedure names
+- A grid of tick marks (X, ✓) or empty cells
+
+Answer in JSON format:
+{"is_soa_table": true/false, "confidence": "high/medium/low", "reason": "brief explanation"}"""
+
+    client = get_llm_client(model_name)
+    
+    # Build vision message
+    messages = [
+        {"role": "user", "content": [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_data}"}}
+        ]}
+    ]
+    
+    config = LLMConfig(temperature=0.0, json_mode=True, max_tokens=200)
+    
+    try:
+        response = client.generate(messages, config)
+        result = parse_llm_json(response.content, fallback={})
+        return result.get('is_soa_table', False) and result.get('confidence') in ['high', 'medium']
+    except Exception as e:
+        logger.warning(f"Vision validation failed: {e}")
+        return True  # Default to including page if validation fails
 
 
 def _expand_adjacent_pages(pages: List[int], pdf_path: str) -> List[int]:
