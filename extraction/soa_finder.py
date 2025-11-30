@@ -158,29 +158,33 @@ def find_soa_pages_llm(
         return []
     
     # Build prompt
-    prompt = """Analyze these protocol pages and identify which ones contain a Schedule of Activities (SoA) table.
+    prompt = """Analyze these protocol pages and identify ALL pages that contain a Schedule of Activities (SoA) table.
 
 An SoA table typically has:
-- Column headers with visit names (Visit 1, Visit 2, etc.) or time points (Week 0, Day 1, etc.)
-- Row headers with procedure/activity names
-- Checkmarks or X marks indicating which activities occur at which visits
+- Column headers with visit names (Visit 1, Visit 2, etc.) or time points (Day -7, Day 1, Week 4, etc.)
+- Row headers with procedure/activity names (e.g., "Informed consent", "Physical examination", "Blood sampling")
+- A grid with checkmarks (X, ✓) indicating which activities occur at which visits
 
-IMPORTANT: SoA tables often span MULTIPLE PAGES. Include:
-- Pages with the "Schedule of Activities" title/header (even if the table starts on that page)
-- Continuation pages that have table content but no title
-- All pages that are part of the same table
+**CRITICAL: SoA tables span MULTIPLE PAGES (typically 2-4 pages). You MUST identify ALL pages.**
+
+How to identify SoA CONTINUATION pages (pages 2, 3, etc. of the table):
+- Same column structure as the first page (Days, Visits, etc.)
+- Activity/procedure names in the left column
+- Grid of X marks continuing from previous page
+- May NOT have "Schedule of Activities" title - just table content
+- Look for: "Safety Assessments", "Laboratory", "PK/PD", "Balance assessments", etc.
 
 PAGES TO ANALYZE:
 {pages}
 
 Return a JSON object with:
 {{
-  "soa_pages": [list of page numbers that contain SoA tables - include ALL pages of multi-page tables],
+  "soa_pages": [list of ALL page numbers containing SoA table content],
   "confidence": "high" or "medium" or "low",
-  "notes": "brief explanation"
+  "notes": "brief explanation including how many pages the table spans"
 }}
 
-Include any page that has SoA table content, even if it's a continuation page.""".format(
+**Do NOT miss continuation pages. If page N has the SoA title, check if pages N+1, N+2 continue the same table.**""".format(
         pages="\n\n---\n\n".join(page_texts)
     )
     
