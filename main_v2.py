@@ -1277,10 +1277,13 @@ Examples:
                 json.dump(fixed_data, f, indent=2, ensure_ascii=False)
             logger.info(f"  ✓ USDM output saved to: {combined_usdm_path}")
             
-            # NOTE: Don't sync provenance IDs with combined USDM data
-            # The SoA provenance should match 9_final_soa.json (original IDs)
-            # The combined protocol_usdm.json has different activities from expansions
-            # Viewer uses 9_final_soa.json + provenance for SoA display
+            # Sync provenance IDs with protocol_usdm.json (single source of truth)
+            # Viewer always uses protocol_usdm.json, so provenance must match its IDs
+            provenance_path = os.path.join(output_dir, "9_final_soa_provenance.json")
+            if os.path.exists(provenance_path):
+                sync_provenance_with_data(provenance_path, fixed_data, id_map)
+                logger.info(f"  ✓ Synchronized provenance IDs with protocol_usdm.json")
+            
             combined_data = fixed_data
             
             # Save schema validation results (including unfixable issues)
@@ -1370,7 +1373,11 @@ Examples:
                         json.dump(fixed_data, f, indent=2, ensure_ascii=False)
                     logger.info(f"  ✓ Fixed data saved")
                     
-                    # NOTE: Don't sync provenance - viewer uses original SoA file with original IDs
+                    # Sync provenance IDs with the validated data (viewer uses this as source of truth)
+                    provenance_path = os.path.join(output_dir, "9_final_soa_provenance.json")
+                    if os.path.exists(provenance_path):
+                        sync_provenance_with_data(provenance_path, fixed_data, id_map)
+                        logger.info(f"  ✓ Synchronized provenance IDs")
                     
                     # Save schema validation report
                     schema_output_path = os.path.join(output_dir, "schema_validation.json")
