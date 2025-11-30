@@ -741,6 +741,9 @@ def combine_to_full_usdm(
             if r.data.population:
                 study_design["population"] = r.data.population.to_dict()
     
+    # Note: population is required by USDM schema but we don't provide a default
+    # If missing, validation will flag it so user knows to run --eligibility extraction
+    
     # Add Objectives & Endpoints
     if expansion_results and expansion_results.get('objectives'):
         r = expansion_results['objectives']

@@ -129,6 +129,40 @@ class USDMValidator:
         if not HAS_USDM:
             logger.warning("usdm package not available. Validation will be limited.")
     
+    def _get_study_design_type(self, data: Dict[str, Any]) -> Optional[str]:
+        """Extract the actual StudyDesign instanceType from the data."""
+        try:
+            study_designs = data.get('study', {}).get('versions', [{}])[0].get('studyDesigns', [])
+            if study_designs:
+                return study_designs[0].get('instanceType')
+        except (KeyError, IndexError, TypeError):
+            pass
+        return None
+    
+    def _is_wrong_union_branch_error(self, location: str, actual_type: Optional[str]) -> bool:
+        """
+        Check if an error is for a union branch that doesn't match our actual type.
+        
+        Pydantic validates against all union branches and reports errors for each.
+        We filter out errors for branches we're not using.
+        """
+        if not actual_type:
+            return False
+        
+        # Map of union branch types to ignore based on actual type
+        union_branch_filters = {
+            'InterventionalStudyDesign': ['ObservationalStudyDesign'],
+            'ObservationalStudyDesign': ['InterventionalStudyDesign'],
+        }
+        
+        branches_to_ignore = union_branch_filters.get(actual_type, [])
+        
+        for branch in branches_to_ignore:
+            if branch in location:
+                return True
+        
+        return False
+    
     def validate_file(self, filepath: str) -> ValidationResult:
         """
         Validate a USDM JSON file.
@@ -220,14 +254,29 @@ class USDMValidator:
             result.valid = True
             logger.info("USDM validation passed")
         except ValidationError as e:
+            # Filter out errors for union types that don't match the actual instanceType
+            # E.g., if using InterventionalStudyDesign, ignore ObservationalStudyDesign errors
+            actual_design_type = self._get_study_design_type(data)
+            
             for error in e.errors():
                 location = ' -> '.join(str(loc) for loc in error['loc'])
+                
+                # Skip errors for union branches that don't match our instanceType
+                if self._is_wrong_union_branch_error(location, actual_design_type):
+                    continue
+                
                 result.issues.append(ValidationIssue(
                     location=location,
                     message=error['msg'],
                     error_type=error['type']
                 ))
-            logger.warning(f"USDM validation failed with {len(result.issues)} error(s)")
+            
+            if result.issues:
+                logger.warning(f"USDM validation failed with {len(result.issues)} error(s)")
+            else:
+                # All errors were filtered out (wrong union branches)
+                result.valid = True
+                logger.info("USDM validation passed (union branch errors filtered)")
         except Exception as e:
             result.issues.append(ValidationIssue(
                 location='validation',
