@@ -270,8 +270,20 @@ def extract_soa_from_text(
         response = client.generate(messages, config)
         raw_response = response.content
         
+        # Log raw response for debugging (first 500 chars)
+        if not raw_response:
+            logger.warning("LLM returned empty response for text extraction")
+        else:
+            logger.debug(f"Raw response (first 500 chars): {raw_response[:500]}")
+        
         # Parse response
         data = parse_llm_json(raw_response, fallback={})
+        
+        # Debug: log what keys were found
+        if data:
+            logger.debug(f"Parsed JSON keys: {list(data.keys())}")
+        else:
+            logger.warning(f"Failed to parse JSON. Raw response type: {type(raw_response)}, length: {len(raw_response) if raw_response else 0}")
         
         # Extract activities
         activities = [

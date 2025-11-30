@@ -360,10 +360,14 @@ class ClaudeProvider(LLMProvider):
     """
     
     SUPPORTED_MODELS = [
-        # Claude Opus 4.x (most powerful)
+        # Claude Opus 4.5 (latest, most powerful)
+        'claude-opus-4-5-20250918', 'claude-opus-4-5',
+        # Claude Sonnet 4.5
+        'claude-sonnet-4-5-20250918', 'claude-sonnet-4-5',
+        # Claude Opus 4.x
         'claude-opus-4-1', 'claude-opus-4-1-20250805',
         'claude-opus-4', 'claude-opus-4-20250514',
-        # Claude Sonnet 4 (recommended default)
+        # Claude Sonnet 4
         'claude-sonnet-4', 'claude-sonnet-4-20250514',
         # Claude 3.7 Sonnet
         'claude-3-7-sonnet-latest', 'claude-3-7-sonnet-20250219',
@@ -431,10 +435,11 @@ class ClaudeProvider(LLMProvider):
             system_content = (system_content + json_instruction) if system_content else json_instruction.strip()
         
         # Build parameters
+        # Claude needs higher max_tokens for complex extractions
         params = {
             "model": self.model,
             "messages": api_messages,
-            "max_tokens": config.max_tokens or 4096,
+            "max_tokens": config.max_tokens or 16384,
         }
         
         if system_content:
@@ -460,6 +465,21 @@ class ClaudeProvider(LLMProvider):
                     if hasattr(block, 'text'):
                         content = block.text
                         break
+            
+            # Log warning if response was truncated
+            if response.stop_reason == 'max_tokens':
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Claude response was truncated (max_tokens reached). "
+                    f"Used {response.usage.output_tokens} tokens. Consider increasing max_tokens."
+                )
+            
+            # Log warning if empty response
+            if not content:
+                import logging
+                logging.getLogger(__name__).warning(
+                    f"Claude returned empty content. Stop reason: {response.stop_reason}"
+                )
             
             # Extract usage information
             usage = None
