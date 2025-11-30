@@ -46,6 +46,12 @@ CODES_TO_VERIFY = {
     "C49649": "Active Control",
     "C174270": "No Intervention Arm",
     "C174269": "Sham Comparator Arm",
+    
+    # Study Identifier Type Codes - Verified 2024-11-30
+    "C132351": "Sponsor Protocol Identifier",
+    "C172240": "Clinicaltrials.gov Identifier",
+    "C98714": "Clinical Trial Registry Identifier",
+    "C218685": "US FDA Investigational New Drug Application Number"
 }
 
 

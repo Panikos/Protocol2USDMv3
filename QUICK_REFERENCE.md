@@ -1,8 +1,8 @@
 # Protocol2USDM Quick Reference
 
-**v6.3.0** | One-page command reference
+**v6.5.0** | One-page command reference
 
-> **New in v6.3.0:** NCI EVS terminology enrichment (`--enrich`), CDISC CORE integration (`--conformance`), provenance ID sync for accurate viewer display. Schema-driven architecture with 86+ auto-generated entity types.
+> **New in v6.5.0:** External evaluation **88%** (7/8 passing)! encounterId alignment, StudyIdentifier type auto-inference, EVS-verified terminology codes. All 28 NCI codes verified against NIH EVS API.
 
 ---
 

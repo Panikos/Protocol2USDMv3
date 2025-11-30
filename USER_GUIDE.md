@@ -1,9 +1,9 @@
 # Protocol2USDM User Guide
 
-**Version:** 6.1.2  
-**Last Updated:** 2025-11-28
+**Version:** 6.5.0  
+**Last Updated:** 2025-11-30
 
-> **📢 What's New in v6.1.2:** Enhanced SoA with proper activity group hierarchy (`childIds`), SoA footnotes stored as `CommentAnnotation`, and fixed provenance tracking. The pipeline extracts the **full protocol** including metadata, eligibility, objectives, study design, interventions, and more.
+> **📢 What's New in v6.5.0:** External evaluation score **88%** (7/8 checks passing)! Key fixes: encounterId alignment (enc_N instead of pt_N), StudyIdentifier type auto-inference (NCT, EudraCT, IND, Sponsor), and all 28 NCI terminology codes EVS-verified. The pipeline extracts the **full protocol** including metadata, eligibility, objectives, study design, interventions, and more.
 
 ---
 

@@ -4,7 +4,7 @@
 
 Protocol2USDM is an automated pipeline that extracts, validates, and structures clinical trial protocol content into data conformant to the [CDISC USDM v4.0](https://www.cdisc.org/standards/foundational/usdm) model.
 
-> **📢 v6.3.0 Update:** NCI EVS terminology enrichment! Entities are now enriched with official NCI codes via the EVS API with local caching. Use `--enrich` to enable. Also includes CDISC CORE integration with `--update-cache` for rule management. Schema-driven architecture with 86+ auto-generated entity types from `dataStructure.yml`.
+> **📢 v6.5.0 Update:** External evaluation score now **88%** (7/8 checks passing)! Key fixes: encounterId alignment, StudyIdentifier type auto-inference, EVS-verified terminology codes. All 28 NCI codes verified against NIH EVS API. Schema-driven architecture with 86+ auto-generated entity types from `dataStructure.yml`.
 
 ---
 
@@ -404,6 +404,9 @@ CDISC_API_KEY=...           # For CORE rules cache (get from library.cdisc.org)
 The following items are planned for upcoming releases:
 
 - [ ] **Biomedical Concepts**: Add extraction via a separate comprehensive canonical model for standardized concept mapping
+- [x] **StudyIdentifier Type Auto-Inference**: NCT, EudraCT, IND, Sponsor patterns auto-detected *(completed v6.5.0)*
+- [x] **encounterId Alignment**: Extraction uses enc_N directly instead of pt_N *(completed v6.5.0)*
+- [x] **EVS-Verified Terminology Codes**: All 28 NCI codes verified against NIH EVS API *(completed v6.5.0)*
 - [x] **Provenance ID Consistency**: Idempotent UUID generation ensures provenance IDs match data *(completed v6.3.0)*
 - [x] **NCI EVS Terminology Enrichment**: Real-time EVS API integration with local caching *(completed v6.3.0)*
 - [x] **CDISC CORE Integration**: Local CORE engine for conformance validation with cache update *(completed v6.3.0)*

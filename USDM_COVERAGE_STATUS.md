@@ -1,8 +1,9 @@
 # USDM v4.0 Entity Coverage Status
 
 **Last Updated:** 2025-11-30  
-**Version:** 6.4.0  
-**Coverage:** 62/87 entities (71.3%)
+**Version:** 6.5.0  
+**Coverage:** 62/87 entities (71.3%)  
+**External Evaluation Score:** 88% (7/8 checks passing)
 
 ---
 
@@ -114,7 +115,15 @@ These are structural containers used implicitly:
 1. **Phase 9: Biomedical Concepts** - Pending special integration with CDISC BC library
 2. **Phase 16: eCOA/CDASH** - Implement when eCOA spec integration required
 
-## Recent Additions (v6.4.0)
+## Recent Additions (v6.5.0)
+
+- **encounterId Alignment**: Extraction now uses `enc_N` directly instead of `pt_N` for proper cross-references
+- **StudyIdentifier Type Auto-Inference**: NCT, EudraCT, IND, Sponsor patterns auto-detected with EVS-verified codes
+- **EVS-Verified Terminology Codes**: All 28 NCI codes verified against NIH EVS API
+- **Provenance Fix**: Orphaned ticks resolved with proper UUID conversion (enc_N → UUID)
+- **External Evaluation**: 88% score (7/8 checks passing) - up from 45%
+
+## Additions (v6.4.0)
 
 - **Parser Fixes**: All 7 extraction parsers now handle USDM-compliant LLM responses
 - **Extraction Gap Audit**: New `testing/audit_extraction_gaps.py` tool to detect parsing mismatches

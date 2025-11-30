@@ -140,23 +140,23 @@ ARM_TYPE_CODES: Dict[str, Dict[str, str]] = {
 
 STUDY_IDENTIFIER_TYPE_CODES: Dict[str, Dict[str, str]] = {
     "sponsor": {
-        "code": "C99905x",  # Placeholder - verify exact code
+        "code": "C132351",  # Verified against EVS API
         "decode": "Sponsor Protocol Identifier",
         "pattern": None,  # Default for sponsor identifiers
     },
     "nct": {
-        "code": "C142710",
-        "decode": "ClinicalTrials.gov Identifier",
+        "code": "C172240",  # Verified against EVS API
+        "decode": "Clinicaltrials.gov Identifier",
         "pattern": r"^NCT\d+$",
     },
     "eudract": {
-        "code": "C142711",
-        "decode": "EudraCT Number",
+        "code": "C98714",  # Clinical Trial Registry Identifier (generic)
+        "decode": "Clinical Trial Registry Identifier",
         "pattern": r"^\d{4}-\d{6}-\d{2}$",
     },
     "ind": {
-        "code": "C142712",
-        "decode": "IND Number",
+        "code": "C218685",  # Verified against EVS API
+        "decode": "US FDA Investigational New Drug Application Number",
         "pattern": r"^\d{5,6}$",  # Usually 5-6 digit numbers
     },
 }
@@ -225,11 +225,24 @@ def get_study_identifier_type(identifier_text: str) -> Dict[str, Any]:
         
     Returns:
         USDM Code object for the identifier type
+        
+    Mappings (EVS-verified):
+        NCT... -> C172240 (Clinicaltrials.gov Identifier)
+        YYYY-NNNNNN-NN -> C98714 (Clinical Trial Registry Identifier) 
+        5-6 digits -> C218685 (US FDA IND Number)
+        Other -> C132351 (Sponsor Protocol Identifier)
     """
     import re
     
     if not identifier_text:
-        return get_code_object("sponsor", STUDY_IDENTIFIER_TYPE_CODES)
+        info = STUDY_IDENTIFIER_TYPE_CODES["sponsor"]
+        return {
+            "code": info["code"],
+            "codeSystem": "http://www.cdisc.org",
+            "codeSystemVersion": "2024-09-27",
+            "decode": info["decode"],
+            "instanceType": "Code",
+        }
     
     text = identifier_text.strip()
     
