@@ -4,8 +4,6 @@
 
 Protocol2USDM is an automated pipeline that extracts, validates, and structures clinical trial protocol content into data conformant to the [CDISC USDM v4.0](https://www.cdisc.org/standards/foundational/usdm) model.
 
-> **📢 v6.5.0 Update:** External evaluation score now **88%** (7/8 checks passing)! Key fixes: encounterId alignment, StudyIdentifier type auto-inference, EVS-verified terminology codes. All 28 NCI codes verified against NIH EVS API. Schema-driven architecture with 86+ auto-generated entity types from `dataStructure.yml`.
-
 ---
 
 ## 🚀 Try It Now
