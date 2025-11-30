@@ -150,6 +150,9 @@ class ActivityTimepoint:
     """
     Internal extraction type - represents a tick in the SoA matrix.
     Maps to ScheduledActivityInstance in USDM 4.0.
+    
+    footnoteRefs: List of footnote identifiers (e.g., ["a", "m"]) for ticks
+    that have superscript references like "X^a" or "✓^m,n"
     """
     activity_id: str = ""
     timepoint_id: str = ""
@@ -158,6 +161,7 @@ class ActivityTimepoint:
     activityId: str = ""  # Alternative field name
     plannedTimepointId: str = ""  # Alternative field name
     encounterId: str = ""  # Alternative field name
+    footnoteRefs: List[str] = field(default_factory=list)  # Footnote superscripts (e.g., ["a", "m"])
     
     def __post_init__(self):
         if not self.activity_id and self.activityId:
@@ -166,11 +170,15 @@ class ActivityTimepoint:
             self.timepoint_id = self.plannedTimepointId or self.encounterId
     
     def to_dict(self) -> Dict[str, Any]:
-        return {
+        result = {
             "activityId": self.activity_id or self.activityId,
             "encounterId": self.timepoint_id or self.plannedTimepointId or self.encounterId,
             "instanceType": "ScheduledActivityInstance",
         }
+        # Include footnoteRefs if present (for provenance/viewer, not USDM output)
+        if self.footnoteRefs:
+            result["footnoteRefs"] = self.footnoteRefs
+        return result
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'ActivityTimepoint':
@@ -181,6 +189,7 @@ class ActivityTimepoint:
             timepoint_id=data.get('timepoint_id', data.get('plannedTimepointId', data.get('encounterId', ''))),
             is_performed=data.get('is_performed', data.get('isPerformed', True)),
             condition=data.get('condition'),
+            footnoteRefs=data.get('footnoteRefs', data.get('footnote_refs', [])),
         )
     
     def to_scheduled_instance(self) -> ScheduledActivityInstance:

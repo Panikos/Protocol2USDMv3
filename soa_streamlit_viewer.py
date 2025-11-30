@@ -379,8 +379,10 @@ def get_file_inventory(base_path):
             break
     
     # Store provenance path for later attachment (outside cache)
+    # Priority: protocol_usdm_provenance.json has UUID-converted IDs matching protocol_usdm.json
     possible_prov_files = [
-        '9_final_soa_provenance.json',      # New pipeline
+        'protocol_usdm_provenance.json',    # UUID-converted (matches protocol_usdm.json)
+        '9_final_soa_provenance.json',      # Original IDs (legacy)
         '9_reconciled_soa_provenance.json', # Legacy pipeline
         'step6_provenance.json',            # Step-by-step test
     ]
@@ -390,6 +392,25 @@ def get_file_inventory(base_path):
         if os.path.exists(prov_path):
             inventory['provenance_path'] = prov_path
             break
+    
+    # Load id_mapping.json to build pt_uuid -> enc_uuid mapping
+    # (Instances use pt_* UUIDs but encounters/provenance use enc_* UUIDs)
+    id_mapping_path = os.path.join(base_path, 'id_mapping.json')
+    if os.path.exists(id_mapping_path):
+        id_mapping, _ = load_file(id_mapping_path)
+        if id_mapping:
+            inventory['id_mapping'] = id_mapping
+            # Build pt_uuid -> enc_uuid mapping
+            import re
+            pt_uuid_to_enc_uuid = {}
+            for key, uuid_val in id_mapping.items():
+                match = re.match(r'^pt_(\d+)$', key)
+                if match:
+                    n = match.group(1)
+                    enc_key = f"enc_{n}"
+                    if enc_key in id_mapping:
+                        pt_uuid_to_enc_uuid[uuid_val] = id_mapping[enc_key]
+            inventory['pt_uuid_to_enc_uuid'] = pt_uuid_to_enc_uuid
     
     inventory['file_map'] = file_map
     return inventory
@@ -428,6 +449,20 @@ def attach_provenance_to_inventory(inventory):
                     if pt_id:  # Only add if pt_id is not empty
                         nested_cells[act_id][pt_id] = source
             merged_prov['activityTimepoints'] = nested_cells
+            
+            # Convert cellFootnotes from flat "actId|ptId" -> nested {actId: {ptId: [refs]}}
+            cell_footnotes = prov_data.get('cellFootnotes', {})
+            if cell_footnotes:
+                nested_fn = {}
+                for key, refs in cell_footnotes.items():
+                    if '|' in key:
+                        act_id, pt_id = key.split('|', 1)
+                        if act_id not in nested_fn:
+                            nested_fn[act_id] = {}
+                        if pt_id and refs:
+                            nested_fn[act_id][pt_id] = refs
+                merged_prov['cellFootnotes'] = nested_fn
+            
             target_content['p2uProvenance'] = merged_prov
         elif 'p2uProvenance' not in target_content:
             # Legacy format - use directly
@@ -440,6 +475,9 @@ def attach_provenance_to_inventory(inventory):
     # Attach provenance to full_usdm (protocol_usdm.json)
     if inventory.get('full_usdm'):
         attach_provenance(inventory['full_usdm']['content'], prov_content)
+        # Also attach pt_uuid_to_enc_uuid mapping for instance ID resolution
+        if inventory.get('pt_uuid_to_enc_uuid'):
+            inventory['full_usdm']['content']['_pt_uuid_to_enc_uuid'] = inventory['pt_uuid_to_enc_uuid']
 
 
 def attach_footnotes_to_inventory(inventory):
@@ -773,7 +811,11 @@ def render_flexible_soa(data, table_id: str = "main", source_name: str = "SoA da
     # Pre-compute activity ⇢ plannedTimepoint/encounter links
     activity_pt_links = set()
     
-    # Build a mapping from pt_* IDs to enc_* IDs (for ID mismatch handling)
+    # Get pt_uuid -> enc_uuid mapping from inventory (built from id_mapping.json)
+    # This handles the case where instances have pt_* UUIDs but encounters have enc_* UUIDs
+    pt_uuid_to_enc_uuid = data.get('_pt_uuid_to_enc_uuid', {})
+    
+    # Build a mapping from pt_* IDs to enc_* IDs (for legacy ID format)
     # The ScheduledActivityInstance may use pt_* IDs for encounterId
     pt_to_enc_map = {}
     for i, enc in enumerate(components['encounters']):
@@ -792,9 +834,13 @@ def render_flexible_soa(data, table_id: str = "main", source_name: str = "SoA da
             
             # Get encounter/timepoint ID and normalize to enc_* format
             enc_id = inst.get('encounterId')
-            # Map pt_* to enc_* if needed
-            if enc_id and enc_id.startswith('pt_'):
-                enc_id = pt_to_enc_map.get(enc_id, enc_id)
+            # Map pt_* to enc_* if needed (handles both string pt_1 and pt_uuid formats)
+            if enc_id:
+                if enc_id.startswith('pt_'):
+                    enc_id = pt_to_enc_map.get(enc_id, enc_id)
+                elif enc_id in pt_uuid_to_enc_uuid:
+                    # Instance has pt_* UUID, map to enc_* UUID
+                    enc_id = pt_uuid_to_enc_uuid[enc_id]
             
             for act_id in act_ids:
                 if act_id and enc_id:
@@ -826,17 +872,16 @@ def render_flexible_soa(data, table_id: str = "main", source_name: str = "SoA da
     if provenance:
         # Get cell-level provenance map (already converted to nested format during load)
         at_prov_map = provenance.get('activityTimepoints', {})
+        # Get cell footnotes map (nested {actId: {ptId: [refs]}})
+        cell_footnotes_map = provenance.get('cellFootnotes', {})
         
         tick_counts = {'text': 0, 'confirmed': 0, 'needs_review': 0, 'orphaned': 0}
         rows_with_review = set()
         
-        # Build enc_* to pt_* mapping for provenance lookup
-        # Provenance uses pt_* IDs but columns may use enc_* IDs
+        # Note: After the pt_N -> enc_N UUID fix in convert_provenance_to_uuids(),
+        # provenance now uses encounter UUIDs directly, so no mapping needed.
+        # We keep enc_to_pt_map empty to disable the old pt_* lookup behavior.
         enc_to_pt_map = {}
-        for i, enc in enumerate(components['encounters']):
-            enc_id = enc.get('id')
-            if enc_id:
-                enc_to_pt_map[enc_id] = f"pt_{i+1}"
         
         # Build set of timepoint IDs for lookup
         pt_id_map = {pt['id']: True for pt in ordered_pt_for_cols if pt.get('id')}
@@ -876,8 +921,8 @@ def render_flexible_soa(data, table_id: str = "main", source_name: str = "SoA da
                         if cell_value == 'X':
                             # Get timepoint ID by position (handles duplicate column names)
                             pt_id = ordered_pt_for_cols[col_pos].get('id') if col_pos < len(ordered_pt_for_cols) else None
-                            # Map enc_* ID to pt_* ID for provenance lookup
-                            prov_pt_id = enc_to_pt_map.get(pt_id, pt_id) if pt_id else None
+                            # Provenance now uses encounter UUIDs directly (after pt_N -> enc_N fix)
+                            prov_pt_id = pt_id
                             if prov_pt_id and prov_pt_id not in cell_map:
                                 tick_counts['orphaned'] += 1
                                 has_row_review = True
@@ -964,8 +1009,8 @@ def render_flexible_soa(data, table_id: str = "main", source_name: str = "SoA da
             if not act_id or not pt_id:
                 return ''
             
-            # Map enc_* ID to pt_* ID for provenance lookup
-            prov_pt_id = enc_to_pt_map.get(pt_id, pt_id)
+            # Provenance now uses encounter UUIDs directly (after pt_N -> enc_N fix)
+            prov_pt_id = pt_id
 
             # 1) Prefer cell-level provenance if available (using the at_prov_map built earlier)
             if at_prov_map and isinstance(at_prov_map, dict):
@@ -1105,7 +1150,19 @@ def render_flexible_soa(data, table_id: str = "main", source_name: str = "SoA da
             for j, (col_idx, value) in enumerate(row.items()):
                 cell_style = style_map.get((i, j), '')
                 style_attr = f' style="{cell_style}"' if cell_style else ''
-                html_parts.append(f'<td{style_attr}>{html.escape(str(value))}</td>')
+                
+                # Get footnote superscripts for this cell if available
+                cell_value = html.escape(str(value))
+                if value == 'X' and cell_footnotes_map and i < len(ordered_activities_display):
+                    act_id = ordered_activities_display[i].get('id')
+                    pt_id = ordered_pt_for_cols[j].get('id') if j < len(ordered_pt_for_cols) else None
+                    # Provenance now uses encounter UUIDs directly
+                    footnote_refs = cell_footnotes_map.get(act_id, {}).get(pt_id, [])
+                    if footnote_refs:
+                        superscript = ','.join(footnote_refs)
+                        cell_value = f'X<sup style="color: #3b82f6; font-size: 0.75em;">{html.escape(superscript)}</sup>'
+                
+                html_parts.append(f'<td{style_attr}>{cell_value}</td>')
             html_parts.append('</tr>')
         
         html_parts.append('</tbody></table></div>')

@@ -96,6 +96,8 @@ For each activity row in the SoA table:
 2. Assign it to its parent group using `activityGroupId`
 3. Identify which timepoints have a tick (X, ✓, or similar marker)
 4. Create an ActivityTimepoint entry for EACH tick
+5. **IMPORTANT**: If a tick has a superscript footnote reference (e.g., "X^a", "✓^m", "X^a,b"),
+   capture the footnote letters in the `footnoteRefs` array (e.g., ["a"] or ["a", "b"])
 
 ## USDM v4.0 Output Format (MUST follow exactly)
 
@@ -138,6 +140,14 @@ Every activity MUST have `activityGroupId` linking it to its parent group.
       "id": "at_2",
       "activityId": "act_2",
       "plannedTimepointId": "pt_1",
+      "footnoteRefs": ["a"],
+      "instanceType": "ActivityTimepoint"
+    }},
+    {{
+      "id": "at_3",
+      "activityId": "act_3",
+      "plannedTimepointId": "pt_2",
+      "footnoteRefs": ["m", "n"],
       "instanceType": "ActivityTimepoint"
     }}
   ]
@@ -190,6 +200,9 @@ PK/PD Analyses           <- group header (grp_3)
 - `id`: Unique identifier (at_1, at_2, etc.)
 - `activityId`: Reference to the activity (must match an activity's id)
 - `plannedTimepointId`: Reference to timepoint from header (must match exactly)
+- `footnoteRefs`: (OPTIONAL) Array of footnote letters if the tick has superscript references
+  - Example: "X^a" → `["a"]`, "✓^m,n" → `["m", "n"]`
+  - Only include if superscript is present on the tick mark
 - `instanceType`: Must be "ActivityTimepoint"
 
 Output ONLY the JSON object, no explanations or markdown fences."""

@@ -4,6 +4,31 @@ All notable changes documented here. Dates in ISO-8601.
 
 ---
 
+## [6.4.1] – 2025-11-30
+
+### Provenance & Viewer Fix - Tick Color Display
+
+Fixed critical bug where SoA viewer showed no colored ticks despite correct provenance data.
+
+#### Root Cause
+UUID namespace mismatch between:
+- `enc_*` IDs → encounter UUIDs (used by encounters array and provenance)
+- `pt_*` IDs → timepoint UUIDs (used by `ScheduledActivityInstance.encounterId`)
+
+#### Fixes
+* **`main_v2.py`**: `convert_provenance_to_uuids()` now maps `pt_N` → `enc_N` UUIDs
+* **`soa_streamlit_viewer.py`**: 
+  - Loads `id_mapping.json` to build `pt_uuid → enc_uuid` mapping
+  - Attaches mapping to content for instance ID resolution
+  - All 211 ticks now display with proper provenance coloring
+
+#### Model Availability Note
+* **GPT-5 / GPT-5.1 / GPT-5.1-pro**: These model names do NOT exist on OpenAI API
+* **Valid models**: `gpt-4.1`, `gpt-4o`, `gpt-4o-mini`, `o3`, `o4-mini`
+* Recommend: `claude-opus-4-5` or `gemini-2.5-pro` for best results
+
+---
+
 ## [6.4.0] – 2025-11-30
 
 ### Parser Fixes for USDM-Compliant LLM Responses

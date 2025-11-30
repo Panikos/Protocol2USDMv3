@@ -293,13 +293,15 @@ SoA extraction tested on Alexion Wilson's Disease protocol (Nov 2025):
 | Model | Activities | Timepoints | Ticks | Vision Header | Recommendation |
 |-------|------------|------------|-------|---------------|----------------|
 | **Claude Opus 4.5** | 36 ✓ | 24 ✓ | 212 (100% confirmed) | ✅ | **Best accuracy** |
-| **Gemini 3 Pro** | 36 ✓ | 24 ✓ | 207 (10 flagged) | ✅ | Good, slower |
-| GPT-5.1 | 36 ✓ | 0 ❌ | 0 ❌ | ❌ | Vision issues |
+| **Gemini 2.5 Pro** | 36 ✓ | 24 ✓ | 207 (10 flagged) | ✅ | Good, reliable |
+| GPT-4.1 | 36 ✓ | 24 ✓ | 205 | ✅ | Good alternative |
 
 **Notes:**
 - Claude Opus 4.5: Best overall - all ticks confirmed by vision validation
-- Gemini 3 Pro: Good accuracy, flags potential hallucinations for review
-- GPT-5.1: Vision-based header analysis fails; text extraction works but no tick matrix
+- Gemini 2.5 Pro: Good accuracy, flags potential hallucinations for review
+- GPT-4.1: Solid performance with vision support
+
+**⚠️ Invalid Models:** `gpt-5`, `gpt-5.1`, `gpt-5.1-pro` do NOT exist on OpenAI API
 
 ---
 

@@ -23,7 +23,7 @@ Usage:
 
 import json
 from enum import Enum
-from typing import Dict, Optional, Set, Any
+from typing import Dict, List, Optional, Set, Any
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -61,6 +61,7 @@ class ProvenanceTracker:
         'activityGroups': {},
     })
     cells: Dict[str, str] = field(default_factory=dict)
+    cellFootnotes: Dict[str, List[str]] = field(default_factory=dict)  # "activityId|timepointId" -> ["a", "b"]
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def tag_entity(
@@ -137,7 +138,7 @@ class ProvenanceTracker:
         Tag cells from an activityTimepoints/scheduledActivityInstances list.
         
         Args:
-            activity_timepoints: List of {activityId, plannedTimepointId/encounterId} dicts
+            activity_timepoints: List of {activityId, plannedTimepointId/encounterId, footnoteRefs?} dicts
             source: Source for all cells
         """
         for at in activity_timepoints:
@@ -147,6 +148,37 @@ class ProvenanceTracker:
                 tp_id = at.get('plannedTimepointId') or at.get('timepointId') or at.get('encounterId')
                 if act_id and tp_id:
                     self.tag_cell(act_id, tp_id, source)
+                    # Store footnote references if present
+                    footnotes = at.get('footnoteRefs', [])
+                    if footnotes:
+                        self.tag_cell_footnotes(act_id, tp_id, footnotes)
+    
+    def tag_cell_footnotes(
+        self,
+        activity_id: str,
+        timepoint_id: str,
+        footnoteRefs: List[str]
+    ) -> None:
+        """
+        Tag footnote references for an activity-timepoint cell.
+        
+        Args:
+            activity_id: Activity ID
+            timepoint_id: PlannedTimepoint ID
+            footnoteRefs: List of footnote identifiers (e.g., ["a", "m"])
+        """
+        if footnoteRefs:
+            key = f"{activity_id}|{timepoint_id}"
+            self.cellFootnotes[key] = footnoteRefs
+    
+    def get_cell_footnotes(
+        self,
+        activity_id: str,
+        timepoint_id: str
+    ) -> List[str]:
+        """Get footnote references for a cell."""
+        key = f"{activity_id}|{timepoint_id}"
+        return self.cellFootnotes.get(key, [])
     
     def get_entity_source(
         self, 
@@ -216,7 +248,8 @@ class ProvenanceTracker:
         return {
             'entities': self.entities,
             'cells': self.cells,
-            'metadata': self.metadata,
+            'cellFootnotes': self.cellFootnotes,
+            'metadata': self.metadata
         }
     
     @classmethod
@@ -225,6 +258,7 @@ class ProvenanceTracker:
         tracker = cls()
         tracker.entities = data.get('entities', tracker.entities)
         tracker.cells = data.get('cells', {})
+        tracker.cellFootnotes = data.get('cellFootnotes', {})
         tracker.metadata = data.get('metadata', {})
         return tracker
     

@@ -330,6 +330,93 @@ def build_name_to_id_map(data: dict) -> dict:
     return name_map
 
 
+def convert_provenance_to_uuids(provenance_data: dict, id_map: dict) -> dict:
+    """
+    Convert provenance IDs to UUIDs using the same id_map from convert_ids_to_uuids.
+    
+    This creates a new provenance dict with all IDs converted to UUIDs,
+    ensuring perfect alignment with protocol_usdm.json.
+    
+    IMPORTANT: Provenance uses pt_N for timepoint IDs but USDM uses enc_N for encounters.
+    We map pt_N -> enc_N UUID so viewer lookups work correctly.
+    
+    Args:
+        provenance_data: Original provenance dict (entities, cells, cellFootnotes, metadata)
+        id_map: ID mapping from convert_ids_to_uuids {simple_id: uuid}
+        
+    Returns:
+        New provenance dict with all IDs converted to UUIDs
+    """
+    if not provenance_data or not id_map:
+        return provenance_data
+    
+    # Build pt_N -> enc_N mapping for timepoint/encounter alignment
+    # Provenance uses pt_1, pt_2... but USDM uses enc_1, enc_2... for the same columns
+    pt_to_enc_uuid = {}
+    import re
+    for key, uuid_val in id_map.items():
+        match = re.match(r'^pt_(\d+)$', key)
+        if match:
+            n = match.group(1)
+            enc_key = f"enc_{n}"
+            if enc_key in id_map:
+                # Map pt_N's UUID to enc_N's UUID for provenance lookup
+                pt_to_enc_uuid[uuid_val] = id_map[enc_key]
+    
+    def convert_id(old_id: str) -> str:
+        """Convert ID using id_map, return original if not found."""
+        return id_map.get(old_id, old_id)
+    
+    def convert_timepoint_id(old_id: str) -> str:
+        """Convert timepoint ID, mapping pt_N to enc_N UUID."""
+        # First convert to UUID
+        uuid_val = id_map.get(old_id, old_id)
+        # Then check if this pt_N UUID should map to enc_N UUID
+        return pt_to_enc_uuid.get(uuid_val, uuid_val)
+    
+    result = {}
+    
+    # Convert entity IDs
+    if 'entities' in provenance_data:
+        result['entities'] = {}
+        for entity_type, entities in provenance_data['entities'].items():
+            if isinstance(entities, dict):
+                result['entities'][entity_type] = {
+                    convert_id(eid): source for eid, source in entities.items()
+                }
+            else:
+                result['entities'][entity_type] = entities
+    
+    # Convert cell keys (format: "act_id|pt_id" -> "uuid|enc_uuid")
+    if 'cells' in provenance_data:
+        result['cells'] = {}
+        for key, source in provenance_data['cells'].items():
+            if '|' in key:
+                act_id, pt_id = key.split('|', 1)
+                # Use convert_timepoint_id to map pt_N -> enc_N UUID
+                new_key = f"{convert_id(act_id)}|{convert_timepoint_id(pt_id)}"
+                result['cells'][new_key] = source
+            else:
+                result['cells'][key] = source
+    
+    # Convert cellFootnotes keys (format: "act_id|pt_id" -> "uuid|enc_uuid")
+    if 'cellFootnotes' in provenance_data:
+        result['cellFootnotes'] = {}
+        for key, refs in provenance_data['cellFootnotes'].items():
+            if '|' in key:
+                act_id, pt_id = key.split('|', 1)
+                new_key = f"{convert_id(act_id)}|{convert_timepoint_id(pt_id)}"
+                result['cellFootnotes'][new_key] = refs
+            else:
+                result['cellFootnotes'][key] = refs
+    
+    # Copy metadata unchanged
+    if 'metadata' in provenance_data:
+        result['metadata'] = provenance_data['metadata'].copy()
+    
+    return result
+
+
 def sync_provenance_with_data(provenance_path: str, data: dict, id_map: dict = None) -> None:
     """
     Synchronize provenance IDs with the final USDM data.
@@ -507,6 +594,7 @@ def validate_and_fix_schema(
     logger.info("      ✓ Applied type inference to Encounters, Epochs, Arms, Codes")
     
     # Step 2: Convert IDs to UUIDs (USDM 4.0 requirement)
+    id_map = {}
     if convert_to_uuids:
         logger.info("\n[2/3] Converting IDs to UUIDs...")
         data, id_map = convert_ids_to_uuids(data)
@@ -516,6 +604,22 @@ def validate_and_fix_schema(
         id_map_path = os.path.join(output_dir, "id_mapping.json")
         with open(id_map_path, 'w', encoding='utf-8') as f:
             json.dump(id_map, f, indent=2)
+        
+        # Generate protocol_usdm_provenance.json with converted IDs
+        # This ensures provenance keys match protocol_usdm.json exactly
+        orig_provenance_path = os.path.join(output_dir, "9_final_soa_provenance.json")
+        if os.path.exists(orig_provenance_path):
+            with open(orig_provenance_path, 'r', encoding='utf-8') as f:
+                orig_provenance = json.load(f)
+            
+            # Convert provenance IDs using the same id_map
+            converted_provenance = convert_provenance_to_uuids(orig_provenance, id_map)
+            
+            # Save as protocol_usdm_provenance.json (paired with protocol_usdm.json)
+            prov_output_path = os.path.join(output_dir, "protocol_usdm_provenance.json")
+            with open(prov_output_path, 'w', encoding='utf-8') as f:
+                json.dump(converted_provenance, f, indent=2)
+            logger.info(f"      ✓ Created protocol_usdm_provenance.json ({len(converted_provenance.get('cells', {}))} cells)")
     
     fixed_data = data
     fixer_result = None
@@ -1277,12 +1381,11 @@ Examples:
                 json.dump(fixed_data, f, indent=2, ensure_ascii=False)
             logger.info(f"  ✓ USDM output saved to: {combined_usdm_path}")
             
-            # Sync provenance IDs with protocol_usdm.json (single source of truth)
-            # Viewer always uses protocol_usdm.json, so provenance must match its IDs
-            provenance_path = os.path.join(output_dir, "9_final_soa_provenance.json")
-            if os.path.exists(provenance_path):
-                sync_provenance_with_data(provenance_path, fixed_data, id_map)
-                logger.info(f"  ✓ Synchronized provenance IDs with protocol_usdm.json")
+            # Note: protocol_usdm_provenance.json is created during validate_and_fix_schema
+            # with UUID-converted IDs that match protocol_usdm.json exactly
+            prov_path = os.path.join(output_dir, "protocol_usdm_provenance.json")
+            if os.path.exists(prov_path):
+                logger.info(f"  ✓ Provenance file: protocol_usdm_provenance.json")
             
             combined_data = fixed_data
             
@@ -1373,11 +1476,10 @@ Examples:
                         json.dump(fixed_data, f, indent=2, ensure_ascii=False)
                     logger.info(f"  ✓ Fixed data saved")
                     
-                    # Sync provenance IDs with the validated data (viewer uses this as source of truth)
-                    provenance_path = os.path.join(output_dir, "9_final_soa_provenance.json")
-                    if os.path.exists(provenance_path):
-                        sync_provenance_with_data(provenance_path, fixed_data, id_map)
-                        logger.info(f"  ✓ Synchronized provenance IDs")
+                    # Note: protocol_usdm_provenance.json is created during validate_and_fix_schema
+                    prov_path = os.path.join(output_dir, "protocol_usdm_provenance.json")
+                    if os.path.exists(prov_path):
+                        logger.info(f"  ✓ Provenance file: protocol_usdm_provenance.json")
                     
                     # Save schema validation report
                     schema_output_path = os.path.join(output_dir, "schema_validation.json")

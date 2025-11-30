@@ -204,7 +204,7 @@ The schema defines which fields are required. Key ones enforced:
 
 ## Provenance Tracking
 
-Provenance tracks the **source** of each extracted entity and cell (text extraction, vision validation, or both).
+Provenance tracks the **source** of each extracted entity and cell (text extraction, vision validation, or both), plus **footnote references** for ticks with superscripts.
 
 ### Architecture
 
@@ -212,22 +212,26 @@ Provenance tracks the **source** of each extracted entity and cell (text extract
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Extraction Pipeline                          │
 │                                                                 │
-│   text_extractor.py ──► entities + provenance (same IDs)       │
+│   text_extractor.py ──► entities + provenance (simple IDs)     │
 │           │                        │                            │
 │           ▼                        ▼                            │
 │   9_final_soa.json     9_final_soa_provenance.json             │
+│   (act_1, pt_1)        (act_1|pt_1 → source)                   │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   Validation & Combine                          │
+│                   Validation & UUID Conversion                  │
 │                                                                 │
-│   normalize_usdm_data() ──► ID conversion ──► protocol_usdm.json│
-│                                    │                            │
-│                    sync_provenance_with_data()                  │
-│                                    │                            │
-│                         9_final_soa_provenance.json (updated)   │
+│   convert_ids_to_uuids() ──► id_map {simple → uuid}            │
+│           │                        │                            │
+│           ▼                        ▼                            │
+│   protocol_usdm.json   convert_provenance_to_uuids()           │
+│   (UUIDs)                          │                            │
+│                                    ▼                            │
+│                        protocol_usdm_provenance.json            │
+│                        (uuid|uuid → source)                     │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -235,12 +239,24 @@ Provenance tracks the **source** of each extracted entity and cell (text extract
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Viewer Display                              │
 │                                                                 │
-│   protocol_usdm.json + provenance ──► colored tick marks       │
+│   protocol_usdm.json + protocol_usdm_provenance.json           │
+│                    ↓                                            │
+│   Colored tick marks + footnote superscripts                    │
 │                                                                 │
-│   Colors: 🟢 Both (confirmed)  🟡 Text-only  🔴 Needs review    │
+│   Colors: 🟢 Both (confirmed)  🔵 Text-only  🟠 Needs review    │
+│   Footnotes: X^a, X^m,n displayed as superscripts              │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Provenance Files
+
+**Two paired output files:**
+
+| File | IDs | Purpose |
+|------|-----|---------|
+| `9_final_soa_provenance.json` | Simple (act_1, pt_1) | Original extraction provenance |
+| `protocol_usdm_provenance.json` | UUIDs | Viewer consumption (matches protocol_usdm.json) |
 
 ### Provenance File Format
 
@@ -254,6 +270,9 @@ Provenance tracks the **source** of each extracted entity and cell (text extract
   "cells": {
     "<activity_uuid>|<timepoint_uuid>": "text|vision|both"
   },
+  "cellFootnotes": {
+    "<activity_uuid>|<timepoint_uuid>": ["a", "m"]
+  },
   "metadata": {
     "model": "gemini-2.5-pro",
     "extraction_type": "text"
@@ -263,18 +282,28 @@ Provenance tracks the **source** of each extracted entity and cell (text extract
 
 ### ID Consistency
 
-The **idempotent ID generation** in `_ensure_id()` ensures:
-1. When `to_dict()` is called for provenance tagging, UUIDs are generated and stored
-2. When `to_dict()` is called again for JSON output, **same UUIDs** are returned
-3. Provenance and data always have matching IDs
+The `convert_provenance_to_uuids()` function ensures perfect ID alignment:
 
-For legacy runs with mismatched IDs, `sync_provenance_with_data()` matches entities by **name** as fallback.
+1. During validation, `convert_ids_to_uuids()` creates `id_map` mapping simple IDs → UUIDs
+2. The same `id_map` is used to convert provenance IDs
+3. **Critical:** Provenance uses `pt_N` IDs but USDM uses `enc_N` for encounters - the function maps `pt_N` → `enc_N` UUIDs
+4. Both `protocol_usdm.json` and `protocol_usdm_provenance.json` use identical encounter UUIDs
+5. Viewer loads `id_mapping.json` to build `pt_uuid → enc_uuid` mapping for instance ID resolution
+
+### Footnote Extraction
+
+Footnotes are extracted at two levels:
+
+1. **Protocol-level footnotes**: Stored in `HeaderStructure.footnotes` as `CommentAnnotation` objects
+2. **Cell-level footnote refs**: Stored in `cellFootnotes` as `["a", "m"]` arrays per tick
+
+The text extraction prompt captures superscripts like "X^a" or "✓^m,n" and stores them in `ActivityTimepoint.footnoteRefs`.
 
 ## Validation & Enrichment Pipeline
 
 1. **Normalization** - Type inference for Encounters, Epochs, Arms
-2. **UUID Conversion** - Simple IDs converted to proper UUIDs
-3. **Provenance Sync** - Provenance IDs updated to match final data
+2. **UUID Conversion** - Simple IDs converted to proper UUIDs via `convert_ids_to_uuids()`
+3. **Provenance Conversion** - Creates `protocol_usdm_provenance.json` using same `id_map`
 4. **Terminology Enrichment** - NCI codes via EVS API (with caching)
 5. **Official Validation** - Validate against `usdm` Pydantic package
 6. **CDISC CORE Conformance** - Rule-based validation
