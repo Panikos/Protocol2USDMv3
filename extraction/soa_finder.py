@@ -238,12 +238,17 @@ def find_soa_pages(
     # Combine heuristic and title pages
     all_candidates = list(set(heuristic_pages + title_pages))
     
+    # Pre-expand candidates to include ±2 adjacent pages BEFORE LLM analysis
+    # This ensures the LLM sees potential continuation pages
+    expanded_candidates = _pre_expand_candidates(all_candidates, pdf_path)
+    logger.info(f"Expanded candidates for LLM: {sorted(expanded_candidates)}")
+    
     if not use_llm or not model_name:
-        final_pages = _expand_adjacent_pages(all_candidates, pdf_path)
+        final_pages = _expand_adjacent_pages(expanded_candidates, pdf_path)
         return sorted(final_pages)[:10]
     
-    # Second pass: LLM refinement
-    llm_pages = find_soa_pages_llm(pdf_path, model_name, all_candidates)
+    # Second pass: LLM refinement (now sees adjacent pages)
+    llm_pages = find_soa_pages_llm(pdf_path, model_name, expanded_candidates)
     
     if llm_pages:
         # Conservative expansion with vision validation for ±1 pages
@@ -255,6 +260,35 @@ def find_soa_pages(
     # Fallback to heuristics if LLM fails
     final_pages = _expand_adjacent_pages(all_candidates, pdf_path)
     return sorted(final_pages)[:10]
+
+
+def _pre_expand_candidates(pages: List[int], pdf_path: str, radius: int = 2) -> List[int]:
+    """
+    Pre-expand candidate pages by ±radius before LLM analysis.
+    
+    This ensures the LLM sees potential continuation pages that
+    weren't caught by heuristics.
+    
+    Args:
+        pages: Initial candidate pages
+        pdf_path: Path to PDF
+        radius: Number of pages to add on each side (default ±2)
+    """
+    if not pages:
+        return pages
+    
+    doc = fitz.open(pdf_path)
+    total_pages = len(doc)
+    doc.close()
+    
+    expanded = set(pages)
+    for page in pages:
+        for offset in range(-radius, radius + 1):
+            new_page = page + offset
+            if 0 <= new_page < total_pages:
+                expanded.add(new_page)
+    
+    return list(expanded)
 
 
 def _find_soa_title_pages(pdf_path: str) -> List[int]:
