@@ -89,13 +89,30 @@ These are CATEGORY HEADERS that group related activities. They are typically:
 - Have NO tick marks (they are headers, not activities)
 
 ## YOUR TASK
-Extract the ACTIVITIES and TICK MATRIX from the protocol text.
+Extract the ACTIVITIES and TICK MATRIX from the protocol text using a SYSTEMATIC approach.
 
-For each activity row in the SoA table:
-1. Extract the activity name and description  
-2. Assign it to its parent group using `activityGroupId`
-3. Identify which timepoints have a tick (X, ✓, or similar marker)
-4. Create an ActivityTimepoint entry for EACH tick
+## SYSTEMATIC EXTRACTION PROCESS
+
+Work through the SoA table METHODICALLY using these steps:
+
+### Step 1: Identify ALL Activity Rows
+- Scan the ENTIRE table from top to bottom, across ALL pages
+- List every row that represents an activity (not a group header)
+- For EACH page, process EVERY row - do not skip any
+- Pay special attention to rows immediately after page breaks
+
+### Step 2: For EACH Activity Row (process one at a time)
+1. Extract the activity name exactly as written
+2. Determine which group it belongs to (the nearest group header ABOVE it)
+3. Scan across ALL columns (timepoints) for that row
+4. Record EVERY cell that contains a tick mark (X, ✓, •, or similar)
+
+### Step 3: Build the Tick Matrix
+- For each activity, systematically check EVERY timepoint column
+- Use the timepoint IDs from the header structure (pt_1, pt_2, ... pt_N)
+- Create one ActivityTimepoint for each tick found
+
+**IMPORTANT: Do not stop early. Process the COMPLETE table.**
 
 ## USDM v4.0 Output Format (MUST follow exactly)
 
@@ -156,32 +173,20 @@ Every activity MUST have `activityGroupId` linking it to its parent group.
 8. **Include ALL activities** from the SoA table with their descriptions
 9. **Every activity MUST have `activityGroupId`** - MANDATORY, see rules below
 
-## MULTI-PAGE SoA HANDLING (CRITICAL)
+## MULTI-PAGE SoA HANDLING
 
-The protocol text contains `--- PAGE BREAK ---` markers between pages. The SoA table often spans multiple pages.
+The protocol text contains `--- PAGE BREAK ---` markers between pages. The SoA table typically spans 2-4 pages.
 
-**YOU MUST START READING FROM THE VERY TOP OF EACH PAGE:**
-- After every `--- PAGE BREAK ---`, the VERY FIRST LINE of text is usually an activity row
-- Do NOT assume page 2+ starts with headers - it typically continues the data rows
-- The first activity on page 2 is commonly missed - CHECK IT EXPLICITLY
-- Activities continue ACROSS page breaks without interruption
+**PAGE BREAK RULES:**
+1. Activities continue ACROSS page breaks - the table does NOT restart
+2. The FIRST row after `--- PAGE BREAK ---` is usually an ACTIVITY ROW, not a header
+3. Process text BEFORE and AFTER each page break marker
+4. The current activity group continues across page breaks unless a new group header appears
 
-**EXTRACTION CHECKLIST:**
-1. Read from the TOP of page 1 - extract all activities
-2. After `--- PAGE BREAK ---` - immediately look at the FIRST LINE of text
-3. That first line after page break is almost always an activity - EXTRACT IT
-4. Continue extracting all remaining activities on that page
-5. Repeat for every page break
-
-**COMMON MISTAKE TO AVOID:**
-Skipping the first row after a page break. Example:
-```
-... activity on page 1
---- PAGE BREAK ---
-PD: Plasma total and PUF-Cu    ← THIS ROW IS OFTEN MISSED - DO NOT SKIP IT
-Ceruloplasmin-bound Cu
-... more activities
-```
+**VERIFICATION:** After extraction, mentally walk through each page of the text:
+- Page 1: Did I capture all activities from this page?
+- Page 2: Did I capture the FIRST activity after the page break?
+- Page N: Did I process every row on this page?
 
 ## HOW TO ASSIGN activityGroupId (MANDATORY)
 
