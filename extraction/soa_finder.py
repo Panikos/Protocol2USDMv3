@@ -362,11 +362,12 @@ def _expand_conservative(pages: List[int], pdf_path: str, model_name: str = None
         page = doc[page_num]
         pix = page.get_pixmap(dpi=100)  # Lower DPI for quick check
         
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-            pix.save(tmp.name)
-            tmp_path = tmp.name
+        # Create temp file path without keeping handle open
+        tmp_fd, tmp_path = tempfile.mkstemp(suffix='.png')
+        os.close(tmp_fd)  # Close the file descriptor immediately
         
         try:
+            pix.save(tmp_path)
             is_soa = _validate_page_is_soa(tmp_path, model_name)
             if is_soa:
                 expanded.add(page_num)
@@ -374,7 +375,10 @@ def _expand_conservative(pages: List[int], pdf_path: str, model_name: str = None
             else:
                 logger.info(f"Vision rejected page {page_num + 1} - not SoA table")
         finally:
-            os.unlink(tmp_path)
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass  # Ignore cleanup errors on Windows
     
     doc.close()
     return list(expanded)
