@@ -270,37 +270,52 @@ def _analyze_with_gemini(
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel(model_name)
     
-    # Build content with images
-    content_parts = [prompt]
-    
-    for img_path in image_paths:
-        img = Image.open(img_path)
-        img_bytes = io.BytesIO()
-        img.save(img_bytes, format='PNG')
-        content_parts.append({
-            'inline_data': {
-                'mime_type': 'image/png',
-                'data': base64.b64encode(img_bytes.getvalue()).decode('utf-8')
-            }
-        })
-    
-    # Generate response
-    response = model.generate_content(
-        content_parts,
-        generation_config=genai.types.GenerationConfig(
-            temperature=0.1,
-            response_mime_type="application/json"
+    def call_api(images: List[str]) -> Tuple[str, HeaderStructure]:
+        """Make API call with given images."""
+        content_parts = [prompt]
+        for img_path in images:
+            img = Image.open(img_path)
+            img_bytes = io.BytesIO()
+            img.save(img_bytes, format='PNG')
+            content_parts.append({
+                'inline_data': {
+                    'mime_type': 'image/png',
+                    'data': base64.b64encode(img_bytes.getvalue()).decode('utf-8')
+                }
+            })
+        
+        response = model.generate_content(
+            content_parts,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.1,
+                response_mime_type="application/json"
+            )
         )
-    )
+        raw = response.text or ""
+        data = parse_llm_json(raw, fallback={})
+        struct = HeaderStructure.from_dict(data)
+        return raw, struct
     
-    raw_response = response.text or ""
-    
-    # Parse response
-    data = parse_llm_json(raw_response, fallback={})
-    structure = HeaderStructure.from_dict(data)
-    
-    # Enforce unique encounter names
+    # Try with all images first
+    raw_response, structure = call_api(image_paths)
     structure = _enforce_unique_encounter_names(structure)
+    
+    # If result is empty and we have multiple images, try with later images only
+    # (Early pages often contain SoA title/text, actual table is on later pages)
+    if len(image_paths) > 3 and not structure.encounters:
+        logger.info(f"Empty result with all images, retrying with later images only...")
+        later_images = image_paths[len(image_paths)//2:]
+        raw_response, structure = call_api(later_images)
+        structure = _enforce_unique_encounter_names(structure)
+        
+        # If still empty, try middle images
+        if not structure.encounters and len(image_paths) > 4:
+            logger.info(f"Still empty, trying middle images...")
+            mid_start = len(image_paths) // 3
+            mid_end = 2 * len(image_paths) // 3
+            mid_images = image_paths[mid_start:mid_end]
+            raw_response, structure = call_api(mid_images)
+            structure = _enforce_unique_encounter_names(structure)
     
     return HeaderAnalysisResult(
         structure=structure,
