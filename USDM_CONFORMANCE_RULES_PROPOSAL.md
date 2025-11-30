@@ -7,11 +7,22 @@
 
 ---
 
+## Note on Existing Rules
+
+USDM 4.0 currently has **96 conformance rules** (CORE-000402 through CORE-000959). These rules primarily focus on:
+- Structural validation (unique identifiers, valid references)
+- Terminology conformance (code/decode matching against DDF codelists)
+- Schema compliance (required fields, valid formats)
+
+**Before implementing the rules below, please verify they don't duplicate existing rules.** The rules proposed here are specifically for **content completeness** - ensuring a USDM document contains the essential clinical trial information, not just that it's structurally valid.
+
+---
+
 ## Executive Summary
 
-During implementation of a protocol-to-USDM extraction pipeline, we identified several cases where USDM documents could be structurally valid (passing schema validation) but semantically incomplete. The current USDM 4.0 rule set focuses primarily on structural validation (e.g., unique identifiers, required references) but lacks rules to verify that essential clinical trial content is present.
+During implementation of a protocol-to-USDM extraction pipeline, we identified several cases where USDM documents could be structurally valid (passing schema validation) but semantically incomplete. The current USDM 4.0 rule set focuses primarily on structural validation (e.g., unique identifiers, required references) but may lack rules to verify that essential clinical trial content is present.
 
-We propose a set of **Completeness Conformance Rules** to catch these gaps.
+We propose a set of **Completeness Conformance Rules** to catch these gaps. These rules ask: "Does the document have the content expected of a clinical trial protocol?"
 
 ---
 
